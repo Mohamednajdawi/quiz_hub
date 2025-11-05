@@ -507,7 +507,7 @@ function ProjectDetailContent() {
                       Difficulty Level
                     </label>
                     <select
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
                       value={difficulty}
                       onChange={(e) => setDifficulty(e.target.value as any)}
                     >
