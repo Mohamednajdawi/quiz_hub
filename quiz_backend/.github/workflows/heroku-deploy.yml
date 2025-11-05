@@ -1,0 +1,61 @@
+name: Deploy to Heroku
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: quiz-maker-api-backend
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install Heroku CLI
+        run: |
+          curl https://cli-assets.heroku.com/install.sh | sh
+
+      - name: Verify secrets are set
+        run: |
+          if [ -z "${{ secrets.HEROKU_API_KEY }}" ]; then
+            echo "Error: HEROKU_API_KEY secret is not set"
+            exit 1
+          fi
+          if [ -z "${{ secrets.HEROKU_APP_NAME }}" ]; then
+            echo "Error: HEROKU_APP_NAME secret is not set"
+            exit 1
+          fi
+          echo "Both secrets are configured"
+
+      - name: Deploy to Heroku
+        env:
+          HEROKU_API_KEY: ${{ secrets.HEROKU_API_KEY }}
+        run: |
+          git remote add heroku https://heroku:${{ secrets.HEROKU_API_KEY }}@git.heroku.com/${{ secrets.HEROKU_APP_NAME }}.git
+          git push heroku main --force
+
+      - name: Wait for deployment to complete
+        run: |
+          echo "Waiting for deployment to complete..."
+          sleep 30
+
+      - name: Run database migration
+        env:
+          HEROKU_API_KEY: ${{ secrets.HEROKU_API_KEY }}
+        run: |
+          echo "Running database migration..."
+          heroku run python update_db.py --app ${{ secrets.HEROKU_APP_NAME }}
+          echo "Database migration completed!"
+
+      - name: Verify deployment
+        env:
+          HEROKU_API_KEY: ${{ secrets.HEROKU_API_KEY }}
+        run: |
+          echo "Verifying deployment..."
+          heroku ps --app ${{ secrets.HEROKU_APP_NAME }}
+          echo "Deployment verification completed!"

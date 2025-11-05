@@ -1,0 +1,62 @@
+# Git
+.git
+.gitignore
+.github
+
+# Documentation
+*.md
+README.md
+QUICKSTART.md
+DOCKER.md
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Node modules (will be installed in container)
+quiz_frontend/node_modules
+quiz_frontend/.next
+quiz_frontend/out
+
+# Python cache
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.so
+*.egg
+*.egg-info
+dist
+build
+
+# Virtual environments
+.venv
+venv
+env
+
+# Environment files (use .env.example as template)
+.env
+.env.local
+.env.*.local
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Testing
+coverage
+.pytest_cache
+.coverage
+
+# Database (will be mounted as volume)
+quiz_backend/quiz_database.db
+
