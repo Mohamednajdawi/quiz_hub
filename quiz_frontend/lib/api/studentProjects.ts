@@ -5,6 +5,10 @@ export interface StudentProject {
   name: string;
   description?: string;
   created_at: string;
+  contents?: ProjectContent[];
+  quiz_references?: number[];
+  flashcard_references?: number[];
+  essay_references?: number[];
 }
 
 export interface ProjectContent {
@@ -114,6 +118,20 @@ export const studentProjectsApi = {
 
   getContentGeneratedContent: async (projectId: number, contentId: number) => {
     const { data } = await apiClient.get(`/student-projects/${projectId}/content/${contentId}/generated-content`);
+    return data;
+  },
+
+  chatWithPDFs: async (projectId: number, message: string, contentId?: number) => {
+    const form = new FormData();
+    form.append('message', message);
+    if (contentId !== undefined) {
+      form.append('content_id', String(contentId));
+    }
+    const { data } = await apiClient.post(`/student-projects/${projectId}/chat`, form, {
+      headers: {
+        // Don't set Content-Type - let axios/browser set it with boundary for multipart/form-data
+      },
+    });
     return data;
   },
 };

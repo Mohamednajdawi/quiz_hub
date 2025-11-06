@@ -1,4 +1,5 @@
 import logging
+import os
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form
 from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
@@ -344,9 +345,8 @@ async def add_project_content(
         raise HTTPException(status_code=404, detail="Project not found")
     
     # Handle PDF file upload
-    import tempfile
     import shutil
-    import os
+    import uuid
     
     # Validate file type - check both filename and content type
     filename = pdf_file.filename or ''
@@ -366,18 +366,26 @@ async def add_project_content(
             detail=f"Only PDF files are accepted. Received: filename='{filename}', content_type='{content_type}'"
         )
     
-    # Save file temporarily to get size
-    with tempfile.NamedTemporaryFile(delete=False, suffix='.pdf') as temp_file:
-        shutil.copyfileobj(pdf_file.file, temp_file)
-        temp_file_path = temp_file.name
-        file_size = os.path.getsize(temp_file_path)
+    # Create persistent storage directory for PDFs
+    storage_dir = os.path.join(os.getcwd(), 'student_project_pdfs')
+    os.makedirs(storage_dir, exist_ok=True)
+    
+    # Generate a unique filename to avoid conflicts
+    file_extension = os.path.splitext(pdf_file.filename or 'uploaded_file.pdf')[1] or '.pdf'
+    unique_filename = f"{project_id}_{uuid.uuid4().hex}{file_extension}"
+    file_path = os.path.join(storage_dir, unique_filename)
+    
+    # Save file to persistent storage
+    with open(file_path, 'wb') as f:
+        shutil.copyfileobj(pdf_file.file, f)
+    file_size = os.path.getsize(file_path)
     
     # Create content entry
     content = StudentProjectContent(
         project_id=project_id,
         content_type='pdf',
         name=pdf_file.filename or 'uploaded_file.pdf',
-        content_url=temp_file_path,  # Store path temporarily (in production, upload to storage)
+        content_url=file_path,  # Store persistent path
         file_size=file_size,
         uploaded_at=datetime.datetime.now()
     )
@@ -858,4 +866,134 @@ async def get_content_generated_content(
             "total_essays": len(essays)
         },
         headers={"Content-Type": "application/json; charset=utf-8"}
-    ) 
+    )
+
+
+@router.post("/student-projects/{project_id}/chat", tags=["Student Projects"])
+async def chat_with_project_pdfs(
+    project_id: int,
+    message: str = Form(...),
+    content_id: Optional[int] = Form(None),  # Optional: chat with specific PDF, or all PDFs if None
+    current_user: UserModel = Depends(get_current_user_dependency),
+    db: Session = Depends(get_db)
+) -> JSONResponse:
+    """Chat with PDFs in a student project"""
+    user_id = current_user.id
+    logging.warning(f"[STUDENT PROJECT] Chat request for project {project_id} from user: {user_id}")
+    
+    # Verify project exists and belongs to user
+    project = db.query(StudentProject).filter(
+        StudentProject.id == project_id,
+        StudentProject.user_id == user_id
+    ).first()
+    
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+    
+    # Get PDF contents
+    if content_id:
+        # Chat with specific PDF
+        contents = db.query(StudentProjectContent).filter(
+            StudentProjectContent.id == content_id,
+            StudentProjectContent.project_id == project_id,
+            StudentProjectContent.content_type == 'pdf'
+        ).all()
+    else:
+        # Chat with all PDFs in the project
+        contents = db.query(StudentProjectContent).filter(
+            StudentProjectContent.project_id == project_id,
+            StudentProjectContent.content_type == 'pdf'
+        ).all()
+    
+    if not contents:
+        raise HTTPException(
+            status_code=404, 
+            detail="No PDFs found in this project" if not content_id else "PDF not found"
+        )
+    
+    # Extract text from all PDFs
+    from backend.components.custom_components import PDFTextExtractor
+    pdf_extractor = PDFTextExtractor()
+    
+    all_pdf_text = []
+    missing_files = []
+    for content in contents:
+        if not content.content_url:
+            logging.warning(f"[STUDENT PROJECT] PDF has no content_url: {content.name}")
+            missing_files.append(content.name)
+            continue
+            
+        if not os.path.exists(content.content_url):
+            logging.warning(f"[STUDENT PROJECT] PDF file not found: {content.content_url}")
+            missing_files.append(content.name)
+            continue
+        
+        try:
+            result = pdf_extractor.run(content.content_url)
+            pdf_text = result["text"]
+            all_pdf_text.append(f"=== {content.name} ===\n{pdf_text}\n")
+        except Exception as e:
+            logging.error(f"[STUDENT PROJECT] Error extracting text from {content.name}: {e}")
+            missing_files.append(content.name)
+            continue
+    
+    if not all_pdf_text:
+        error_msg = "Failed to extract text from PDFs"
+        if missing_files:
+            error_msg += f". The following PDFs could not be accessed: {', '.join(missing_files)}. Please re-upload them."
+        raise HTTPException(
+            status_code=500,
+            detail=error_msg
+        )
+    
+    if missing_files:
+        logging.warning(f"[STUDENT PROJECT] Some PDFs were missing but continuing with available ones: {missing_files}")
+    
+    # Combine all PDF text
+    combined_pdf_text = "\n\n".join(all_pdf_text)
+    
+    # Call LLM using OpenAI-compatible API (Groq)
+    try:
+        from openai import OpenAI
+        
+        # Initialize OpenAI client with Groq endpoint
+        client = OpenAI(
+            api_key=os.environ.get("GROQ_API_KEY"),
+            base_url="https://api.groq.com/openai/v1"
+        )
+        
+        # Create system message with PDF context
+        system_message = f"""You are a helpful assistant that answers questions based on the following PDF content. 
+Answer the user's question using only the information provided in the PDFs. If the answer is not in the PDFs, say so.
+
+PDF Content:
+{combined_pdf_text}"""
+        
+        # Call the API with messages format
+        response = client.chat.completions.create(
+            model="openai/gpt-oss-120b",
+            messages=[
+                {"role": "system", "content": system_message},
+                {"role": "user", "content": message}
+            ],
+            temperature=0.7,
+            max_tokens=2000
+        )
+        
+        response_text = response.choices[0].message.content if response.choices else "I'm sorry, I couldn't generate a response."
+        
+        return JSONResponse(
+            content={
+                "response": response_text,
+                "project_id": project_id,
+                "content_id": content_id,
+                "pdfs_used": [c.name for c in contents]
+            },
+            headers={"Content-Type": "application/json; charset=utf-8"}
+        )
+    except Exception as e:
+        logging.error(f"[STUDENT PROJECT] Error calling LLM: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to generate response: {str(e)}"
+        ) 

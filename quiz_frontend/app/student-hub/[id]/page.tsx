@@ -10,7 +10,7 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Alert } from '@/components/ui/Alert';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
-import { ArrowLeft, Upload, FileText, Settings, HelpCircle, BookOpen, FileQuestion, PenTool, Sparkles, ChevronDown, ChevronUp } from 'lucide-react';
+import { ArrowLeft, Upload, FileText, Settings, HelpCircle, BookOpen, FileQuestion, PenTool, Sparkles, ChevronDown, ChevronUp, MessageSquare } from 'lucide-react';
 import Link from 'next/link';
 import { studentProjectsApi, type StudentProject, type ProjectContent } from '@/lib/api/studentProjects';
 import { format } from 'date-fns';
@@ -177,6 +177,18 @@ function ContentItem({
               <PenTool className="w-4 h-4" />
               Essay
             </Button>
+            {content.content_type === 'pdf' && (
+              <Link href={`/student-hub/${projectId}/chat?contentId=${content.id}`}>
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  className="flex items-center gap-1"
+                >
+                  <MessageSquare className="w-4 h-4" />
+                  Chat
+                </Button>
+              </Link>
+            )}
           </div>
         </div>
 
@@ -421,6 +433,12 @@ function ProjectDetailContent() {
                   <p className="text-gray-700">{project.description}</p>
                 )}
               </div>
+              <Link href={`/student-hub/${projectId}/chat`}>
+                <Button variant="primary" size="lg">
+                  <MessageSquare className="w-4 h-4 mr-2" />
+                  Chat with PDFs
+                </Button>
+              </Link>
             </div>
           </div>
 
