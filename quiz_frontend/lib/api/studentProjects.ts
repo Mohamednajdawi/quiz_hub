@@ -134,4 +134,14 @@ export const studentProjectsApi = {
     });
     return data;
   },
+
+  deleteProject: async (projectId: number) => {
+    const { data } = await apiClient.delete(`/student-projects/${projectId}`);
+    return data;
+  },
+
+  deleteContent: async (projectId: number, contentId: number) => {
+    const { data } = await apiClient.delete(`/student-projects/${projectId}/content/${contentId}`);
+    return data;
+  },
 };

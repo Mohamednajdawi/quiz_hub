@@ -10,7 +10,7 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Alert } from '@/components/ui/Alert';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
-import { ArrowLeft, Upload, FileText, Settings, HelpCircle, BookOpen, FileQuestion, PenTool, Sparkles, ChevronDown, ChevronUp, MessageSquare } from 'lucide-react';
+import { ArrowLeft, Upload, FileText, Settings, HelpCircle, BookOpen, FileQuestion, PenTool, Sparkles, ChevronDown, ChevronUp, MessageSquare, Trash2 } from 'lucide-react';
 import Link from 'next/link';
 import { studentProjectsApi, type StudentProject, type ProjectContent } from '@/lib/api/studentProjects';
 import { format } from 'date-fns';
@@ -62,18 +62,22 @@ function ContentItem({
   onGenerateQuiz, 
   onGenerateFlashcards, 
   onGenerateEssays,
+  onDeleteContent,
   isGeneratingQuiz,
   isGeneratingFlashcards,
   isGeneratingEssays,
+  isDeletingContent,
 }: {
   content: ProjectContent;
   projectId: number;
   onGenerateQuiz: () => void;
   onGenerateFlashcards: () => void;
   onGenerateEssays: () => void;
+  onDeleteContent: () => void;
   isGeneratingQuiz: boolean;
   isGeneratingFlashcards: boolean;
   isGeneratingEssays: boolean;
+  isDeletingContent: boolean;
 }) {
   const router = useRouter();
   const [expanded, setExpanded] = useState(false);
@@ -189,6 +193,16 @@ function ContentItem({
                 </Button>
               </Link>
             )}
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={onDeleteContent}
+              isLoading={isDeletingContent}
+              className="flex items-center gap-1 text-red-600 hover:text-red-700 hover:border-red-300"
+            >
+              <Trash2 className="w-4 h-4" />
+              Delete
+            </Button>
           </div>
         </div>
 
@@ -404,6 +418,33 @@ function ProjectDetailContent() {
     },
   });
 
+  const deleteContentMutation = useMutation({
+    mutationFn: (contentId: number) => studentProjectsApi.deleteContent(projectId, contentId),
+    onSuccess: () => {
+      setSuccess('PDF deleted successfully!');
+      setError(null);
+      queryClient.invalidateQueries({ queryKey: ['student-project-contents', projectId] });
+      queryClient.invalidateQueries({ queryKey: ['student-project', projectId] });
+      setTimeout(() => setSuccess(null), 3000);
+    },
+    onError: (e: any) => {
+      setError(e.message || 'Failed to delete PDF');
+      setSuccess(null);
+    },
+  });
+
+  const deleteProjectMutation = useMutation({
+    mutationFn: () => studentProjectsApi.deleteProject(projectId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['student-projects'] });
+      router.push('/student-hub');
+    },
+    onError: (e: any) => {
+      setError(e.message || 'Failed to delete project');
+      setSuccess(null);
+    },
+  });
+
   if (projectLoading) {
     return (
       <Layout>
@@ -433,12 +474,28 @@ function ProjectDetailContent() {
                   <p className="text-gray-700">{project.description}</p>
                 )}
               </div>
-              <Link href={`/student-hub/${projectId}/chat`}>
-                <Button variant="primary" size="lg">
-                  <MessageSquare className="w-4 h-4 mr-2" />
-                  Chat with PDFs
+              <div className="flex items-center gap-3">
+                <Link href={`/student-hub/${projectId}/chat`}>
+                  <Button variant="primary" size="lg">
+                    <MessageSquare className="w-4 h-4 mr-2" />
+                    Chat with PDFs
+                  </Button>
+                </Link>
+                <Button 
+                  variant="outline" 
+                  size="lg"
+                  onClick={() => {
+                    if (confirm(`Are you sure you want to delete the project "${project?.name}"? This will delete all PDFs, quizzes, flashcards, and essays in this project. This action cannot be undone.`)) {
+                      deleteProjectMutation.mutate();
+                    }
+                  }}
+                  isLoading={deleteProjectMutation.isPending}
+                  className="text-red-600 hover:text-red-700 hover:border-red-300"
+                >
+                  <Trash2 className="w-4 h-4 mr-2" />
+                  Delete Project
                 </Button>
-              </Link>
+              </div>
             </div>
           </div>
 
@@ -599,9 +656,15 @@ function ProjectDetailContent() {
                       onGenerateQuiz={() => generateQuizMutation.mutate(c.id)}
                       onGenerateFlashcards={() => generateFlashcardsMutation.mutate(c.id)}
                       onGenerateEssays={() => generateEssaysMutation.mutate(c.id)}
+                      onDeleteContent={() => {
+                        if (confirm(`Are you sure you want to delete "${c.name}"? This will also delete all quizzes, flashcards, and essays generated from this PDF. This action cannot be undone.`)) {
+                          deleteContentMutation.mutate(c.id);
+                        }
+                      }}
                       isGeneratingQuiz={generateQuizMutation.isPending}
                       isGeneratingFlashcards={generateFlashcardsMutation.isPending}
                       isGeneratingEssays={generateEssaysMutation.isPending}
+                      isDeletingContent={deleteContentMutation.isPending}
                     />
                   ))}
                 </div>

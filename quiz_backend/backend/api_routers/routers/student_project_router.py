@@ -271,6 +271,18 @@ async def delete_student_project(
         raise HTTPException(status_code=404, detail="Project not found")
     
     try:
+        # Get all content files to delete from disk
+        contents = db.query(StudentProjectContent).filter(StudentProjectContent.project_id == project_id).all()
+        
+        # Delete PDF files from disk
+        for content in contents:
+            if content.content_url and os.path.exists(content.content_url):
+                try:
+                    os.remove(content.content_url)
+                    logging.warning(f"[STUDENT PROJECT] Deleted PDF file: {content.content_url}")
+                except Exception as file_error:
+                    logging.warning(f"[STUDENT PROJECT] Could not delete PDF file {content.content_url}: {file_error}")
+        
         # Delete references first (to avoid foreign key violations)
         db.query(StudentProjectQuizReference).filter(StudentProjectQuizReference.project_id == project_id).delete()
         db.query(StudentProjectFlashcardReference).filter(StudentProjectFlashcardReference.project_id == project_id).delete()
@@ -440,6 +452,14 @@ async def delete_project_content(
         raise HTTPException(status_code=404, detail="Content not found")
     
     try:
+        # Delete the PDF file from disk if it exists
+        if content.content_url and os.path.exists(content.content_url):
+            try:
+                os.remove(content.content_url)
+                logging.warning(f"[STUDENT PROJECT] Deleted PDF file: {content.content_url}")
+            except Exception as file_error:
+                logging.warning(f"[STUDENT PROJECT] Could not delete PDF file {content.content_url}: {file_error}")
+        
         # Delete references to this content first (to avoid foreign key violations)
         db.query(StudentProjectQuizReference).filter(StudentProjectQuizReference.content_id == content_id).delete()
         db.query(StudentProjectFlashcardReference).filter(StudentProjectFlashcardReference.content_id == content_id).delete()

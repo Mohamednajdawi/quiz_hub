@@ -10,7 +10,7 @@ import { Input } from '@/components/ui/Input';
 import { Alert } from '@/components/ui/Alert';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import Link from 'next/link';
-import { Plus, FolderOpen } from 'lucide-react';
+import { Plus, FolderOpen, Trash2 } from 'lucide-react';
 import { studentProjectsApi, type StudentProject } from '@/lib/api/studentProjects';
 
 export default function StudentHubPage() {
@@ -44,6 +44,17 @@ function StudentHubContent() {
     onError: (e: any) => {
       const errorMsg = e?.response?.data?.detail || e?.message || String(e);
       setError(typeof errorMsg === 'string' ? errorMsg : 'Failed to create project');
+    },
+  });
+
+  const deleteProjectMutation = useMutation({
+    mutationFn: (projectId: number) => studentProjectsApi.deleteProject(projectId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['student-projects'] });
+    },
+    onError: (e: any) => {
+      const errorMsg = e?.response?.data?.detail || e?.message || String(e);
+      setError(typeof errorMsg === 'string' ? errorMsg : 'Failed to delete project');
     },
   });
 
@@ -141,20 +152,39 @@ function StudentHubContent() {
                     const countString = countParts.join(' • ');
 
                     return (
-                      <Link key={p.id} href={`/student-hub/${p.id}`} className="block group">
-                        <Card className="transition-all hover:shadow-lg hover:border-indigo-300 cursor-pointer">
-                          <div className="flex flex-col">
-                            <h4 className="text-lg font-semibold text-gray-900 mb-2 group-hover:text-indigo-600 transition-colors">
-                              {p.name}
-                            </h4>
-                            {countString && (
-                              <p className="text-sm text-gray-600">
-                                {countString}
-                              </p>
-                            )}
+                      <div key={p.id} className="group">
+                        <Card className="transition-all hover:shadow-lg hover:border-indigo-300">
+                          <div className="flex items-start justify-between gap-3">
+                            <Link href={`/student-hub/${p.id}`} className="flex-1 min-w-0">
+                              <div className="flex flex-col">
+                                <h4 className="text-lg font-semibold text-gray-900 mb-2 group-hover:text-indigo-600 transition-colors">
+                                  {p.name}
+                                </h4>
+                                {countString && (
+                                  <p className="text-sm text-gray-600">
+                                    {countString}
+                                  </p>
+                                )}
+                              </div>
+                            </Link>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                if (confirm(`Are you sure you want to delete "${p.name}"? This will delete all PDFs, quizzes, flashcards, and essays in this project. This action cannot be undone.`)) {
+                                  deleteProjectMutation.mutate(p.id);
+                                }
+                              }}
+                              isLoading={deleteProjectMutation.isPending}
+                              className="flex-shrink-0 text-red-600 hover:text-red-700 hover:border-red-300"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
                           </div>
                         </Card>
-                      </Link>
+                      </div>
                     );
                   })}
                 </div>
