@@ -48,13 +48,13 @@ def _ensure_topics(session) -> None:
     ]
 
     flashcard_topics: Iterable[FlashcardTopic] = [
-        FlashcardTopic(topic="Biology Terms", category="Science", subcategory="Biology", difficulty="medium"),
-        FlashcardTopic(topic="Spanish Vocabulary", category="Languages", subcategory="Spanish", difficulty="easy"),
+        FlashcardTopic(topic="Biology Terms", category="Science", subcategory="Biology", difficulty="medium", created_by_user_id="demo-user"),
+        FlashcardTopic(topic="Spanish Vocabulary", category="Languages", subcategory="Spanish", difficulty="easy", created_by_user_id="demo-user"),
     ]
 
     essay_topics: Iterable[EssayQATopic] = [
-        EssayQATopic(topic="Climate Change", category="Environment", subcategory="Climate", difficulty="medium"),
-        EssayQATopic(topic="Modern Art", category="Art", subcategory="20th Century", difficulty="hard"),
+        EssayQATopic(topic="Climate Change", category="Environment", subcategory="Climate", difficulty="medium", created_by_user_id="demo-user"),
+        EssayQATopic(topic="Modern Art", category="Art", subcategory="20th Century", difficulty="hard", created_by_user_id="demo-user"),
     ]
 
     for collection in (quiz_topics, flashcard_topics, essay_topics):

@@ -13,7 +13,10 @@ from backend.api_routers.schemas import FlashcardRequest
 from backend.database.db import get_db
 from backend.database.sqlite_dal import FlashcardTopic, FlashcardCard
 from backend.utils.utils import generate_flashcards, generate_flashcards_from_pdf
-from backend.api_routers.routers.auth_router import get_current_user_dependency
+from backend.api_routers.routers.auth_router import (
+    get_current_user_dependency,
+    get_optional_current_user_dependency,
+)
 from backend.database.sqlite_dal import User as UserModel
 
 router = APIRouter()
@@ -21,7 +24,9 @@ router = APIRouter()
 
 @router.post("/generate-flashcards", tags=["Flashcards"])
 async def create_flashcards(
-    request: FlashcardRequest, db: Session = Depends(get_db)
+    request: FlashcardRequest,
+    db: Session = Depends(get_db),
+    current_user: Optional[UserModel] = Depends(get_optional_current_user_dependency),
 ) -> JSONResponse:
     try:
         # Remove trailing slash if present
@@ -37,7 +42,8 @@ async def create_flashcards(
                 category=flashcard_data["category"],
                 subcategory=flashcard_data["subcategory"],
                 difficulty="medium",  # Default difficulty for flashcards
-                creation_timestamp=datetime.datetime.now()
+                creation_timestamp=datetime.datetime.now(),
+                created_by_user_id=current_user.id if current_user else None,
             )
             db.add(flashcard_topic)
             db.flush()  # Get the ID of the newly created topic
@@ -51,7 +57,8 @@ async def create_flashcards(
                 topic=flashcard_data["topic"],
                 category=flashcard_data["category"],
                 subcategory=flashcard_data["subcategory"],
-                creation_timestamp=datetime.datetime.now()
+                creation_timestamp=datetime.datetime.now(),
+                created_by_user_id=current_user.id if current_user else None,
             )
             db.add(flashcard_topic)
             db.flush()  # Get the ID of the newly created topic
@@ -89,7 +96,8 @@ async def create_flashcards_from_pdf(
     num_cards: int = Form(10),
     project_id: Optional[int] = Form(None),  # Optional project ID
     content_id: Optional[int] = Form(None),  # Optional content ID
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: Optional[UserModel] = Depends(get_optional_current_user_dependency),
 ) -> JSONResponse:
     try:
         temp_file_path = None
@@ -151,7 +159,8 @@ async def create_flashcards_from_pdf(
                     category=flashcard_data["category"],
                     subcategory=flashcard_data["subcategory"],
                     difficulty="medium",  # Default difficulty for flashcards
-                    creation_timestamp=datetime.datetime.now()
+                    creation_timestamp=datetime.datetime.now(),
+                    created_by_user_id=current_user.id if current_user else None,
                 )
             except Exception as e:
                 # Fallback: create without difficulty if column doesn't exist
@@ -160,7 +169,8 @@ async def create_flashcards_from_pdf(
                     topic=flashcard_data["topic"],
                     category=flashcard_data["category"],
                     subcategory=flashcard_data["subcategory"],
-                    creation_timestamp=datetime.datetime.now()
+                    creation_timestamp=datetime.datetime.now(),
+                    created_by_user_id=current_user.id if current_user else None,
                 )
             db.add(flashcard_topic)
             db.flush()  # Get the ID of the newly created topic
@@ -225,7 +235,11 @@ async def get_my_flashcard_topics(
     db: Session = Depends(get_db)
 ) -> JSONResponse:
     """Get flashcard topics for the current authenticated user (from projects + all recent)"""
-    from backend.database.sqlite_dal import StudentProject, StudentProjectFlashcardReference
+    from backend.database.sqlite_dal import (
+        StudentProject,
+        StudentProjectFlashcardReference,
+        FlashcardTopic,
+    )
     
     user_id = current_user.id
     logging.warning(f"[FLASHCARD] Fetching user flashcards for user: {user_id}")
@@ -242,17 +256,9 @@ async def get_my_flashcard_topics(
         ).all()
         flashcard_topic_ids.update([ref.flashcard_topic_id for ref in flashcard_references])
     
-    # 2. Get all recent flashcards (for directly generated ones, show all recent ones)
-    # Since we don't track user_id in FlashcardTopic, we show all recent flashcards
-    # This allows users to see flashcards they generated directly
-    if not flashcard_topic_ids:
-        # If no project flashcards, show all recent flashcards (last 50)
-        all_topics = db.query(FlashcardTopic).order_by(FlashcardTopic.creation_timestamp.desc()).limit(50).all()
-        flashcard_topic_ids.update([topic.id for topic in all_topics])
-    else:
-        # If there are project flashcards, also include recent ones in case user generated directly
-        recent_topics = db.query(FlashcardTopic).order_by(FlashcardTopic.creation_timestamp.desc()).limit(20).all()
-        flashcard_topic_ids.update([topic.id for topic in recent_topics])
+    # 2. Get flashcards generated directly by the user
+    direct_topics = db.query(FlashcardTopic).filter(FlashcardTopic.created_by_user_id == user_id).all()
+    flashcard_topic_ids.update([topic.id for topic in direct_topics])
     
     if not flashcard_topic_ids:
         logging.warning(f"[FLASHCARD] No flashcards found for user: {user_id}")

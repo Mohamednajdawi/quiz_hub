@@ -21,6 +21,7 @@ from backend.utils.auth import (
 router = APIRouter()
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/login")
+optional_oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/login", auto_error=False)
 
 
 class Gender(str, Enum):
@@ -216,6 +217,26 @@ async def update_current_user(
     db.refresh(user)
 
     return _serialize_user(user)
+
+
+# Optional dependency to get current user
+async def get_optional_current_user_dependency(
+    token: Optional[str] = Depends(optional_oauth2_scheme),
+    db: Session = Depends(get_db)
+) -> Optional[User]:
+    if not token:
+        return None
+
+    payload = verify_token(token)
+    if payload is None:
+        return None
+
+    user_id: Optional[str] = payload.get("sub")
+    if not user_id:
+        return None
+
+    user = get_user_by_id(db, user_id)
+    return user
 
 
 # Dependency to get current user

@@ -1,14 +1,13 @@
 import os
 import secrets
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, date
 from typing import Optional
-from datetime import date
 from jose import JWTError, jwt
 from passlib.context import CryptContext
 from sqlalchemy.orm import Session
 from backend.database.sqlite_dal import User
 
-# Password hashing
+# Password hashing (placeholder - not secure for production)
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 # JWT settings
@@ -18,31 +17,13 @@ ACCESS_TOKEN_EXPIRE_MINUTES = 30 * 24 * 60  # 30 days
 
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
-    """Verify a password against its hash
-    
-    TEMPORARY: Simple string comparison for development
-    TODO: Re-enable bcrypt verification in production
-    """
-    # TEMPORARY: Simple string comparison (no hashing)
-    # WARNING: This is NOT secure and should only be used for development
+    """TEMPORARY: Simple string comparison (not secure)."""
     return plain_password == hashed_password
-    
-    # Original bcrypt code (disabled for now):
-    # return pwd_context.verify(plain_password, hashed_password)
 
 
 def get_password_hash(password: str) -> str:
-    """Hash a password
-    
-    TEMPORARY: Storing password as plaintext for development
-    TODO: Re-enable bcrypt hashing in production
-    """
-    # TEMPORARY: Return password as-is (no hashing)
-    # WARNING: This is NOT secure and should only be used for development
+    """TEMPORARY: Return password as-is (not secure)."""
     return password
-    
-    # Original bcrypt code (disabled for now):
-    # return pwd_context.hash(password)
 
 
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -> str:

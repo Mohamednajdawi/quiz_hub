@@ -13,7 +13,10 @@ from backend.api_routers.schemas import EssayQARequest
 from backend.database.db import get_db
 from backend.database.sqlite_dal import EssayQATopic, EssayQAQuestion
 from backend.utils.utils import generate_essay_qa, generate_essay_qa_from_pdf
-from backend.api_routers.routers.auth_router import get_current_user_dependency
+from backend.api_routers.routers.auth_router import (
+    get_current_user_dependency,
+    get_optional_current_user_dependency,
+)
 from backend.database.sqlite_dal import User as UserModel
 
 router = APIRouter()
@@ -21,7 +24,9 @@ router = APIRouter()
 
 @router.post("/generate-essay-qa", tags=["EssayQA"])
 async def create_essay_qa(
-    request: EssayQARequest, db: Session = Depends(get_db)
+    request: EssayQARequest,
+    db: Session = Depends(get_db),
+    current_user: Optional[UserModel] = Depends(get_optional_current_user_dependency),
 ) -> JSONResponse:
     try:
         # Remove trailing slash if present
@@ -44,7 +49,8 @@ async def create_essay_qa(
                 category=essay_qa_data["category"],
                 subcategory=essay_qa_data["subcategory"],
                 difficulty=request.difficulty,  # Store the difficulty level
-                creation_timestamp=datetime.datetime.now()
+                creation_timestamp=datetime.datetime.now(),
+                created_by_user_id=current_user.id if current_user else None,
             )
             db.add(essay_qa_topic)
             db.flush()  # Get the ID of the newly created topic
@@ -58,7 +64,8 @@ async def create_essay_qa(
                 topic=essay_qa_data["topic"],
                 category=essay_qa_data["category"],
                 subcategory=essay_qa_data["subcategory"],
-                creation_timestamp=datetime.datetime.now()
+                creation_timestamp=datetime.datetime.now(),
+                created_by_user_id=current_user.id if current_user else None,
             )
             db.add(essay_qa_topic)
             db.flush()  # Get the ID of the newly created topic
@@ -97,7 +104,8 @@ async def create_essay_qa_from_pdf(
     difficulty: str = Form("medium"),
     project_id: Optional[int] = Form(None),  # Optional project ID
     content_id: Optional[int] = Form(None),  # Optional content ID
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: Optional[UserModel] = Depends(get_optional_current_user_dependency),
 ) -> JSONResponse:
     try:
         # Validate difficulty level
@@ -167,7 +175,8 @@ async def create_essay_qa_from_pdf(
                     category=essay_qa_data["category"],
                     subcategory=essay_qa_data["subcategory"],
                     difficulty=difficulty,  # Store the difficulty level
-                    creation_timestamp=datetime.datetime.now()
+                    creation_timestamp=datetime.datetime.now(),
+                    created_by_user_id=current_user.id if current_user else None,
                 )
                 db.add(essay_qa_topic)
                 db.flush()  # Get the ID of the newly created topic
@@ -181,7 +190,8 @@ async def create_essay_qa_from_pdf(
                     topic=essay_qa_data["topic"],
                     category=essay_qa_data["category"],
                     subcategory=essay_qa_data["subcategory"],
-                    creation_timestamp=datetime.datetime.now()
+                    creation_timestamp=datetime.datetime.now(),
+                    created_by_user_id=current_user.id if current_user else None,
                 )
                 db.add(essay_qa_topic)
                 db.flush()  # Get the ID of the newly created topic
@@ -246,7 +256,12 @@ async def get_my_essay_qa_topics(
     db: Session = Depends(get_db)
 ) -> JSONResponse:
     """Get essay QA topics for the current authenticated user (from projects + all recent)"""
-    from backend.database.sqlite_dal import StudentProject, StudentProjectEssayReference, EssayAnswer
+    from backend.database.sqlite_dal import (
+        StudentProject,
+        StudentProjectEssayReference,
+        EssayAnswer,
+        EssayQATopic,
+    )
     
     user_id = current_user.id
     logging.warning(f"[ESSAY] Fetching user essays for user: {user_id}")
@@ -267,16 +282,9 @@ async def get_my_essay_qa_topics(
     essay_answers = db.query(EssayAnswer).filter(EssayAnswer.user_id == user_id).all()
     essay_topic_ids.update([answer.essay_topic_id for answer in essay_answers])
     
-    # 3. Also include recent essays (for directly generated ones without answers yet)
-    # Since we don't track user_id in EssayQATopic, we show recent ones
-    if not essay_topic_ids:
-        # If no project essays or answers, show all recent essays (last 50)
-        all_topics = db.query(EssayQATopic).order_by(EssayQATopic.creation_timestamp.desc()).limit(50).all()
-        essay_topic_ids.update([topic.id for topic in all_topics])
-    else:
-        # If there are project essays or answers, also include recent ones
-        recent_topics = db.query(EssayQATopic).order_by(EssayQATopic.creation_timestamp.desc()).limit(20).all()
-        essay_topic_ids.update([topic.id for topic in recent_topics])
+    # 3. Include essays generated directly by the user
+    direct_topics = db.query(EssayQATopic).filter(EssayQATopic.created_by_user_id == user_id).all()
+    essay_topic_ids.update([topic.id for topic in direct_topics])
     
     if not essay_topic_ids:
         logging.warning(f"[ESSAY] No essays found for user: {user_id}")

@@ -28,6 +28,8 @@ class User(Base):
     transactions = relationship("Transaction", back_populates="user")
     quiz_attempts = relationship("QuizAttempt", back_populates="user")
     student_projects = relationship("StudentProject", back_populates="user")
+    flashcard_topics_created = relationship("FlashcardTopic", back_populates="created_by_user")
+    essay_topics_created = relationship("EssayQATopic", back_populates="created_by_user")
 
 
 class Subscription(Base):
@@ -144,7 +146,9 @@ class FlashcardTopic(Base):
     subcategory = Column(String, nullable=False)
     difficulty = Column(String, nullable=True)  # easy, medium, hard
     creation_timestamp = Column(DateTime, default=datetime.datetime.now)
+    created_by_user_id = Column(String(255), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
     cards = relationship("FlashcardCard", back_populates="topic")
+    created_by_user = relationship("User", back_populates="flashcard_topics_created")
 
 
 class FlashcardCard(Base):
@@ -168,7 +172,9 @@ class EssayQATopic(Base):
     subcategory = Column(String, nullable=False)
     difficulty = Column(String, nullable=True)  # easy, medium, hard
     creation_timestamp = Column(DateTime, default=datetime.datetime.now)
+    created_by_user_id = Column(String(255), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
     questions = relationship("EssayQAQuestion", back_populates="topic")
+    created_by_user = relationship("User", back_populates="essay_topics_created")
 
 
 class EssayQAQuestion(Base):
