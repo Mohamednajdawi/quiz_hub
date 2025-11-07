@@ -14,6 +14,7 @@ from backend.api_routers.routers import (
     essay_qa_router,
     student_project_router,
     auth_router,
+    config_router,
 )
 
 app = FastAPI(title="Quiz Maker API")
@@ -36,3 +37,4 @@ app.include_router(topic_router.router)
 app.include_router(attempt_router.router)
 app.include_router(health_router.router)
 app.include_router(student_project_router.router)
+app.include_router(config_router.router)

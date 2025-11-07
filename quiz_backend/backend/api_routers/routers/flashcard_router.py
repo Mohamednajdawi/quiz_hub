@@ -13,11 +13,9 @@ from backend.api_routers.schemas import FlashcardRequest
 from backend.database.db import get_db
 from backend.database.sqlite_dal import FlashcardTopic, FlashcardCard
 from backend.utils.utils import generate_flashcards, generate_flashcards_from_pdf
-from backend.api_routers.routers.auth_router import (
-    get_current_user_dependency,
-    get_optional_current_user_dependency,
-)
+from backend.api_routers.routers.auth_router import get_current_user_dependency
 from backend.database.sqlite_dal import User as UserModel
+from backend.utils.credits import consume_generation_token
 
 router = APIRouter()
 
@@ -26,7 +24,7 @@ router = APIRouter()
 async def create_flashcards(
     request: FlashcardRequest,
     db: Session = Depends(get_db),
-    current_user: Optional[UserModel] = Depends(get_optional_current_user_dependency),
+    current_user: UserModel = Depends(get_current_user_dependency),
 ) -> JSONResponse:
     try:
         # Remove trailing slash if present
@@ -43,7 +41,7 @@ async def create_flashcards(
                 subcategory=flashcard_data["subcategory"],
                 difficulty="medium",  # Default difficulty for flashcards
                 creation_timestamp=datetime.datetime.now(),
-                created_by_user_id=current_user.id if current_user else None,
+                created_by_user_id=current_user.id,
             )
             db.add(flashcard_topic)
             db.flush()  # Get the ID of the newly created topic
@@ -58,7 +56,7 @@ async def create_flashcards(
                 category=flashcard_data["category"],
                 subcategory=flashcard_data["subcategory"],
                 creation_timestamp=datetime.datetime.now(),
-                created_by_user_id=current_user.id if current_user else None,
+                created_by_user_id=current_user.id,
             )
             db.add(flashcard_topic)
             db.flush()  # Get the ID of the newly created topic
@@ -73,6 +71,7 @@ async def create_flashcards(
             )
             db.add(flashcard_card)
 
+        consume_generation_token(db, current_user)
         db.commit()
         return JSONResponse(
             content=flashcard_data,
@@ -80,11 +79,14 @@ async def create_flashcards(
         )
     except requests.exceptions.HTTPError as e:
         if e.response.status_code == 404:
+            db.rollback()
             raise HTTPException(
                 status_code=404, detail=f"Content not found at URL: {request.url}"
             )
+        db.rollback()
         raise HTTPException(status_code=500, detail=str(e))
     except Exception as e:
+        db.rollback()
         raise HTTPException(
             status_code=500, detail=f"An unexpected error occurred: {str(e)}"
         )
@@ -97,7 +99,7 @@ async def create_flashcards_from_pdf(
     project_id: Optional[int] = Form(None),  # Optional project ID
     content_id: Optional[int] = Form(None),  # Optional content ID
     db: Session = Depends(get_db),
-    current_user: Optional[UserModel] = Depends(get_optional_current_user_dependency),
+    current_user: UserModel = Depends(get_current_user_dependency),
 ) -> JSONResponse:
     try:
         temp_file_path = None
@@ -160,20 +162,23 @@ async def create_flashcards_from_pdf(
                     subcategory=flashcard_data["subcategory"],
                     difficulty="medium",  # Default difficulty for flashcards
                     creation_timestamp=datetime.datetime.now(),
-                    created_by_user_id=current_user.id if current_user else None,
+                    created_by_user_id=current_user.id,
                 )
+                db.add(flashcard_topic)
+                db.flush()  # Get the ID of the newly created topic
             except Exception as e:
                 # Fallback: create without difficulty if column doesn't exist
                 logging.warning(f"Creating flashcard topic without difficulty column: {e}")
+                db.rollback()
                 flashcard_topic = FlashcardTopic(
                     topic=flashcard_data["topic"],
                     category=flashcard_data["category"],
                     subcategory=flashcard_data["subcategory"],
                     creation_timestamp=datetime.datetime.now(),
-                    created_by_user_id=current_user.id if current_user else None,
+                    created_by_user_id=current_user.id,
                 )
-            db.add(flashcard_topic)
-            db.flush()  # Get the ID of the newly created topic
+                db.add(flashcard_topic)
+                db.flush()  # Get the ID of the newly created topic
 
             # Add cards
             for card in flashcard_data["cards"]:
@@ -200,6 +205,7 @@ async def create_flashcards_from_pdf(
             else:
                 logging.warning(f"[FLASHCARDS] No project_id provided, skipping reference creation")
 
+            consume_generation_token(db, current_user)
             db.commit()
             return JSONResponse(
                 content=flashcard_data,
@@ -224,6 +230,7 @@ async def create_flashcards_from_pdf(
             status_code=400, detail=str(e)
         )
     except Exception as e:
+        db.rollback()
         raise HTTPException(
             status_code=500, detail=f"An unexpected error occurred: {str(e)}"
         )

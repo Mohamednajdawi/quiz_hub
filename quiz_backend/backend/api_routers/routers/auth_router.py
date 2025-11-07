@@ -54,6 +54,7 @@ class UserResponse(BaseModel):
     last_name: Optional[str]
     birth_date: Optional[date]
     gender: Optional[Gender]
+    free_tokens: Optional[int]
 
 
 class Token(BaseModel):
@@ -279,6 +280,7 @@ def _serialize_user(user: User) -> UserResponse:
         last_name=user.last_name,
         birth_date=user.birth_date,
         gender=Gender(user.gender) if user.gender else None,
+        free_tokens=user.free_tokens,
     )
 
 

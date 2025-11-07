@@ -19,6 +19,7 @@ class User(Base):
     firebase_uid = Column(String(255), unique=True, nullable=True)
     stripe_customer_id = Column(String(255), unique=True, nullable=True)
     is_active = Column(Boolean, default=True)
+    free_tokens = Column(Integer, default=10)
     created_at = Column(DateTime, default=datetime.datetime.now)
     updated_at = Column(DateTime, default=datetime.datetime.now, onupdate=datetime.datetime.now)
     

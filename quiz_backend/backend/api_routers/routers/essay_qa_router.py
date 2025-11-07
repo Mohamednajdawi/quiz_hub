@@ -13,11 +13,9 @@ from backend.api_routers.schemas import EssayQARequest
 from backend.database.db import get_db
 from backend.database.sqlite_dal import EssayQATopic, EssayQAQuestion
 from backend.utils.utils import generate_essay_qa, generate_essay_qa_from_pdf
-from backend.api_routers.routers.auth_router import (
-    get_current_user_dependency,
-    get_optional_current_user_dependency,
-)
+from backend.api_routers.routers.auth_router import get_current_user_dependency
 from backend.database.sqlite_dal import User as UserModel
+from backend.utils.credits import consume_generation_token
 
 router = APIRouter()
 
@@ -26,7 +24,7 @@ router = APIRouter()
 async def create_essay_qa(
     request: EssayQARequest,
     db: Session = Depends(get_db),
-    current_user: Optional[UserModel] = Depends(get_optional_current_user_dependency),
+    current_user: UserModel = Depends(get_current_user_dependency),
 ) -> JSONResponse:
     try:
         # Remove trailing slash if present
@@ -50,7 +48,7 @@ async def create_essay_qa(
                 subcategory=essay_qa_data["subcategory"],
                 difficulty=request.difficulty,  # Store the difficulty level
                 creation_timestamp=datetime.datetime.now(),
-                created_by_user_id=current_user.id if current_user else None,
+                created_by_user_id=current_user.id,
             )
             db.add(essay_qa_topic)
             db.flush()  # Get the ID of the newly created topic
@@ -65,7 +63,7 @@ async def create_essay_qa(
                 category=essay_qa_data["category"],
                 subcategory=essay_qa_data["subcategory"],
                 creation_timestamp=datetime.datetime.now(),
-                created_by_user_id=current_user.id if current_user else None,
+                created_by_user_id=current_user.id,
             )
             db.add(essay_qa_topic)
             db.flush()  # Get the ID of the newly created topic
@@ -80,6 +78,7 @@ async def create_essay_qa(
             )
             db.add(essay_qa_question)
 
+        consume_generation_token(db, current_user)
         db.commit()
         return JSONResponse(
             content=essay_qa_data,
@@ -87,11 +86,14 @@ async def create_essay_qa(
         )
     except requests.exceptions.HTTPError as e:
         if e.response.status_code == 404:
+            db.rollback()
             raise HTTPException(
                 status_code=404, detail=f"Content not found at URL: {request.url}"
             )
+        db.rollback()
         raise HTTPException(status_code=500, detail=str(e))
     except Exception as e:
+        db.rollback()
         raise HTTPException(
             status_code=500, detail=f"An unexpected error occurred: {str(e)}"
         )
@@ -105,7 +107,7 @@ async def create_essay_qa_from_pdf(
     project_id: Optional[int] = Form(None),  # Optional project ID
     content_id: Optional[int] = Form(None),  # Optional content ID
     db: Session = Depends(get_db),
-    current_user: Optional[UserModel] = Depends(get_optional_current_user_dependency),
+    current_user: UserModel = Depends(get_current_user_dependency),
 ) -> JSONResponse:
     try:
         # Validate difficulty level
@@ -176,7 +178,7 @@ async def create_essay_qa_from_pdf(
                     subcategory=essay_qa_data["subcategory"],
                     difficulty=difficulty,  # Store the difficulty level
                     creation_timestamp=datetime.datetime.now(),
-                    created_by_user_id=current_user.id if current_user else None,
+                    created_by_user_id=current_user.id,
                 )
                 db.add(essay_qa_topic)
                 db.flush()  # Get the ID of the newly created topic
@@ -191,7 +193,7 @@ async def create_essay_qa_from_pdf(
                     category=essay_qa_data["category"],
                     subcategory=essay_qa_data["subcategory"],
                     creation_timestamp=datetime.datetime.now(),
-                    created_by_user_id=current_user.id if current_user else None,
+                    created_by_user_id=current_user.id,
                 )
                 db.add(essay_qa_topic)
                 db.flush()  # Get the ID of the newly created topic
@@ -221,6 +223,7 @@ async def create_essay_qa_from_pdf(
             else:
                 logging.warning(f"[ESSAY] No project_id provided, skipping reference creation")
 
+            consume_generation_token(db, current_user)
             db.commit()
             return JSONResponse(
                 content=essay_qa_data,
@@ -245,6 +248,7 @@ async def create_essay_qa_from_pdf(
             status_code=400, detail=str(e)
         )
     except Exception as e:
+        db.rollback()
         raise HTTPException(
             status_code=500, detail=f"An unexpected error occurred: {str(e)}"
         )

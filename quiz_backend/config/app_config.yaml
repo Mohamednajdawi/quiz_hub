@@ -1,0 +1,58 @@
+free_generation_quota: 10
+
+pricing:
+  hero:
+    title: "Simple, transparent pricing"
+    subtitle: "Start for free with {free_generation_quota} AI generations included. Upgrade when you need more capacity or collaboration."
+  tiers:
+    - id: starter
+      name: "Starter"
+      price: "$0"
+      price_suffix: ""
+      tagline: "Perfect for trying Quiz Hub"
+      description: "Every new account starts on the Starter plan with just enough capacity to explore the platform."
+      features:
+        - "{free_generation_quota} AI generations or chats included"
+        - "Access to quizzes, flashcards, and essay Q&A tools"
+        - "Student hub project organization"
+        - "Community help center"
+      cta:
+        label: "Create Free Account"
+        href: "/register"
+        variant: "primary"
+      highlighted: false
+    - id: pro
+      name: "Pro"
+      price: "$24"
+      price_suffix: " / month"
+      tagline: "For students who rely on Quiz Hub daily"
+      description: "Unlimited generations, faster responses, and priority support. Ideal for heavy study loads and exam prep."
+      features:
+        - "Unlimited AI generations and chats"
+        - "Priority queue for content creation"
+        - "Advanced analytics and progress tracking"
+        - "Priority support with 1 business day response time"
+        - "Early access to new features"
+      cta:
+        label: "Join the Waitlist"
+        href: "mailto:support@quizhub.com?subject=Pro%20plan%20interest"
+        variant: "outline"
+      highlighted: true
+    - id: teams
+      name: "Teams"
+      price: "Let’s chat"
+      price_suffix: ""
+      tagline: "Designed for classrooms and study groups"
+      description: "Share content libraries, manage cohorts, and unlock collaborative features tailored to educators and tutoring teams."
+      features:
+        - "Shared projects and content libraries"
+        - "Admin console with token budgets"
+        - "Role-based access controls"
+        - "Dedicated onboarding session"
+        - "SLA-backed support"
+      cta:
+        label: "Talk to Sales"
+        href: "mailto:sales@quizhub.com?subject=Quiz%20Hub%20Teams"
+        variant: "outline"
+      highlighted: false
+

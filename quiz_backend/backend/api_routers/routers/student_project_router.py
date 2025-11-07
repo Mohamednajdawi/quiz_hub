@@ -27,6 +27,7 @@ from backend.database.sqlite_dal import (
     EssayQATopic
 )
 from backend.api_routers.routers.auth_router import get_current_user_dependency
+from backend.utils.credits import consume_generation_token
 from backend.database.sqlite_dal import User as UserModel
 
 router = APIRouter()
@@ -1002,6 +1003,9 @@ PDF Content:
         
         response_text = response.choices[0].message.content if response.choices else "I'm sorry, I couldn't generate a response."
         
+        consume_generation_token(db, current_user)
+        db.commit()
+
         return JSONResponse(
             content={
                 "response": response_text,
@@ -1013,6 +1017,7 @@ PDF Content:
         )
     except Exception as e:
         logging.error(f"[STUDENT PROJECT] Error calling LLM: {e}")
+        db.rollback()
         raise HTTPException(
             status_code=500,
             detail=f"Failed to generate response: {str(e)}"

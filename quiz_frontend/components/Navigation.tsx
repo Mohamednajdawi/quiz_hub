@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { BookOpen, FileText, GraduationCap, Home, BarChart3, LogOut, User, ChevronDown } from 'lucide-react';
+import { BookOpen, FileText, GraduationCap, Home, BarChart3, LogOut, User, ChevronDown, CreditCard, Sparkles } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 
 const studyTools = [
@@ -16,6 +16,7 @@ const navigation = [
   { name: 'Home', href: '/', icon: Home },
   { name: 'Dashboard', href: '/dashboard', icon: BarChart3 },
   { name: 'Student Hub', href: '/student-hub', icon: FileText },
+  { name: 'Pricing', href: '/pricing', icon: CreditCard },
 ];
 
 export function Navigation() {
@@ -30,6 +31,8 @@ export function Navigation() {
   const displayName = user
     ? [user.first_name, user.last_name].filter(Boolean).join(' ').trim() || user.email
     : '';
+
+  const remainingGenerations = typeof user?.free_tokens === 'number' ? user.free_tokens : null;
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -123,9 +126,18 @@ export function Navigation() {
                   >
                     Profile
                   </Link>
-                  <div className="hidden sm:flex items-center text-sm text-gray-700">
-                    <User className="w-4 h-4 mr-1" />
-                    {displayName}
+                  <div className="hidden sm:flex items-center gap-2 text-sm text-gray-700">
+                    <User className="w-4 h-4" />
+                    <span>{displayName}</span>
+                    {remainingGenerations !== null && (
+                      <span
+                        className="inline-flex items-center gap-1 rounded-full border border-indigo-100 bg-indigo-50 px-2 py-0.5 text-xs font-medium text-indigo-700"
+                        title="Free generations remaining"
+                      >
+                        <Sparkles className="h-3 w-3" aria-hidden="true" />
+                        <span>{remainingGenerations}</span>
+                      </span>
+                    )}
                   </div>
                   <button
                     onClick={logout}
@@ -218,10 +230,10 @@ export function Navigation() {
             )}
           </div>
           {isAuthenticated ? (
-            <div className="pt-2 border-t border-gray-200">
+            <div className="pt-2 border-t border-gray-200 space-y-1">
               <Link
                 href="/profile"
-                className={`flex items-center pl-3 pr-4 py-2 border-l-4 text-base font-medium ${
+                className={`flex items-center pl-3 pr-4 py-2 text-base font-medium ${
                   pathname.startsWith('/profile')
                     ? 'bg-indigo-50 border-indigo-500 text-indigo-700'
                     : 'border-transparent text-gray-600 hover:bg-gray-50 hover:border-gray-300 hover:text-gray-800'
@@ -230,9 +242,17 @@ export function Navigation() {
                 <User className="w-5 h-5 mr-3" />
                 Profile
               </Link>
-              <div className="px-3 py-2 text-sm text-gray-700">
-                <User className="w-4 h-4 inline mr-2" />
-                {displayName}
+              <div className="px-3 py-2 text-sm text-gray-700 space-y-1">
+                <div>
+                  <User className="w-4 h-4 inline mr-2" />
+                  {displayName}
+                </div>
+                {remainingGenerations !== null && (
+                  <div className="flex items-center gap-1 text-indigo-600">
+                    <Sparkles className="h-4 w-4" aria-hidden="true" />
+                    <span>{remainingGenerations} free generation{remainingGenerations === 1 ? '' : 's'} left</span>
+                  </div>
+                )}
               </div>
               <button
                 onClick={logout}
@@ -263,4 +283,3 @@ export function Navigation() {
     </nav>
   );
 }
-

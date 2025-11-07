@@ -156,6 +156,11 @@ function ProfileContent() {
                 <div className="mt-4">
                   <Input label="Email" value={user.email} readOnly disabled className="bg-gray-100" />
                 </div>
+                {typeof user.free_tokens === 'number' && (
+                  <div className="mt-3 text-sm text-indigo-700 bg-indigo-50 border border-indigo-100 rounded-md px-4 py-3">
+                    <span className="font-semibold">Free plan status:</span> {user.free_tokens} generation{user.free_tokens === 1 ? '' : 's'} remaining.
+                  </div>
+                )}
               </div>
 
               <div>

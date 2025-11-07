@@ -13,6 +13,7 @@ from typing import Iterable
 
 from sqlalchemy.exc import IntegrityError
 
+from backend.config import get_free_generation_quota
 from backend.database.db import SessionLocal
 from backend.database.sqlite_dal import (
     QuizTopic,
@@ -37,6 +38,7 @@ def _ensure_user(session) -> None:
         birth_date=datetime.date(2000, 1, 1),
         gender="prefer_not_to_say",
         is_active=True,
+        free_tokens=get_free_generation_quota(),
     )
     session.add(user)
 

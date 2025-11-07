@@ -6,6 +6,7 @@ from jose import JWTError, jwt
 from passlib.context import CryptContext
 from sqlalchemy.orm import Session
 from backend.database.sqlite_dal import User
+from backend.config import get_free_generation_quota
 
 # Password hashing (placeholder - not secure for production)
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
@@ -103,6 +104,7 @@ def create_user(
         last_name=last_name,
         birth_date=birth_date,
         gender=gender,
+        free_tokens=get_free_generation_quota(),
     )
     db.add(user)
     db.commit()

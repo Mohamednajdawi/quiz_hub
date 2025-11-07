@@ -30,6 +30,7 @@ export interface User {
   last_name?: string | null;
   birth_date?: string | null;
   gender?: GenderOption | null;
+  free_tokens?: number | null;
 }
 
 export type UpdateProfileRequest = Partial<Pick<User, 'first_name' | 'last_name' | 'birth_date' | 'gender'>>;

@@ -14,13 +14,16 @@ from backend.database.sqlite_dal import QuizQuestion, QuizTopic
 from backend.utils.utils import generate_quiz, generate_quiz_from_pdf
 from backend.api_routers.routers.auth_router import get_current_user_dependency
 from backend.database.sqlite_dal import User as UserModel
+from backend.utils.credits import consume_generation_token
 
 router = APIRouter()
 
 
 @router.post("/generate-quiz", tags=["Quiz"])
 async def create_quiz(
-    request: URLRequest, db: Session = Depends(get_db)
+    request: URLRequest,
+    db: Session = Depends(get_db),
+    current_user: UserModel = Depends(get_current_user_dependency),
 ) -> JSONResponse:
     try:
         # Remove trailing slash if present
@@ -56,6 +59,7 @@ async def create_quiz(
             )
             db.add(quiz_question)
 
+        consume_generation_token(db, current_user)
         db.commit()
         return JSONResponse(
             content=quiz_data,
@@ -68,6 +72,7 @@ async def create_quiz(
             )
         raise HTTPException(status_code=500, detail=str(e))
     except Exception as e:
+        db.rollback()
         raise HTTPException(
             status_code=500, detail=f"An unexpected error occurred: {str(e)}"
         )
@@ -80,7 +85,8 @@ async def create_quiz_from_pdf(
     difficulty: str = Form("medium"),
     project_id: int = Form(None),  # Optional project ID
     content_id: int = Form(None),  # Optional content ID
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: UserModel = Depends(get_current_user_dependency),
 ) -> JSONResponse:
     try:
         # Validate difficulty level
@@ -190,6 +196,7 @@ async def create_quiz_from_pdf(
                 )
                 db.add(quiz_reference)
 
+            consume_generation_token(db, current_user)
             db.commit()
             return JSONResponse(
                 content=quiz_data,
@@ -214,6 +221,7 @@ async def create_quiz_from_pdf(
             status_code=400, detail=str(e)
         )
     except Exception as e:
+        db.rollback()
         raise HTTPException(
             status_code=500, detail=f"An unexpected error occurred: {str(e)}"
         )
