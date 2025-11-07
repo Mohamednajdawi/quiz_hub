@@ -1,31 +1,32 @@
 #!/usr/bin/env python3
-"""
-Simple script to run the database migration on Heroku
-"""
+"""Utility to run Alembic migrations programmatically."""
+
+from __future__ import annotations
 
 import os
 import sys
 
-# Add the backend directory to the Python path
-sys.path.append(os.path.join(os.path.dirname(__file__), 'backend'))
+from alembic import command
+from alembic.config import Config
 
-from update_db import update_database, test_database_connection
 
-def main():
-    print("🚀 Running database migration on Heroku...")
-    
-    # Test connection first
-    if not test_database_connection():
-        print("❌ Cannot proceed without database connection")
-        sys.exit(1)
-    
-    # Run the migration
-    if update_database():
-        print("✅ Database migration completed successfully!")
-        sys.exit(0)
-    else:
-        print("❌ Database migration failed!")
-        sys.exit(1)
+def get_config() -> Config:
+    base_dir = os.path.dirname(os.path.abspath(__file__))
+    alembic_ini = os.path.join(base_dir, "alembic.ini")
+    if not os.path.exists(alembic_ini):
+        raise FileNotFoundError("alembic.ini not found; ensure Alembic is initialised")
+
+    config = Config(alembic_ini)
+    config.set_main_option("script_location", os.path.join(base_dir, "alembic"))
+    return config
+
+
+def main() -> None:
+    config = get_config()
+    print("🚀 Running Alembic migrations -> head")
+    command.upgrade(config, "head")
+    print("✅ Database is up to date")
+
 
 if __name__ == "__main__":
-    main() 
+    sys.exit(main())
