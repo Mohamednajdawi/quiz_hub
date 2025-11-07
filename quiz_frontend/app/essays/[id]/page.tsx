@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useParams, useRouter } from 'next/navigation';
 import { ProtectedRoute } from '@/components/ProtectedRoute';
@@ -14,6 +15,8 @@ function EssayDetailPageContent() {
   const params = useParams();
   const router = useRouter();
   const essayId = parseInt(params.id as string);
+  const [userAnswers, setUserAnswers] = useState<Record<number, string>>({});
+  const [revealedAnswers, setRevealedAnswers] = useState<Record<number, boolean>>({});
 
   const { data: essay, isLoading, error } = useQuery({
     queryKey: ['essay', essayId],
@@ -41,6 +44,20 @@ function EssayDetailPageContent() {
     );
   }
 
+  const handleAnswerChange = (questionIndex: number, value: string) => {
+    setUserAnswers((prev) => ({
+      ...prev,
+      [questionIndex]: value,
+    }));
+  };
+
+  const toggleRevealAnswer = (questionIndex: number) => {
+    setRevealedAnswers((prev) => ({
+      ...prev,
+      [questionIndex]: !prev[questionIndex],
+    }));
+  };
+
   return (
     <Layout>
       <div className="px-4 sm:px-6 lg:px-8 max-w-4xl mx-auto">
@@ -53,34 +70,63 @@ function EssayDetailPageContent() {
           </div>
 
           <div className="space-y-6 mb-6">
-            {essay.questions.map((question, index) => (
-              <div key={index} className="border-b border-gray-200 pb-6">
-                <div className="bg-blue-50 border-2 border-blue-200 rounded-lg p-4 mb-4">
-                  <div className="text-sm text-blue-600 font-medium mb-2">
-                    Question {index + 1}
+            {essay.questions.map((question, index) => {
+              const isAnswerRevealed = revealedAnswers[index] || false;
+              const currentUserAnswer = userAnswers[index] || '';
+              
+              return (
+                <div key={index} className="border-b border-gray-200 pb-6">
+                  <div className="bg-blue-50 border-2 border-blue-200 rounded-lg p-4 mb-4">
+                    <div className="text-sm text-blue-600 font-medium mb-2">
+                      Question {index + 1}
+                    </div>
+                    <div className="text-lg font-semibold text-gray-900">
+                      {question.question}
+                    </div>
                   </div>
-                  <div className="text-lg font-semibold text-gray-900">
-                    {question.question}
-                  </div>
-                </div>
 
-                <div className="bg-green-50 border-2 border-green-200 rounded-lg p-4 mb-4">
-                  <div className="text-sm text-green-600 font-medium mb-2">Full Answer</div>
-                  <div className="text-gray-900 whitespace-pre-wrap">
-                    {question.full_answer}
+                  <div className="bg-purple-50 border-2 border-purple-200 rounded-lg p-4 mb-4">
+                    <div className="text-sm text-purple-600 font-medium mb-3">Your Answer</div>
+                    <textarea
+                      value={currentUserAnswer}
+                      onChange={(e) => handleAnswerChange(index, e.target.value)}
+                      placeholder="Write your answer here..."
+                      className="w-full px-4 py-3 border border-gray-300 rounded-md shadow-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 resize-y min-h-[150px]"
+                      rows={6}
+                    />
                   </div>
-                </div>
 
-                <div className="bg-yellow-50 border-2 border-yellow-200 rounded-lg p-4">
-                  <div className="text-sm text-yellow-600 font-medium mb-2">Key Information</div>
-                  <ul className="list-disc list-inside space-y-1 text-gray-900">
-                    {question.key_info.map((info, infoIndex) => (
-                      <li key={infoIndex}>{info}</li>
-                    ))}
-                  </ul>
+                  <div className="flex justify-center mb-4">
+                    <Button
+                      variant={isAnswerRevealed ? "secondary" : "primary"}
+                      onClick={() => toggleRevealAnswer(index)}
+                    >
+                      {isAnswerRevealed ? "Hide Answer" : "Reveal Answer"}
+                    </Button>
+                  </div>
+
+                  {isAnswerRevealed && (
+                    <>
+                      <div className="bg-green-50 border-2 border-green-200 rounded-lg p-4 mb-4">
+                        <div className="text-sm text-green-600 font-medium mb-2">Full Answer</div>
+                        <div className="text-gray-900 whitespace-pre-wrap">
+                          {question.full_answer}
+                        </div>
+                      </div>
+
+                      <div className="bg-yellow-50 border-2 border-yellow-200 rounded-lg p-4">
+                        <div className="text-sm text-yellow-600 font-medium mb-2">Key Information</div>
+                        <ul className="list-disc list-inside space-y-1 text-gray-900">
+                          {question.key_info.map((info, infoIndex) => (
+                            <li key={infoIndex}>{info}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    </>
+                  )}
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
 
           <div className="flex gap-4">

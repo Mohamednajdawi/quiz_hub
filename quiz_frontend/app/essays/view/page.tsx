@@ -15,6 +15,8 @@ function ViewEssaysContent() {
   const router = useRouter();
   const [essayData, setEssayData] = useState<EssayQAData | null>(null);
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [userAnswers, setUserAnswers] = useState<Record<number, string>>({});
+  const [revealedAnswers, setRevealedAnswers] = useState<Record<number, boolean>>({});
 
   useEffect(() => {
     const dataParam = searchParams.get('data');
@@ -53,6 +55,23 @@ function ViewEssaysContent() {
     }
   };
 
+  const handleAnswerChange = (value: string) => {
+    setUserAnswers((prev) => ({
+      ...prev,
+      [currentIndex]: value,
+    }));
+  };
+
+  const toggleRevealAnswer = () => {
+    setRevealedAnswers((prev) => ({
+      ...prev,
+      [currentIndex]: !prev[currentIndex],
+    }));
+  };
+
+  const isAnswerRevealed = revealedAnswers[currentIndex] || false;
+  const currentUserAnswer = userAnswers[currentIndex] || '';
+
   return (
     <Layout>
       <div className="px-4 sm:px-6 lg:px-8 max-w-4xl mx-auto">
@@ -83,21 +102,45 @@ function ViewEssaysContent() {
               </div>
             </div>
 
-            <div className="bg-green-50 border-2 border-green-200 rounded-lg p-6">
-              <div className="text-sm text-green-600 font-medium mb-2">Full Answer</div>
-              <div className="text-gray-900 whitespace-pre-wrap">
-                {currentQuestion.full_answer}
-              </div>
+            <div className="bg-purple-50 border-2 border-purple-200 rounded-lg p-6">
+              <div className="text-sm text-purple-600 font-medium mb-3">Your Answer</div>
+              <textarea
+                value={currentUserAnswer}
+                onChange={(e) => handleAnswerChange(e.target.value)}
+                placeholder="Write your answer here..."
+                className="w-full px-4 py-3 border border-gray-300 rounded-md shadow-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 resize-y min-h-[150px]"
+                rows={6}
+              />
             </div>
 
-            <div className="bg-yellow-50 border-2 border-yellow-200 rounded-lg p-6">
-              <div className="text-sm text-yellow-600 font-medium mb-2">Key Information</div>
-              <ul className="list-disc list-inside space-y-1 text-gray-900">
-                {currentQuestion.key_info.map((info, index) => (
-                  <li key={index}>{info}</li>
-                ))}
-              </ul>
+            <div className="flex justify-center">
+              <Button
+                variant={isAnswerRevealed ? "secondary" : "primary"}
+                onClick={toggleRevealAnswer}
+              >
+                {isAnswerRevealed ? "Hide Answer" : "Reveal Answer"}
+              </Button>
             </div>
+
+            {isAnswerRevealed && (
+              <>
+                <div className="bg-green-50 border-2 border-green-200 rounded-lg p-6">
+                  <div className="text-sm text-green-600 font-medium mb-2">Full Answer</div>
+                  <div className="text-gray-900 whitespace-pre-wrap">
+                    {currentQuestion.full_answer}
+                  </div>
+                </div>
+
+                <div className="bg-yellow-50 border-2 border-yellow-200 rounded-lg p-6">
+                  <div className="text-sm text-yellow-600 font-medium mb-2">Key Information</div>
+                  <ul className="list-disc list-inside space-y-1 text-gray-900">
+                    {currentQuestion.key_info.map((info, index) => (
+                      <li key={index}>{info}</li>
+                    ))}
+                  </ul>
+                </div>
+              </>
+            )}
           </div>
 
           <div className="flex items-center justify-between mb-4">

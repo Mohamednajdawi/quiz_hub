@@ -2,11 +2,14 @@
 FROM node:20-alpine AS deps
 WORKDIR /app
 
-# Copy package files
-COPY package.json package-lock.json* ./
+# Upgrade npm to fix potential issues
+RUN npm install -g npm@latest
+
+# Copy package files (only package.json, not lock file to avoid npm bug)
+COPY package.json ./
 
 # Install dependencies
-RUN npm ci
+RUN npm install
 
 # Stage 2: Builder
 FROM node:20-alpine AS builder
@@ -22,7 +25,7 @@ ENV NEXT_TELEMETRY_DISABLED=1
 ENV NEXT_PRIVATE_SKIP_TURBO=1
 
 # Build the application (using webpack instead of Turbopack)
-RUN npm run build:docker || npm run build
+RUN npm run build
 
 # Stage 3: Runner
 FROM node:20-alpine AS runner
