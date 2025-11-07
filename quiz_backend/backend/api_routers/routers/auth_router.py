@@ -1,8 +1,11 @@
-from datetime import timedelta
+from datetime import date, timedelta
+from enum import Enum
+from typing import Optional
+
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, EmailStr, Field
 
 from backend.database.db import get_db
 from backend.database.sqlite_dal import User
@@ -20,9 +23,21 @@ router = APIRouter()
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/login")
 
 
+class Gender(str, Enum):
+    male = "male"
+    female = "female"
+    non_binary = "non_binary"
+    prefer_not_to_say = "prefer_not_to_say"
+    other = "other"
+
+
 class UserRegister(BaseModel):
     email: EmailStr
-    password: str
+    password: str = Field(min_length=6, max_length=72)
+    first_name: str = Field(..., min_length=1, max_length=100)
+    last_name: str = Field(..., min_length=1, max_length=100)
+    birth_date: date
+    gender: Gender
 
 
 class UserLogin(BaseModel):
@@ -30,24 +45,54 @@ class UserLogin(BaseModel):
     password: str
 
 
-class Token(BaseModel):
-    access_token: str
-    token_type: str
-    user_id: str
-    email: str
-
-
 class UserResponse(BaseModel):
     id: str
     email: str
     is_active: bool
+    first_name: Optional[str]
+    last_name: Optional[str]
+    birth_date: Optional[date]
+    gender: Optional[Gender]
+
+
+class Token(BaseModel):
+    access_token: str
+    token_type: str
+    user: UserResponse
+
+
+class UserUpdate(BaseModel):
+    first_name: Optional[str] = Field(None, min_length=1, max_length=100)
+    last_name: Optional[str] = Field(None, min_length=1, max_length=100)
+    birth_date: Optional[date] = None
+    gender: Optional[Gender] = None
+
+    def apply(self, user: User) -> None:
+        if self.first_name is not None:
+            user.first_name = self.first_name
+        if self.last_name is not None:
+            user.last_name = self.last_name
+        if self.birth_date is not None:
+            user.birth_date = self.birth_date
+        if self.gender is not None:
+            user.gender = self.gender.value if isinstance(self.gender, Enum) else self.gender
 
 
 @router.post("/register", response_model=Token, status_code=status.HTTP_201_CREATED)
 async def register(user_data: UserRegister, db: Session = Depends(get_db)):
     """Register a new user"""
     try:
-        user = create_user(db, user_data.email, user_data.password)
+        _validate_birth_date(user_data.birth_date)
+
+        user = create_user(
+            db,
+            user_data.email,
+            user_data.password,
+            first_name=user_data.first_name,
+            last_name=user_data.last_name,
+            birth_date=user_data.birth_date,
+            gender=user_data.gender.value,
+        )
         
         # Create access token
         access_token = create_access_token(
@@ -57,8 +102,7 @@ async def register(user_data: UserRegister, db: Session = Depends(get_db)):
         return Token(
             access_token=access_token,
             token_type="bearer",
-            user_id=user.id,
-            email=user.email,
+            user=_serialize_user(user),
         )
     except ValueError as e:
         raise HTTPException(
@@ -100,8 +144,7 @@ async def login(
     return Token(
         access_token=access_token,
         token_type="bearer",
-        user_id=user.id,
-        email=user.email,
+        user=_serialize_user(user),
     )
 
 
@@ -133,11 +176,46 @@ async def get_current_user(
             detail="User not found",
         )
     
-    return UserResponse(
-        id=user.id,
-        email=user.email,
-        is_active=user.is_active,
-    )
+    return _serialize_user(user)
+
+
+@router.put("/me", response_model=UserResponse)
+async def update_current_user(
+    update_data: UserUpdate,
+    token: str = Depends(oauth2_scheme),
+    db: Session = Depends(get_db)
+):
+    payload = verify_token(token)
+    if payload is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid authentication credentials",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    user_id: str = payload.get("sub")
+    if user_id is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid authentication credentials",
+        )
+
+    user = get_user_by_id(db, user_id)
+    if user is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found",
+        )
+
+    if update_data.birth_date is not None:
+        _validate_birth_date(update_data.birth_date)
+
+    update_data.apply(user)
+    db.add(user)
+    db.commit()
+    db.refresh(user)
+
+    return _serialize_user(user)
 
 
 # Dependency to get current user
@@ -169,4 +247,34 @@ async def get_current_user_dependency(
         )
     
     return user
+
+
+def _serialize_user(user: User) -> UserResponse:
+    return UserResponse(
+        id=user.id,
+        email=user.email,
+        is_active=user.is_active,
+        first_name=user.first_name,
+        last_name=user.last_name,
+        birth_date=user.birth_date,
+        gender=Gender(user.gender) if user.gender else None,
+    )
+
+
+def _validate_birth_date(birth_date_value: date) -> None:
+    today = date.today()
+    if birth_date_value > today:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Birth date cannot be in the future",
+        )
+
+    age_years = today.year - birth_date_value.year - (
+        (today.month, today.day) < (birth_date_value.month, birth_date_value.day)
+    )
+    if age_years < 13:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="You must be at least 13 years old to register",
+        )
 

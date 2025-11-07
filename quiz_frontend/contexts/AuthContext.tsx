@@ -2,14 +2,15 @@
 
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
-import { authApi, AuthResponse, User } from '@/lib/api/auth';
+import { authApi, AuthResponse, RegisterRequest, UpdateProfileRequest, User } from '@/lib/api/auth';
 
 interface AuthContextType {
   user: User | null;
   token: string | null;
   isLoading: boolean;
   login: (email: string, password: string) => Promise<void>;
-  register: (email: string, password: string) => Promise<void>;
+  register: (data: RegisterRequest) => Promise<void>;
+  updateProfile: (data: UpdateProfileRequest) => Promise<User>;
   logout: () => void;
   isAuthenticated: boolean;
 }
@@ -25,22 +26,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     // Check for stored token and user
     const storedToken = localStorage.getItem('token');
-    const storedUserId = localStorage.getItem('userId');
-    const storedUserEmail = localStorage.getItem('userEmail');
+    const storedUserRaw = localStorage.getItem('user');
 
-    if (storedToken && storedUserId && storedUserEmail) {
+    if (storedToken && storedUserRaw) {
       setToken(storedToken);
-      setUser({
-        id: storedUserId,
-        email: storedUserEmail,
-        is_active: true,
-      });
-      
-      // Verify token is still valid
-      authApi.getCurrentUser(storedToken).catch(() => {
-        // Token invalid, clear storage
+      try {
+        const parsedUser: User = JSON.parse(storedUserRaw);
+        setUser(parsedUser);
+        
+        // Verify token is still valid and refresh user data
+        authApi.getCurrentUser(storedToken)
+          .then((freshUser) => {
+            setUser(freshUser);
+            localStorage.setItem('user', JSON.stringify(freshUser));
+          })
+          .catch(() => {
+            // Token invalid, clear storage
+            logout();
+          });
+      } catch (error) {
+        console.error('Failed to parse stored user', error);
         logout();
-      });
+      }
     }
     
     setIsLoading(false);
@@ -52,15 +59,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       
       // Store auth data
       localStorage.setItem('token', response.access_token);
-      localStorage.setItem('userId', response.user_id);
-      localStorage.setItem('userEmail', response.email);
+      localStorage.setItem('user', JSON.stringify(response.user));
       
       setToken(response.access_token);
-      setUser({
-        id: response.user_id,
-        email: response.email,
-        is_active: true,
-      });
+      setUser(response.user);
       
       router.push('/dashboard');
     } catch (error) {
@@ -68,32 +70,37 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const register = async (email: string, password: string) => {
+  const register = async (data: RegisterRequest) => {
     try {
-      const response: AuthResponse = await authApi.register({ email, password });
+      const response: AuthResponse = await authApi.register(data);
       
       // Store auth data
       localStorage.setItem('token', response.access_token);
-      localStorage.setItem('userId', response.user_id);
-      localStorage.setItem('userEmail', response.email);
+      localStorage.setItem('user', JSON.stringify(response.user));
       
       setToken(response.access_token);
-      setUser({
-        id: response.user_id,
-        email: response.email,
-        is_active: true,
-      });
+      setUser(response.user);
       
       router.push('/dashboard');
     } catch (error) {
       throw error;
     }
+  };
+
+  const updateProfile = async (data: UpdateProfileRequest) => {
+    if (!token) {
+      throw new Error('Not authenticated');
+    }
+
+    const updatedUser = await authApi.updateProfile(token, data);
+    setUser(updatedUser);
+    localStorage.setItem('user', JSON.stringify(updatedUser));
+    return updatedUser;
   };
 
   const logout = () => {
     localStorage.removeItem('token');
-    localStorage.removeItem('userId');
-    localStorage.removeItem('userEmail');
+    localStorage.removeItem('user');
     setToken(null);
     setUser(null);
     router.push('/login');
@@ -107,6 +114,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         isLoading,
         login,
         register,
+        updateProfile,
         logout,
         isAuthenticated: !!user && !!token,
       }}

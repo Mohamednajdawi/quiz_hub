@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
-import { usePathname, useRouter } from 'next/navigation';
+import { usePathname } from 'next/navigation';
 import { BookOpen, FileText, GraduationCap, Home, BarChart3, LogOut, User, ChevronDown } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -20,13 +20,16 @@ const navigation = [
 
 export function Navigation() {
   const pathname = usePathname();
-  const router = useRouter();
   const { isAuthenticated, user, logout } = useAuth();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   // Check if any study tool is active
   const isStudyToolActive = studyTools.some(tool => pathname === tool.href || pathname.startsWith(tool.href + '/'));
+
+  const displayName = user
+    ? [user.first_name, user.last_name].filter(Boolean).join(' ').trim() || user.email
+    : '';
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -114,9 +117,15 @@ export function Navigation() {
             <div className="flex items-center gap-4">
               {isAuthenticated ? (
                 <>
+                  <Link
+                    href="/profile"
+                    className="hidden sm:inline-flex items-center px-3 py-2 border border-transparent text-sm font-medium rounded-md text-gray-700 hover:text-gray-900 hover:bg-gray-50"
+                  >
+                    Profile
+                  </Link>
                   <div className="hidden sm:flex items-center text-sm text-gray-700">
                     <User className="w-4 h-4 mr-1" />
-                    {user?.email}
+                    {displayName}
                   </div>
                   <button
                     onClick={logout}
@@ -210,9 +219,20 @@ export function Navigation() {
           </div>
           {isAuthenticated ? (
             <div className="pt-2 border-t border-gray-200">
+              <Link
+                href="/profile"
+                className={`flex items-center pl-3 pr-4 py-2 border-l-4 text-base font-medium ${
+                  pathname.startsWith('/profile')
+                    ? 'bg-indigo-50 border-indigo-500 text-indigo-700'
+                    : 'border-transparent text-gray-600 hover:bg-gray-50 hover:border-gray-300 hover:text-gray-800'
+                }`}
+              >
+                <User className="w-5 h-5 mr-3" />
+                Profile
+              </Link>
               <div className="px-3 py-2 text-sm text-gray-700">
                 <User className="w-4 h-4 inline mr-2" />
-                {user?.email}
+                {displayName}
               </div>
               <button
                 onClick={logout}

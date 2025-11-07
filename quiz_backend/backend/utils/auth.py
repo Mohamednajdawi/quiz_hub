@@ -2,6 +2,7 @@ import os
 import secrets
 from datetime import datetime, timedelta
 from typing import Optional
+from datetime import date
 from jose import JWTError, jwt
 from passlib.context import CryptContext
 from sqlalchemy.orm import Session
@@ -87,7 +88,16 @@ def get_user_by_id(db: Session, user_id: str) -> Optional[User]:
     return db.query(User).filter(User.id == user_id).first()
 
 
-def create_user(db: Session, email: str, password: str) -> User:
+def create_user(
+    db: Session,
+    email: str,
+    password: str,
+    *,
+    first_name: str,
+    last_name: str,
+    birth_date: Optional[date] = None,
+    gender: Optional[str] = None,
+) -> User:
     """Create a new user"""
     import uuid
     
@@ -107,7 +117,11 @@ def create_user(db: Session, email: str, password: str) -> User:
         id=user_id,
         email=email,
         password_hash=password_hash,
-        is_active=True
+        is_active=True,
+        first_name=first_name,
+        last_name=last_name,
+        birth_date=birth_date,
+        gender=gender,
     )
     db.add(user)
     db.commit()

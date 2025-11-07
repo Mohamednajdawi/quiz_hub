@@ -1,6 +1,6 @@
 import os
 
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, inspect, text
 from sqlalchemy.orm import sessionmaker
 
 from backend.database.sqlite_dal import Base
@@ -20,8 +20,37 @@ else:
     # Create SQLite engine with absolute path
     engine = create_engine(f"sqlite:///{db_path}", connect_args={"check_same_thread": False})
 
-# Create all tables
+# Ensure new user profile columns exist (supports SQLite & Postgres)
+def ensure_user_columns() -> None:
+    inspector = inspect(engine)
+    if "users" not in inspector.get_table_names():
+        return
+
+    existing_columns = {column["name"] for column in inspector.get_columns("users")}
+    required_columns = {
+        "first_name": "VARCHAR(100)",
+        "last_name": "VARCHAR(100)",
+        "birth_date": "DATE",
+        "gender": "VARCHAR(50)",
+    }
+
+    columns_to_add = {
+        name: ddl for name, ddl in required_columns.items() if name not in existing_columns
+    }
+
+    if not columns_to_add:
+        return
+
+    with engine.begin() as connection:
+        for column_name, column_def in columns_to_add.items():
+            connection.execute(
+                text(f"ALTER TABLE users ADD COLUMN {column_name} {column_def}")
+            )
+
+
+# Ensure tables and new columns exist
 Base.metadata.create_all(engine)
+ensure_user_columns()
 
 # Create sessionmaker
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)

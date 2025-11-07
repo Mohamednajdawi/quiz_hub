@@ -1,30 +1,77 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { Layout } from '@/components/Layout';
 import { Card, CardHeader } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Alert } from '@/components/ui/Alert';
-import { Mail, Lock, UserPlus } from 'lucide-react';
+import { Select } from '@/components/ui/Select';
+import { UserPlus } from 'lucide-react';
 import Link from 'next/link';
+import type { GenderOption } from '@/lib/api/auth';
 
 export default function RegisterPage() {
   const [email, setEmail] = useState('');
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
+  const [birthDate, setBirthDate] = useState('');
+  const [gender, setGender] = useState<GenderOption>('prefer_not_to_say');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const { register } = useAuth();
-  const router = useRouter();
+
+  const maxBirthDate = (() => {
+    const today = new Date();
+    const minBirthDate = new Date(
+      today.getFullYear() - 13,
+      today.getMonth(),
+      today.getDate()
+    );
+    return minBirthDate.toISOString().split('T')[0];
+  })();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
 
     // Validation
+    if (!firstName.trim()) {
+      setError('Please enter your first name');
+      return;
+    }
+
+    if (!lastName.trim()) {
+      setError('Please enter your last name');
+      return;
+    }
+
+    if (!birthDate) {
+      setError('Please provide your birth date');
+      return;
+    }
+
+    const birthDateObj = new Date(birthDate);
+    if (Number.isNaN(birthDateObj.getTime())) {
+      setError('Please provide a valid birth date');
+      return;
+    }
+
+    const today = new Date();
+    const minBirthDate = new Date(
+      today.getFullYear() - 13,
+      today.getMonth(),
+      today.getDate()
+    );
+
+    if (birthDateObj > minBirthDate) {
+      setError('You must be at least 13 years old to register');
+      return;
+    }
+
     if (password.length < 6) {
       setError('Password must be at least 6 characters long');
       return;
@@ -43,13 +90,28 @@ export default function RegisterPage() {
     setIsLoading(true);
 
     try {
-      await register(email, password);
+      await register({
+        email,
+        password,
+        first_name: firstName.trim(),
+        last_name: lastName.trim(),
+        birth_date: birthDate,
+        gender,
+      });
     } catch (err: any) {
       setError(err.response?.data?.detail || err.message || 'Registration failed. Please try again.');
     } finally {
       setIsLoading(false);
     }
   };
+
+  const genderOptions: { value: GenderOption; label: string }[] = [
+    { value: 'male', label: 'Male' },
+    { value: 'female', label: 'Female' },
+    { value: 'non_binary', label: 'Non-binary' },
+    { value: 'other', label: 'Other' },
+    { value: 'prefer_not_to_say', label: 'Prefer not to say' },
+  ];
 
   return (
     <Layout>
@@ -68,6 +130,25 @@ export default function RegisterPage() {
             )}
 
             <form onSubmit={handleSubmit} className="space-y-6">
+              <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
+                <Input
+                  label="First Name"
+                  value={firstName}
+                  onChange={(e) => setFirstName(e.target.value)}
+                  placeholder="John"
+                  required
+                  autoComplete="given-name"
+                />
+                <Input
+                  label="Last Name"
+                  value={lastName}
+                  onChange={(e) => setLastName(e.target.value)}
+                  placeholder="Doe"
+                  required
+                  autoComplete="family-name"
+                />
+              </div>
+
               <Input
                 label="Email"
                 type="email"
@@ -77,6 +158,24 @@ export default function RegisterPage() {
                 required
                 autoComplete="email"
               />
+
+              <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
+                <Input
+                  label="Birth Date"
+                  type="date"
+                  value={birthDate}
+                  onChange={(e) => setBirthDate(e.target.value)}
+                  max={maxBirthDate}
+                  required
+                />
+                <Select
+                  label="Gender"
+                  value={gender}
+                  onChange={(e) => setGender(e.target.value as GenderOption)}
+                  options={genderOptions}
+                  required
+                />
+              </div>
 
               <Input
                 label="Password"

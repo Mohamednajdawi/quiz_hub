@@ -1,6 +1,6 @@
 import datetime
 
-from sqlalchemy import JSON, Column, DateTime, ForeignKey, Integer, String, Boolean, Float, Text
+from sqlalchemy import JSON, Column, Date, DateTime, ForeignKey, Integer, String, Boolean, Float, Text
 from sqlalchemy.orm import declarative_base, relationship
 
 Base = declarative_base()
@@ -12,6 +12,10 @@ class User(Base):
     id = Column(String(255), primary_key=True)  # Firebase UID or generated UUID as primary key
     email = Column(String(255), unique=True, nullable=False)
     password_hash = Column(String(255), nullable=True)  # For password-based auth
+    first_name = Column(String(100), nullable=True)
+    last_name = Column(String(100), nullable=True)
+    birth_date = Column(Date, nullable=True)
+    gender = Column(String(50), nullable=True)
     firebase_uid = Column(String(255), unique=True, nullable=True)
     stripe_customer_id = Column(String(255), unique=True, nullable=True)
     is_active = Column(Boolean, default=True)

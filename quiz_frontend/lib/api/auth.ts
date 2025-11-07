@@ -1,8 +1,14 @@
 import apiClient from './client';
 
+export type GenderOption = 'male' | 'female' | 'non_binary' | 'prefer_not_to_say' | 'other';
+
 export interface RegisterRequest {
   email: string;
   password: string;
+  first_name: string;
+  last_name: string;
+  birth_date: string;
+  gender: GenderOption;
 }
 
 export interface LoginRequest {
@@ -13,15 +19,20 @@ export interface LoginRequest {
 export interface AuthResponse {
   access_token: string;
   token_type: string;
-  user_id: string;
-  email: string;
+  user: User;
 }
 
 export interface User {
   id: string;
   email: string;
   is_active: boolean;
+  first_name?: string | null;
+  last_name?: string | null;
+  birth_date?: string | null;
+  gender?: GenderOption | null;
 }
+
+export type UpdateProfileRequest = Partial<Pick<User, 'first_name' | 'last_name' | 'birth_date' | 'gender'>>;
 
 export const authApi = {
   register: async (data: RegisterRequest): Promise<AuthResponse> => {
@@ -44,6 +55,15 @@ export const authApi = {
 
   getCurrentUser: async (token: string): Promise<User> => {
     const response = await apiClient.get('/auth/me', {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+    return response.data;
+  },
+
+  updateProfile: async (token: string, data: UpdateProfileRequest): Promise<User> => {
+    const response = await apiClient.put('/auth/me', data, {
       headers: {
         Authorization: `Bearer ${token}`,
       },
