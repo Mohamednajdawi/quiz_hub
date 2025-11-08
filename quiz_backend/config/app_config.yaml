@@ -1,21 +1,31 @@
-free_generation_quota: 10
+free_generation_quota: 20
+referral:
+  bonus_tokens_per_referral: 5
+
+limits:
+  free_tier:
+    max_projects: 3
+  pro_tier:
+    max_projects: -1  # Unlimited
 
 pricing:
+  currency: "EUR"
   hero:
     title: "Simple, transparent pricing"
     subtitle: "Start for free with {free_generation_quota} AI generations included. Upgrade when you need more capacity or collaboration."
   tiers:
     - id: starter
       name: "Starter"
-      price: "$0"
+      price: "€0"
       price_suffix: ""
       tagline: "Perfect for trying Quiz Hub"
       description: "Every new account starts on the Starter plan with just enough capacity to explore the platform."
       features:
         - "{free_generation_quota} AI generations or chats included"
         - "Access to quizzes, flashcards, and essay Q&A tools"
-        - "Student hub project organization"
+        - "Up to 3 projects in Student Hub"
         - "Community help center"
+        - "5 bonus generations per successful referral"
       cta:
         label: "Create Free Account"
         href: "/register"
@@ -23,13 +33,20 @@ pricing:
       highlighted: false
     - id: pro
       name: "Pro"
-      price: "$24"
-      price_suffix: " / month"
+      price_monthly: "€19"
+      price_annual: "€190"
+      price_suffix_monthly: " / month"
+      price_suffix_annual: " / year"
+      annual_savings: "Save €38 per year (€16/month)"
       tagline: "For students who rely on Quiz Hub daily"
       description: "Unlimited generations, faster responses, and priority support. Ideal for heavy study loads and exam prep."
       features:
         - "Unlimited AI generations and chats"
-        - "Priority queue for content creation"
+        - "Unlimited projects in Student Hub"
+        - "Export flashcards to Anki format"
+        - "PDF annotation & highlighting"
+        - "Spaced repetition algorithm for flashcards"
+        - "Priority queue during peak times (8-10pm exam periods)"
         - "Advanced analytics and progress tracking"
         - "Priority support with 1 business day response time"
         - "Early access to new features"

@@ -20,6 +20,8 @@ class User(Base):
     stripe_customer_id = Column(String(255), unique=True, nullable=True)
     is_active = Column(Boolean, default=True)
     free_tokens = Column(Integer, default=10)
+    referral_code = Column(String(20), unique=True, nullable=True)
+    referred_by_code = Column(String(20), nullable=True)
     created_at = Column(DateTime, default=datetime.datetime.now)
     updated_at = Column(DateTime, default=datetime.datetime.now, onupdate=datetime.datetime.now)
     
@@ -31,6 +33,8 @@ class User(Base):
     student_projects = relationship("StudentProject", back_populates="user")
     flashcard_topics_created = relationship("FlashcardTopic", back_populates="created_by_user")
     essay_topics_created = relationship("EssayQATopic", back_populates="created_by_user")
+    referrals_sent = relationship("Referral", foreign_keys="Referral.referrer_id", back_populates="referrer")
+    referral_received = relationship("Referral", foreign_keys="Referral.referred_id", back_populates="referred")
 
 
 class Subscription(Base):
@@ -283,3 +287,18 @@ class StudentProjectEssayReference(Base):
     project = relationship("StudentProject", back_populates="essay_references")
     content = relationship("StudentProjectContent")  # Added relationship
     essay_topic = relationship("EssayQATopic")
+
+
+class Referral(Base):
+    __tablename__ = "referrals"
+
+    id = Column(Integer, primary_key=True)
+    referrer_id = Column(String(255), ForeignKey("users.id"), nullable=False)
+    referred_id = Column(String(255), ForeignKey("users.id"), nullable=False)
+    referral_code = Column(String(20), nullable=False)
+    bonus_tokens_awarded = Column(Integer, default=0)
+    created_at = Column(DateTime, default=datetime.datetime.now)
+    
+    # Relationships
+    referrer = relationship("User", foreign_keys=[referrer_id], back_populates="referrals_sent")
+    referred = relationship("User", foreign_keys=[referred_id], back_populates="referral_received")

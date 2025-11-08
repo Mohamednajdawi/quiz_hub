@@ -6,8 +6,15 @@ from __future__ import annotations
 import os
 import sys
 
-from alembic import command
-from alembic.config import Config
+try:
+    from alembic import command
+    from alembic.config import Config
+except ImportError:
+    print("❌ Alembic not installed. Installing...")
+    import subprocess
+    subprocess.check_call([sys.executable, "-m", "pip", "install", "alembic>=1.13.3"])
+    from alembic import command
+    from alembic.config import Config
 
 
 def get_config() -> Config:
@@ -22,11 +29,15 @@ def get_config() -> Config:
 
 
 def main() -> None:
-    config = get_config()
-    print("🚀 Running Alembic migrations -> head")
-    command.upgrade(config, "head")
-    print("✅ Database is up to date")
+    try:
+        config = get_config()
+        print("🚀 Running Alembic migrations -> head")
+        command.upgrade(config, "head")
+        print("✅ Database is up to date")
+    except Exception as e:
+        print(f"❌ Migration failed: {e}")
+        sys.exit(1)
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    main()

@@ -26,5 +26,9 @@ USER appuser
 # Expose the port the app runs on
 EXPOSE 8000
 
-# Command to run the application
-CMD ["gunicorn", "backend.api:app", "-k", "uvicorn.workers.UvicornWorker", "--bind", "0.0.0.0:8000"] 
+# Copy startup script
+COPY start.sh .
+RUN chmod +x start.sh
+
+# Command to run the application (with migrations)
+CMD ["./start.sh"] 
