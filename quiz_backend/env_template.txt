@@ -20,8 +20,12 @@ FIREBASE_PRIVATE_KEY=your_firebase_private_key
 FIREBASE_CLIENT_EMAIL=your_firebase_client_email
 FIREBASE_CLIENT_ID=your_firebase_client_id
 
-# Groq AI Configuration
-GROQ_API_KEY=your_groq_api_key_here
+# OpenAI Configuration
+OPENAI_API_KEY=your_openai_api_key_here
+# Optional: Override default model (default: gpt-4.1-2025-04-14)
+# OPENAI_MODEL=gpt-4.1-2025-04-14
+# Alternative: Use gpt-3.5-turbo for lower costs
+# OPENAI_MODEL=gpt-3.5-turbo
 
 # Server Configuration
 HOST=0.0.0.0

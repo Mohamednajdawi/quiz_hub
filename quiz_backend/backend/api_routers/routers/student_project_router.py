@@ -973,15 +973,23 @@ async def chat_with_project_pdfs(
     # Combine all PDF text
     combined_pdf_text = "\n\n".join(all_pdf_text)
     
-    # Call LLM using OpenAI-compatible API (Groq)
+    # Call LLM using OpenAI API
     try:
         from openai import OpenAI
         
-        # Initialize OpenAI client with Groq endpoint
-        client = OpenAI(
-            api_key=os.environ.get("GROQ_API_KEY"),
-            base_url="https://api.groq.com/openai/v1"
-        )
+        # Get API key (support both OPENAI_API_KEY and OPEN_API_KEY for compatibility)
+        api_key = os.environ.get("OPENAI_API_KEY") or os.environ.get("OPEN_API_KEY")
+        if not api_key:
+            raise HTTPException(
+                status_code=500,
+                detail="OPENAI_API_KEY environment variable must be set"
+            )
+        
+        # Initialize OpenAI client (default endpoint)
+        client = OpenAI(api_key=api_key)
+        
+        # Get model from environment or use default
+        model = os.environ.get("OPENAI_MODEL", "gpt-4.1-2025-04-14")
         
         # Create system message with PDF context
         system_message = f"""You are a helpful assistant that answers questions based on the following PDF content. 
@@ -992,7 +1000,7 @@ PDF Content:
         
         # Call the API with messages format
         response = client.chat.completions.create(
-            model="openai/gpt-oss-120b",
+            model=model,
             messages=[
                 {"role": "system", "content": system_message},
                 {"role": "user", "content": message}

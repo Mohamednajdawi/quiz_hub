@@ -18,6 +18,9 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy project files
 COPY . .
 
+# Make startup script executable (before switching to non-root user)
+RUN chmod +x start.sh
+
 # Create a non-root user and switch to it for security
 RUN useradd -m appuser
 RUN chown -R appuser:appuser /app
@@ -25,10 +28,6 @@ USER appuser
 
 # Expose the port the app runs on
 EXPOSE 8000
-
-# Copy startup script
-COPY start.sh .
-RUN chmod +x start.sh
 
 # Command to run the application (with migrations)
 CMD ["./start.sh"] 

@@ -13,13 +13,15 @@ from backend.generation.flashcard_template import FLASHCARD_GENERATION_PROMPT
 from backend.generation.essay_qa_template import Essay_QA_PROMPT
 
 # Validate that required environment variables exist
-if not os.environ.get("GROQ_API_KEY"):
-    raise EnvironmentError("GROQ_API_KEY environment variable must be set")
+# Support both OPENAI_API_KEY (standard) and OPEN_API_KEY (user's typo)
+openai_api_key = os.environ.get("OPENAI_API_KEY") or os.environ.get("OPEN_API_KEY")
+if not openai_api_key:
+    raise EnvironmentError("OPENAI_API_KEY environment variable must be set")
 
 # Configuration for LLM usage
 LLM_CONFIG = {
-    "api_base_url": "https://api.groq.com/openai/v1",
-    "model": "openai/gpt-oss-120b",
+    "api_base_url": None,  # None means use default OpenAI endpoint
+    "model": os.environ.get("OPENAI_MODEL", "gpt-4.1-2025-04-14"),  # Default to gpt-4.1-2025-04-14, can be overridden
     "default_max_tokens": 2000,
     "quiz_temperature": 0.8,
     "flashcard_temperature": 0.7,
@@ -43,16 +45,24 @@ def create_generator(temperature: float = 0.8) -> OpenAIGenerator:
     if not 0 <= temperature <= 1:
         raise ValueError(f"Temperature must be between 0 and 1, got {temperature}")
         
-    return OpenAIGenerator(
-        api_key=Secret.from_env_var("GROQ_API_KEY"),
-        api_base_url=LLM_CONFIG["api_base_url"],
-        model=LLM_CONFIG["model"],
-        generation_kwargs={
+    # Use OPENAI_API_KEY first, fall back to OPEN_API_KEY for compatibility
+    api_key_env = "OPENAI_API_KEY" if os.environ.get("OPENAI_API_KEY") else "OPEN_API_KEY"
+    
+    generator_kwargs = {
+        "api_key": Secret.from_env_var(api_key_env),
+        "model": LLM_CONFIG["model"],
+        "generation_kwargs": {
             "max_tokens": LLM_CONFIG["default_max_tokens"], 
             "temperature": temperature, 
             "top_p": 1
         },
-    )
+    }
+    
+    # Only set api_base_url if it's explicitly configured (for custom endpoints)
+    if LLM_CONFIG["api_base_url"]:
+        generator_kwargs["api_base_url"] = LLM_CONFIG["api_base_url"]
+    
+    return OpenAIGenerator(**generator_kwargs)
 
 # ==================== QUIZ PIPELINES ====================
 

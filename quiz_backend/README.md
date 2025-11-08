@@ -74,7 +74,9 @@ Follow these steps to deploy the application to Heroku:
 
 3. Set up environment variables:
    ```bash
-   heroku config:set GROQ_API_KEY=your_groq_api_key --app quiz-maker-api
+   heroku config:set OPENAI_API_KEY=your_openai_api_key --app quiz-maker-api
+   # Optional: Set model (default: gpt-4)
+   heroku config:set OPENAI_MODEL=gpt-4 --app quiz-maker-api
    ```
 
 4. Initialize a Git repository (if not already done):
