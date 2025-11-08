@@ -24,13 +24,37 @@ from backend.database.sqlite_dal import (
     User,
     QuizTopic,
     FlashcardTopic,
-    EssayQATopic
+    EssayQATopic,
+    Subscription
 )
 from backend.api_routers.routers.auth_router import get_current_user_dependency
 from backend.utils.credits import consume_generation_token
 from backend.database.sqlite_dal import User as UserModel
+from backend.config.settings import get_app_config
 
 router = APIRouter()
+
+
+def get_user_tier(user_id: str, db: Session) -> str:
+    """Determine if user is on free tier or pro tier based on active subscription"""
+    active_subscription = db.query(Subscription).filter(
+        Subscription.user_id == user_id,
+        Subscription.status == "active"
+    ).first()
+    
+    return "pro_tier" if active_subscription else "free_tier"
+
+
+def get_max_projects_for_user(user_id: str, db: Session) -> int:
+    """Get the maximum number of projects allowed for a user based on their tier"""
+    tier = get_user_tier(user_id, db)
+    config = get_app_config()
+    limits = config.get("limits", {})
+    tier_limits = limits.get(tier, {})
+    max_projects = tier_limits.get("max_projects", 3)  # Default to 3 if not found
+    
+    # -1 means unlimited, return a very large number for comparison
+    return max_projects if max_projects != -1 else 999999
 
 
 @router.post("/student-projects", tags=["Student Projects"])
@@ -58,6 +82,24 @@ async def create_student_project(
         db.add(user)
         db.commit()
         db.refresh(user)
+    
+    # Check project limit
+    max_projects = get_max_projects_for_user(user_id, db)
+    current_project_count = db.query(StudentProject).filter(StudentProject.user_id == user_id).count()
+    
+    # Only enforce limit if it's not unlimited (999999 means unlimited)
+    if max_projects < 999999 and current_project_count >= max_projects:
+        tier = get_user_tier(user_id, db)
+        if tier == "free_tier":
+            raise HTTPException(
+                status_code=403,
+                detail=f"You have reached the maximum number of projects ({max_projects}) for the free tier. Please upgrade to Pro for unlimited projects."
+            )
+        else:
+            raise HTTPException(
+                status_code=403,
+                detail=f"You have reached the maximum number of projects ({max_projects})."
+            )
     
     # Create the project
     project = StudentProject(
