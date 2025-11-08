@@ -7,8 +7,40 @@ import { Layout } from '@/components/Layout';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
+import { Alert } from '@/components/ui/Alert';
 import { FlashcardData, FlashcardCard } from '@/lib/types';
 import { RotateCw, ChevronLeft, ChevronRight } from 'lucide-react';
+
+// Safe URI decoding function that handles malformed URIs
+function safeDecodeURIComponent(str: string): string {
+  try {
+    return decodeURIComponent(str);
+  } catch (e) {
+    // If decodeURIComponent fails, try a more lenient approach
+    try {
+      // Replace + with spaces (URL encoding for spaces)
+      const withSpaces = str.replace(/\+/g, ' ');
+      return decodeURIComponent(withSpaces);
+    } catch (e2) {
+      // If that also fails, try to fix common encoding issues
+      try {
+        // Try to fix malformed percent encodings
+        const fixed = str.replace(/%([0-9A-F]{2})/gi, (match, hex) => {
+          try {
+            return String.fromCharCode(parseInt(hex, 16));
+          } catch {
+            return match;
+          }
+        });
+        return fixed;
+      } catch (e3) {
+        // Last resort: return as-is (might already be decoded)
+        console.warn('Could not decode URI component, using as-is');
+        return str;
+      }
+    }
+  }
+}
 
 function ViewFlashcardsContent() {
   const searchParams = useSearchParams();
@@ -16,24 +48,61 @@ function ViewFlashcardsContent() {
   const [flashcardData, setFlashcardData] = useState<FlashcardData | null>(null);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isFlipped, setIsFlipped] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const dataParam = searchParams.get('data');
     if (dataParam) {
       try {
-        const parsed = JSON.parse(decodeURIComponent(dataParam));
+        const decoded = safeDecodeURIComponent(dataParam);
+        const parsed = JSON.parse(decoded);
+        
+        // Validate the parsed data structure
+        if (!parsed || !parsed.cards || !Array.isArray(parsed.cards) || parsed.cards.length === 0) {
+          throw new Error('Invalid flashcard data structure');
+        }
+        
         setFlashcardData(parsed);
+        setError(null);
       } catch (error) {
         console.error('Error parsing flashcard data:', error);
+        setError('Failed to load flashcard data. The data may be corrupted or too large for URL parameters.');
       }
+    } else {
+      setError('No flashcard data provided.');
     }
   }, [searchParams]);
+
+  if (error) {
+    return (
+      <Layout>
+        <div className="px-4 sm:px-6 lg:px-8 max-w-4xl mx-auto">
+          <Card>
+            <div className="p-6">
+              <Alert type="error" className="mb-4">
+                {error}
+              </Alert>
+              <div className="flex gap-4">
+                <Button variant="outline" onClick={() => router.push('/flashcards')}>
+                  Back to Flashcards
+                </Button>
+                <Button variant="primary" onClick={() => router.back()}>
+                  Go Back
+                </Button>
+              </div>
+            </div>
+          </Card>
+        </div>
+      </Layout>
+    );
+  }
 
   if (!flashcardData) {
     return (
       <Layout>
         <div className="flex items-center justify-center min-h-[400px]">
-          <div className="text-gray-700">Loading flashcards...</div>
+          <LoadingSpinner size="lg" />
+          <div className="ml-4 text-gray-700">Loading flashcards...</div>
         </div>
       </Layout>
     );

@@ -33,11 +33,11 @@ pricing:
       highlighted: false
     - id: pro
       name: "Pro"
-      price_monthly: "€19"
-      price_annual: "€190"
-      price_suffix_monthly: " / month"
+      price: "€19"
+      price_suffix: " / month"
+      price_annual: "€159"
       price_suffix_annual: " / year"
-      annual_savings: "Save €38 per year (€16/month)"
+      annual_savings: "Save €69 per year (€13.25/month)"
       tagline: "For students who rely on Quiz Hub daily"
       description: "Unlimited generations, faster responses, and priority support. Ideal for heavy study loads and exam prep."
       features:
@@ -51,9 +51,9 @@ pricing:
         - "Priority support with 1 business day response time"
         - "Early access to new features"
       cta:
-        label: "Join the Waitlist"
-        href: "mailto:support@quizhub.com?subject=Pro%20plan%20interest"
-        variant: "outline"
+        label: "Subscribe"
+        href: "/pricing"
+        variant: "primary"
       highlighted: true
     - id: teams
       name: "Teams"

@@ -11,6 +11,9 @@ export interface PricingTier {
   name: string;
   price: string;
   price_suffix?: string;
+  price_annual?: string;
+  price_suffix_annual?: string;
+  annual_savings?: string;
   tagline?: string;
   description?: string;
   features: string[];

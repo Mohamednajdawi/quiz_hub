@@ -4,6 +4,7 @@ const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
 export const apiClient = axios.create({
   baseURL: API_BASE_URL,
+  timeout: 30000, // 30 second timeout
   headers: {
     'Content-Type': 'application/json',
   },
@@ -43,7 +44,10 @@ apiClient.interceptors.request.use(
 apiClient.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response) {
+    if (error.code === 'ECONNABORTED' || error.message.includes('timeout')) {
+      // Request timeout
+      return Promise.reject(new Error('Request timeout. The server took too long to respond.'));
+    } else if (error.response) {
       // Server responded with error status
       const message = error.response.data?.detail || error.response.data?.message || 'An error occurred';
       return Promise.reject(new Error(message));

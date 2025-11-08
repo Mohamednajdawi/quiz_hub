@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Layout } from '@/components/Layout';
 import { Card, CardHeader } from '@/components/ui/Card';
@@ -14,8 +15,15 @@ const FALLBACK_HERO = {
   subtitle: 'Start for free with our starter quota. Upgrade when you need more capacity or collaboration.',
 };
 
-function TierCard({ tier }: { tier: PricingTier }) {
+type BillingPeriod = 'monthly' | 'yearly';
+
+function TierCard({ tier, billingPeriod }: { tier: PricingTier; billingPeriod: BillingPeriod }) {
   const ctaVariant = tier.cta?.variant ?? (tier.highlighted ? 'primary' : 'outline');
+  
+  // Determine which price to show
+  const showAnnual = billingPeriod === 'yearly' && tier.price_annual;
+  const displayPrice = showAnnual ? tier.price_annual : tier.price;
+  const displaySuffix = showAnnual ? tier.price_suffix_annual : tier.price_suffix;
 
   return (
     <Card
@@ -28,10 +36,13 @@ function TierCard({ tier }: { tier: PricingTier }) {
       </div>
 
       <div className="px-6">
-        <div className="flex items-baseline gap-2 text-gray-900 mb-3">
-          <span className="text-3xl font-bold">{tier.price}</span>
-          {tier.price_suffix && <span className="text-sm text-gray-600">{tier.price_suffix}</span>}
+        <div className="flex items-baseline gap-2 text-gray-900 mb-2">
+          <span className="text-3xl font-bold">{displayPrice}</span>
+          {displaySuffix && <span className="text-sm text-gray-600">{displaySuffix}</span>}
         </div>
+        {showAnnual && tier.annual_savings && (
+          <p className="text-sm text-green-600 font-medium mb-3">{tier.annual_savings}</p>
+        )}
         {tier.description && <p className="text-sm text-gray-600 mb-6">{tier.description}</p>}
 
         {tier.features?.length ? (
@@ -60,6 +71,7 @@ function TierCard({ tier }: { tier: PricingTier }) {
 }
 
 export default function PricingPage() {
+  const [billingPeriod, setBillingPeriod] = useState<BillingPeriod>('monthly');
   const { data, isLoading, error } = useQuery<PricingConfig>({
     queryKey: ['pricing-config'],
     queryFn: configApi.getPricing,
@@ -72,11 +84,37 @@ export default function PricingPage() {
     <Layout>
       <div className="px-4 sm:px-6 lg:px-8">
         <div className="max-w-5xl mx-auto">
-          <div className="text-center mb-16">
+          <div className="text-center mb-12">
             <h1 className="text-4xl sm:text-5xl font-bold text-gray-900 mb-4">{hero.title}</h1>
             {hero.subtitle && (
-              <p className="text-lg text-gray-700 max-w-2xl mx-auto">{hero.subtitle}</p>
+              <p className="text-lg text-gray-700 max-w-2xl mx-auto mb-8">{hero.subtitle}</p>
             )}
+            
+            {/* Billing Period Tabs */}
+            <div className="flex justify-center mb-8">
+              <div className="inline-flex rounded-lg border border-gray-200 bg-white p-1">
+                <button
+                  onClick={() => setBillingPeriod('monthly')}
+                  className={`px-6 py-2 rounded-md text-sm font-medium transition-colors ${
+                    billingPeriod === 'monthly'
+                      ? 'bg-indigo-600 text-white'
+                      : 'text-gray-700 hover:text-gray-900'
+                  }`}
+                >
+                  Monthly
+                </button>
+                <button
+                  onClick={() => setBillingPeriod('yearly')}
+                  className={`px-6 py-2 rounded-md text-sm font-medium transition-colors ${
+                    billingPeriod === 'yearly'
+                      ? 'bg-indigo-600 text-white'
+                      : 'text-gray-700 hover:text-gray-900'
+                  }`}
+                >
+                  Yearly
+                </button>
+              </div>
+            </div>
           </div>
 
           {error && (
@@ -92,7 +130,7 @@ export default function PricingPage() {
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
               {tiers.map((tier) => (
-                <TierCard key={tier.id ?? tier.name} tier={tier} />
+                <TierCard key={tier.id ?? tier.name} tier={tier} billingPeriod={billingPeriod} />
               ))}
             </div>
           )}
