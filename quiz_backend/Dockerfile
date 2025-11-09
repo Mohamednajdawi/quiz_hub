@@ -23,8 +23,8 @@ RUN chmod +x start.sh
 
 # Create a non-root user and switch to it for security
 RUN useradd -m appuser
-# Create data directory for Railway volume mounts
-RUN mkdir -p /app/data
+# Create data directory for Railway volume mounts with proper permissions
+RUN mkdir -p /app/data && chmod 777 /app/data
 RUN chown -R appuser:appuser /app
 USER appuser
 
