@@ -24,6 +24,9 @@ function TierCard({ tier, billingPeriod }: { tier: PricingTier; billingPeriod: B
   const showAnnual = billingPeriod === 'yearly' && tier.price_annual;
   const displayPrice = showAnnual ? tier.price_annual : tier.price;
   const displaySuffix = showAnnual ? tier.price_suffix_annual : tier.price_suffix;
+  
+  // Check if this is the free tier (usually has "Free" or "0" price)
+  const isFreeTier = tier.price === 'Free' || tier.price === '€0' || tier.price?.toLowerCase().includes('free') || displayPrice === 'Free' || displayPrice === '€0';
 
   return (
     <Card
@@ -33,6 +36,14 @@ function TierCard({ tier, billingPeriod }: { tier: PricingTier; billingPeriod: B
     >
       <div className="mb-4">
         <CardHeader title={tier.name} description={tier.tagline} />
+        {/* No credit card badge for free tier */}
+        {isFreeTier && (
+          <div className="px-6 mt-2">
+            <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+              ✓ No credit card required
+            </span>
+          </div>
+        )}
       </div>
 
       <div className="px-6">
@@ -64,6 +75,12 @@ function TierCard({ tier, billingPeriod }: { tier: PricingTier; billingPeriod: B
               {tier.cta.label}
             </Button>
           </Link>
+          {/* Cancel anytime message for paid tiers */}
+          {!isFreeTier && (
+            <p className="text-xs text-center text-gray-500 mt-2">
+              Cancel anytime
+            </p>
+          )}
         </div>
       )}
     </Card>
@@ -134,6 +151,30 @@ export default function PricingPage() {
               ))}
             </div>
           )}
+
+          {/* Trust Section */}
+          <div className="mt-12 text-center">
+            <div className="inline-flex flex-wrap items-center justify-center gap-6 text-sm text-gray-600">
+              <div className="flex items-center gap-2">
+                <svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <span>No credit card required for free plan</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <svg className="w-5 h-5 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <span>Cancel anytime</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                </svg>
+                <span>Secure payment</span>
+              </div>
+            </div>
+          </div>
 
           <Card className="mt-12">
             <CardHeader
