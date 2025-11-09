@@ -33,7 +33,11 @@ def get_database_url() -> str:
             env_url = env_url.replace("postgres://", "postgresql://", 1)
         return env_url
 
-    db_path = os.path.join(BACKEND_DIR, "database", "quiz_database.db")
+    # Use /app/data directory for Railway volume mounts, fallback to default location
+    if os.path.exists("/app/data"):
+        db_path = "/app/data/quiz_database.db"
+    else:
+        db_path = os.path.join(BACKEND_DIR, "database", "quiz_database.db")
     return f"sqlite:///{db_path}"
 
 

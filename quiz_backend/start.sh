@@ -3,6 +3,13 @@
 
 set -e
 
+# Create data directory for Railway volume mounts if it doesn't exist
+if [ ! -d "/app/data" ]; then
+    echo "📁 Creating /app/data directory..."
+    mkdir -p /app/data
+    chown -R appuser:appuser /app/data 2>/dev/null || true
+fi
+
 echo "🚀 Running database migrations..."
 python run_migration.py
 

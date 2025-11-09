@@ -11,7 +11,11 @@ def _build_database_url() -> str:
             database_url = database_url.replace("postgres://", "postgresql://", 1)
         return database_url
 
-    db_path = os.path.abspath("quiz_database.db")
+    # Use /app/data directory for Railway volume mounts, fallback to current directory
+    if os.path.exists("/app/data"):
+        db_path = "/app/data/quiz_database.db"
+    else:
+        db_path = os.path.abspath("quiz_database.db")
     return f"sqlite:///{db_path}"
 
 
