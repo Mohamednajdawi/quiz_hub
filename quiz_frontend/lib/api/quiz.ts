@@ -47,5 +47,60 @@ export const quizApi = {
     const response = await apiClient.get(`/quiz/${topicId}`);
     return response.data;
   },
+
+  getShareCode: async (topicId: number): Promise<{ quiz_id: number; share_code: string | null; topic: string }> => {
+    const response = await apiClient.get(`/quiz/${topicId}/share-code`);
+    return response.data;
+  },
+
+  generateShareCode: async (topicId: number): Promise<{ quiz_id: number; share_code: string; topic: string }> => {
+    const response = await apiClient.post(`/quiz/${topicId}/generate-share-code`);
+    return response.data;
+  },
+
+  getQuizByShareCode: async (shareCode: string): Promise<QuizData & { quiz_id: number }> => {
+    const response = await apiClient.get(`/quiz/share/${shareCode}`);
+    return response.data;
+  },
+
+  submitSharedQuiz: async (
+    shareCode: string,
+    participantName: string,
+    userAnswers: number[],
+    timeTakenSeconds: number
+  ): Promise<{
+    message: string;
+    attempt_id: number;
+    score: number;
+    total_questions: number;
+    percentage_score: number;
+    timestamp: string;
+  }> => {
+    const response = await apiClient.post(`/quiz/share/${shareCode}/submit`, {
+      participant_name: participantName,
+      user_answers: userAnswers,
+      time_taken_seconds: timeTakenSeconds,
+    });
+    return response.data;
+  },
+
+  getSharedQuizResults: async (topicId: number): Promise<{
+    quiz_id: number;
+    quiz_topic: string;
+    share_code: string | null;
+    total_attempts: number;
+    attempts: Array<{
+      id: number;
+      participant_name: string;
+      timestamp: string;
+      score: number;
+      total_questions: number;
+      percentage_score: number;
+      time_taken_seconds: number;
+    }>;
+  }> => {
+    const response = await apiClient.get(`/quiz/${topicId}/shared-results`);
+    return response.data;
+  },
 };
 

@@ -97,6 +97,8 @@ class QuizTopic(Base):
     subcategory = Column(String, nullable=False)
     difficulty = Column(String, nullable=True)  # easy, medium, hard
     creation_timestamp = Column(DateTime, default=datetime.datetime.now)
+    created_by_user_id = Column(String(255), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    share_code = Column(String(6), unique=True, nullable=True)  # 6-digit shareable code
     questions = relationship("QuizQuestion", back_populates="topic")
     attempts = relationship("QuizAttempt", back_populates="topic")
 
@@ -136,6 +138,11 @@ class QuizAttempt(Base):
     difficulty_level = Column(String, nullable=True)  # easy, medium, hard
     source_type = Column(String, nullable=True)  # url, pdf, available
     source_info = Column(String, nullable=True)  # URL or filename
+    
+    # Shared quiz fields
+    is_shared_quiz = Column(Boolean, default=False)  # True if taken via share code
+    participant_name = Column(String, nullable=True)  # Name of participant (for shared quizzes)
+    share_code = Column(String(6), nullable=True)  # Share code used to take this quiz
     
     # Relationships
     user = relationship("User", back_populates="quiz_attempts")

@@ -28,6 +28,7 @@ export interface QuizData {
   category: string;
   subcategory: string;
   questions: QuizQuestion[];
+  quiz_id?: number; // Optional: included when quiz is created and stored in database
 }
 
 export interface FlashcardCard {

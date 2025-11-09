@@ -12,7 +12,7 @@ import { Alert } from '@/components/ui/Alert';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { quizApi } from '@/lib/api/quiz';
 import { useRouter } from 'next/navigation';
-import { Upload, Link as LinkIcon } from 'lucide-react';
+import { Upload, Link as LinkIcon, Key } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 
 function QuizzesPageContent() {
@@ -37,8 +37,13 @@ function QuizzesPageContent() {
       }
     },
     onSuccess: (data) => {
-      // Navigate to quiz taking page with the generated quiz data
-      router.push(`/quizzes/take?data=${encodeURIComponent(JSON.stringify(data))}`);
+      // If quiz has an ID, navigate to quiz detail page, otherwise go to take page
+      if (data.quiz_id) {
+        router.push(`/quizzes/${data.quiz_id}`);
+      } else {
+        // Navigate to quiz taking page with the generated quiz data
+        router.push(`/quizzes/take?data=${encodeURIComponent(JSON.stringify(data))}`);
+      }
     },
   });
 
@@ -185,8 +190,35 @@ function QuizzesPageContent() {
             </form>
           </Card>
 
+          {/* Share Quiz Entry Card - Prominent */}
+          <Card className="mt-8 bg-indigo-50 border-indigo-200">
+            <div className="px-6 py-6">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-12 h-12 bg-indigo-100 rounded-full flex items-center justify-center">
+                  <Key className="w-6 h-6 text-indigo-600" />
+                </div>
+                <div className="flex-1">
+                  <h3 className="text-lg font-semibold text-indigo-900">Take a Shared Quiz</h3>
+                  <p className="text-sm text-indigo-700">Enter a 6-digit code to take a quiz shared with you</p>
+                </div>
+              </div>
+              <Button
+                variant="primary"
+                onClick={() => router.push('/quizzes/share')}
+                className="w-full"
+                size="lg"
+              >
+                <Key className="w-5 h-5 mr-2" />
+                Enter Quiz Code
+              </Button>
+            </div>
+          </Card>
+
           <Card className="mt-8">
-            <CardHeader title={isAuthenticated ? "Available Quizzes" : "Recent Quizzes"} />
+            <CardHeader 
+              title={isAuthenticated ? "My Quizzes" : "Recent Quizzes"}
+              description={isAuthenticated ? "Quizzes you created and quizzes from your projects" : "Browse available quizzes"}
+            />
             
             {topicsLoading && (
               <div className="text-center py-8">

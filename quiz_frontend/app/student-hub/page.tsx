@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useRouter } from 'next/navigation';
 import { ProtectedRoute } from '@/components/ProtectedRoute';
 import { Layout } from '@/components/Layout';
 import { Card } from '@/components/ui/Card';
@@ -10,7 +11,7 @@ import { Input } from '@/components/ui/Input';
 import { Alert } from '@/components/ui/Alert';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import Link from 'next/link';
-import { Plus, FolderOpen, Trash2 } from 'lucide-react';
+import { Plus, FolderOpen, Trash2, Info, Crown } from 'lucide-react';
 import { studentProjectsApi, type StudentProject } from '@/lib/api/studentProjects';
 
 export default function StudentHubPage() {
@@ -23,6 +24,7 @@ export default function StudentHubPage() {
 
 function StudentHubContent() {
   const queryClient = useQueryClient();
+  const router = useRouter();
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -32,6 +34,9 @@ function StudentHubContent() {
     queryFn: studentProjectsApi.listProjects,
     retry: 1,
   });
+
+  const projectCount = projects?.length || 0;
+  const isAtFreeTierLimit = projectCount >= 3;
 
   const createMutation = useMutation({
     mutationFn: () => studentProjectsApi.createProject({ name, description }),
@@ -71,6 +76,36 @@ function StudentHubContent() {
             <Alert type="error" className="mb-6">
               {error || (queryError instanceof Error ? queryError.message : String(queryError))}
             </Alert>
+          )}
+
+          {/* Free Tier Limit Banner */}
+          {isAtFreeTierLimit && (
+            <div className="mb-6 rounded-md border border-indigo-200 bg-indigo-50 p-4">
+              <div className="flex items-start gap-3">
+                <Info className="w-5 h-5 text-indigo-600 flex-shrink-0 mt-0.5" />
+                <div className="flex-1">
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                    <div>
+                      <p className="font-medium text-indigo-900 mb-1">
+                        You've reached the free tier limit of 3 projects
+                      </p>
+                      <p className="text-sm text-indigo-700">
+                        Upgrade to Pro to create unlimited projects and unlock more features.
+                      </p>
+                    </div>
+                    <Button
+                      variant="primary"
+                      size="sm"
+                      onClick={() => router.push('/pricing')}
+                      className="flex-shrink-0"
+                    >
+                      <Crown className="w-4 h-4 mr-2" />
+                      Upgrade to Pro
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            </div>
           )}
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

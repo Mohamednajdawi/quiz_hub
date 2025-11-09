@@ -3,20 +3,36 @@ import shutil
 import tempfile
 import datetime
 import requests
+import random
+import string
 from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
 from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
+from pydantic import BaseModel
+from typing import Optional, List
 import logging
 
 from backend.api_routers.schemas import URLRequest
 from backend.database.db import get_db
-from backend.database.sqlite_dal import QuizQuestion, QuizTopic
+from backend.database.sqlite_dal import QuizQuestion, QuizTopic, QuizAttempt
 from backend.utils.utils import generate_quiz, generate_quiz_from_pdf
 from backend.api_routers.routers.auth_router import get_current_user_dependency
 from backend.database.sqlite_dal import User as UserModel
 from backend.utils.credits import consume_generation_token
 
 router = APIRouter()
+
+
+def generate_share_code(db: Session) -> str:
+    """Generate a unique 6-digit share code"""
+    max_attempts = 100
+    for _ in range(max_attempts):
+        code = ''.join(random.choices(string.digits, k=6))
+        # Check if code already exists
+        existing = db.query(QuizTopic).filter(QuizTopic.share_code == code).first()
+        if not existing:
+            return code
+    raise HTTPException(status_code=500, detail="Failed to generate unique share code")
 
 
 @router.post("/generate-quiz", tags=["Quiz"])
@@ -44,7 +60,8 @@ async def create_quiz(
             category=quiz_data["category"],
             subcategory=quiz_data["subcategory"],
             difficulty=request.difficulty,  # Store the difficulty level
-            creation_timestamp=datetime.datetime.now()
+            creation_timestamp=datetime.datetime.now(),
+            created_by_user_id=current_user.id
         )
         db.add(quiz_topic)
         db.flush()  # Get the ID of the newly created topic
@@ -61,8 +78,10 @@ async def create_quiz(
 
         consume_generation_token(db, current_user)
         db.commit()
+        # Add quiz_id to response
+        quiz_data_with_id = {**quiz_data, "quiz_id": quiz_topic.id}
         return JSONResponse(
-            content=quiz_data,
+            content=quiz_data_with_id,
             headers={"Content-Type": "application/json; charset=utf-8"}
         )
     except requests.exceptions.HTTPError as e:
@@ -156,7 +175,8 @@ async def create_quiz_from_pdf(
                     category=quiz_data["category"],
                     subcategory=quiz_data["subcategory"],
                     difficulty=difficulty,  # Store the difficulty level
-                    creation_timestamp=datetime.datetime.now()
+                    creation_timestamp=datetime.datetime.now(),
+                    created_by_user_id=current_user.id
                 )
                 db.add(quiz_topic)
                 db.flush()  # Get the ID of the newly created topic
@@ -170,7 +190,8 @@ async def create_quiz_from_pdf(
                     topic=quiz_data["topic"],
                     category=quiz_data["category"],
                     subcategory=quiz_data["subcategory"],
-                    creation_timestamp=datetime.datetime.now()
+                    creation_timestamp=datetime.datetime.now(),
+                    created_by_user_id=current_user.id
                 )
                 db.add(quiz_topic)
                 db.flush()  # Get the ID of the newly created topic
@@ -198,8 +219,10 @@ async def create_quiz_from_pdf(
 
             consume_generation_token(db, current_user)
             db.commit()
+            # Add quiz_id to response
+            quiz_data_with_id = {**quiz_data, "quiz_id": quiz_topic.id}
             return JSONResponse(
-                content=quiz_data,
+                content=quiz_data_with_id,
                 headers={"Content-Type": "application/json; charset=utf-8"}
             )
         finally:
@@ -239,8 +262,20 @@ async def get_my_quiz_topics(
     logging.warning(f"[QUIZ] Fetching user quizzes for user: {user_id}")
     
     quiz_topic_ids = set()
+    created_count = 0
+    project_count = 0
     
-    # 1. Get quizzes from user's projects
+    # 1. Get quizzes created by the user
+    try:
+        created_quizzes = db.query(QuizTopic).filter(QuizTopic.created_by_user_id == user_id).all()
+        created_count = len(created_quizzes)
+        quiz_topic_ids.update([quiz.id for quiz in created_quizzes])
+        logging.warning(f"[QUIZ] Found {created_count} quizzes created by user: {user_id}")
+    except Exception as e:
+        # Column might not exist yet (migration not run)
+        logging.warning(f"[QUIZ] Could not filter by created_by_user_id: {e}")
+    
+    # 2. Get quizzes from user's projects
     user_projects = db.query(StudentProject).filter(StudentProject.user_id == user_id).all()
     project_ids = [project.id for project in user_projects]
     
@@ -248,11 +283,11 @@ async def get_my_quiz_topics(
         quiz_references = db.query(StudentProjectQuizReference).filter(
             StudentProjectQuizReference.project_id.in_(project_ids)
         ).all()
+        project_count = len(quiz_references)
         quiz_topic_ids.update([ref.quiz_topic_id for ref in quiz_references])
+        logging.warning(f"[QUIZ] Found {project_count} quizzes from user's projects")
     
-    # 2. Get quizzes the user has attempted (directly generated quizzes)
-    quiz_attempts = db.query(QuizAttempt).filter(QuizAttempt.user_id == user_id).all()
-    quiz_topic_ids.update([attempt.topic_id for attempt in quiz_attempts])
+    # Note: We don't include quizzes from attempts anymore - users should only see quizzes they created
     
     if not quiz_topic_ids:
         logging.warning(f"[QUIZ] No quizzes found for user: {user_id}")
@@ -264,7 +299,7 @@ async def get_my_quiz_topics(
     # Get the quiz topics
     topics = db.query(QuizTopic).filter(QuizTopic.id.in_(quiz_topic_ids)).order_by(QuizTopic.creation_timestamp.desc()).all()
     
-    logging.warning(f"[QUIZ] Found {len(topics)} quizzes for user: {user_id} (from projects: {len(project_ids) if project_ids else 0}, from attempts: {len(quiz_attempts)})")
+    logging.warning(f"[QUIZ] Found {len(topics)} quizzes for user: {user_id} (created: {created_count}, from projects: {project_count})")
     
     return JSONResponse(
         content={
@@ -328,6 +363,253 @@ async def get_quiz(topic_id: int, db: Session = Depends(get_db)) -> JSONResponse
                 }
                 for q in questions
             ],
+        },
+        headers={"Content-Type": "application/json; charset=utf-8"}
+    )
+
+
+@router.get("/quiz/{topic_id}/share-code", tags=["Quiz"])
+async def get_share_code_for_quiz(
+    topic_id: int,
+    current_user: UserModel = Depends(get_current_user_dependency),
+    db: Session = Depends(get_db)
+) -> JSONResponse:
+    """Get the share code for a quiz if it exists"""
+    # Verify quiz exists
+    quiz = db.query(QuizTopic).filter(QuizTopic.id == topic_id).first()
+    if not quiz:
+        raise HTTPException(status_code=404, detail="Quiz not found")
+    
+    # Check if user is the creator OR has attempted the quiz
+    from backend.database.sqlite_dal import QuizAttempt
+    try:
+        is_creator = quiz.created_by_user_id == current_user.id if quiz.created_by_user_id else False
+    except AttributeError:
+        # Column doesn't exist yet (migration not run)
+        is_creator = False
+    
+    has_attempted = db.query(QuizAttempt).filter(
+        QuizAttempt.topic_id == topic_id,
+        QuizAttempt.user_id == current_user.id
+    ).first() is not None
+    
+    # Special handling for quiz 999 (URL/PDF quizzes) - allow if user has attempted
+    is_special_quiz = topic_id == 999
+    
+    if not is_creator and not has_attempted and not is_special_quiz:
+        raise HTTPException(
+            status_code=403,
+            detail="You can only view share codes for quizzes you created or have attempted"
+        )
+    
+    return JSONResponse(
+        content={
+            "quiz_id": quiz.id,
+            "share_code": quiz.share_code,
+            "topic": quiz.topic
+        },
+        headers={"Content-Type": "application/json; charset=utf-8"}
+    )
+
+
+@router.post("/quiz/{topic_id}/generate-share-code", tags=["Quiz"])
+async def generate_share_code_for_quiz(
+    topic_id: int,
+    current_user: UserModel = Depends(get_current_user_dependency),
+    db: Session = Depends(get_db)
+) -> JSONResponse:
+    """Generate a 6-digit share code for a quiz"""
+    # Verify quiz exists
+    quiz = db.query(QuizTopic).filter(QuizTopic.id == topic_id).first()
+    if not quiz:
+        raise HTTPException(status_code=404, detail="Quiz not found")
+    
+    # Check if user is the creator OR has attempted the quiz
+    from backend.database.sqlite_dal import QuizAttempt
+    try:
+        is_creator = quiz.created_by_user_id == current_user.id if quiz.created_by_user_id else False
+    except AttributeError:
+        # Column doesn't exist yet (migration not run)
+        is_creator = False
+    
+    has_attempted = db.query(QuizAttempt).filter(
+        QuizAttempt.topic_id == topic_id,
+        QuizAttempt.user_id == current_user.id
+    ).first() is not None
+    
+    # Special handling for quiz 999 (URL/PDF quizzes) - allow if user has attempted
+    is_special_quiz = topic_id == 999
+    
+    if not is_creator and not has_attempted and not is_special_quiz:
+        raise HTTPException(
+            status_code=403,
+            detail="You can only generate share codes for quizzes you created or have attempted"
+        )
+    
+    # Generate new code if one doesn't exist
+    if not quiz.share_code:
+        quiz.share_code = generate_share_code(db)
+        db.commit()
+        db.refresh(quiz)
+    
+    return JSONResponse(
+        content={
+            "quiz_id": quiz.id,
+            "share_code": quiz.share_code,
+            "topic": quiz.topic
+        },
+        headers={"Content-Type": "application/json; charset=utf-8"}
+    )
+
+
+@router.get("/quiz/share/{share_code}", tags=["Quiz"])
+async def get_quiz_by_share_code(
+    share_code: str,
+    db: Session = Depends(get_db)
+) -> JSONResponse:
+    """Get a quiz by its 6-digit share code (no authentication required)"""
+    if len(share_code) != 6 or not share_code.isdigit():
+        raise HTTPException(status_code=400, detail="Invalid share code format")
+    
+    quiz = db.query(QuizTopic).filter(QuizTopic.share_code == share_code).first()
+    if not quiz:
+        raise HTTPException(status_code=404, detail="Quiz not found")
+    
+    questions = db.query(QuizQuestion).filter(QuizQuestion.topic_id == quiz.id).all()
+    return JSONResponse(
+        content={
+            "quiz_id": quiz.id,
+            "topic": quiz.topic,
+            "category": quiz.category,
+            "subcategory": quiz.subcategory,
+            "difficulty": quiz.difficulty,
+            "creation_timestamp": quiz.creation_timestamp.isoformat() if quiz.creation_timestamp else None,
+            "questions": [
+                {
+                    "question": q.question,
+                    "options": q.options,
+                    "right_option": q.right_option,
+                }
+                for q in questions
+            ],
+        },
+        headers={"Content-Type": "application/json; charset=utf-8"}
+    )
+
+
+class SharedQuizSubmission(BaseModel):
+    participant_name: str
+    user_answers: List[int]
+    time_taken_seconds: int
+
+
+@router.post("/quiz/share/{share_code}/submit", tags=["Quiz"])
+async def submit_shared_quiz(
+    share_code: str,
+    submission: SharedQuizSubmission,
+    db: Session = Depends(get_db)
+) -> JSONResponse:
+    """Submit a quiz attempt using a share code (no authentication required)"""
+    if len(share_code) != 6 or not share_code.isdigit():
+        raise HTTPException(status_code=400, detail="Invalid share code format")
+    
+    # Find quiz by share code
+    quiz = db.query(QuizTopic).filter(QuizTopic.share_code == share_code).first()
+    if not quiz:
+        raise HTTPException(status_code=404, detail="Quiz not found")
+    
+    # Get questions to validate answers
+    questions = db.query(QuizQuestion).filter(QuizQuestion.topic_id == quiz.id).all()
+    if len(submission.user_answers) != len(questions):
+        raise HTTPException(status_code=400, detail="Number of answers does not match number of questions")
+    
+    # Calculate score
+    correct_answers = []
+    user_answers = submission.user_answers
+    score = 0
+    
+    for i, question in enumerate(questions):
+        correct_answer = int(question.right_option) if question.right_option.isdigit() else ord(question.right_option.lower()) - ord('a')
+        correct_answers.append(correct_answer)
+        if i < len(user_answers) and user_answers[i] == correct_answer:
+            score += 1
+    
+    total_questions = len(questions)
+    percentage_score = (score / total_questions) * 100 if total_questions > 0 else 0
+    
+    # Create quiz attempt
+    quiz_attempt = QuizAttempt(
+        user_id=None,  # No user for shared quizzes
+        topic_id=quiz.id,
+        score=score,
+        total_questions=total_questions,
+        time_taken_seconds=submission.time_taken_seconds,
+        percentage_score=percentage_score,
+        user_answers=user_answers,
+        correct_answers=correct_answers,
+        difficulty_level=quiz.difficulty,
+        is_shared_quiz=True,
+        participant_name=submission.participant_name,
+        share_code=share_code
+    )
+    
+    db.add(quiz_attempt)
+    db.commit()
+    db.refresh(quiz_attempt)
+    
+    return JSONResponse(
+        content={
+            "message": "Quiz submitted successfully",
+            "attempt_id": quiz_attempt.id,
+            "score": score,
+            "total_questions": total_questions,
+            "percentage_score": round(percentage_score, 2),
+            "timestamp": quiz_attempt.timestamp.isoformat()
+        },
+        status_code=201
+    )
+
+
+@router.get("/quiz/{topic_id}/shared-results", tags=["Quiz"])
+async def get_shared_quiz_results(
+    topic_id: int,
+    current_user: UserModel = Depends(get_current_user_dependency),
+    db: Session = Depends(get_db)
+) -> JSONResponse:
+    """Get all shared quiz results for a quiz (only accessible by creator)"""
+    # Verify quiz exists and belongs to user
+    quiz = db.query(QuizTopic).filter(QuizTopic.id == topic_id).first()
+    if not quiz:
+        raise HTTPException(status_code=404, detail="Quiz not found")
+    
+    # Check if user is the creator
+    if quiz.created_by_user_id != current_user.id:
+        raise HTTPException(status_code=403, detail="You can only view results for quizzes you created")
+    
+    # Get all shared quiz attempts
+    attempts = db.query(QuizAttempt).filter(
+        QuizAttempt.topic_id == topic_id,
+        QuizAttempt.is_shared_quiz == True
+    ).order_by(QuizAttempt.timestamp.desc()).all()
+    
+    return JSONResponse(
+        content={
+            "quiz_id": quiz.id,
+            "quiz_topic": quiz.topic,
+            "share_code": quiz.share_code,
+            "total_attempts": len(attempts),
+            "attempts": [
+                {
+                    "id": attempt.id,
+                    "participant_name": attempt.participant_name,
+                    "timestamp": attempt.timestamp.isoformat(),
+                    "score": attempt.score,
+                    "total_questions": attempt.total_questions,
+                    "percentage_score": round(attempt.percentage_score, 2),
+                    "time_taken_seconds": attempt.time_taken_seconds,
+                }
+                for attempt in attempts
+            ]
         },
         headers={"Content-Type": "application/json; charset=utf-8"}
     )

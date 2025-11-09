@@ -43,15 +43,13 @@ pricing:
       features:
         - "Unlimited AI generations and chats"
         - "Unlimited projects in Student Hub"
-        - "Export flashcards to Anki format"
-        - "PDF annotation & highlighting"
+        - "Export Flashcards to Anki format"
+        - "Export Quizzes and Essays to PDF format"
         - "Spaced repetition algorithm for flashcards"
-        - "Priority queue during peak times (8-10pm exam periods)"
         - "Advanced analytics and progress tracking"
-        - "Priority support with 1 business day response time"
         - "Early access to new features"
       cta:
-        label: "Subscribe"
+        label: "Get Pro"
         href: "/pricing"
         variant: "primary"
       highlighted: true

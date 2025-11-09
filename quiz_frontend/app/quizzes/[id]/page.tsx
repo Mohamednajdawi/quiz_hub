@@ -1,6 +1,7 @@
 'use client';
 
-import { useQuery } from '@tanstack/react-query';
+import { useState, useEffect } from 'react';
+import { useQuery, useMutation } from '@tanstack/react-query';
 import { useParams, useRouter } from 'next/navigation';
 import { ProtectedRoute } from '@/components/ProtectedRoute';
 import { Layout } from '@/components/Layout';
@@ -9,17 +10,60 @@ import { Button } from '@/components/ui/Button';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { Alert } from '@/components/ui/Alert';
 import { quizApi } from '@/lib/api/quiz';
+import { Share2, Copy, Check, BarChart3 } from 'lucide-react';
 
 function QuizDetailPageContent() {
   const params = useParams();
   const router = useRouter();
   const quizId = parseInt(params.id as string);
+  const [shareCode, setShareCode] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
 
   const { data: quiz, isLoading, error } = useQuery({
     queryKey: ['quiz', quizId],
     queryFn: () => quizApi.getQuiz(quizId),
     enabled: !isNaN(quizId),
   });
+
+  // Try to get existing share code if quiz has one
+  const { data: existingCodeData } = useQuery({
+    queryKey: ['quiz-share-code', quizId],
+    queryFn: async () => {
+      try {
+        return await quizApi.getShareCode(quizId);
+      } catch (e) {
+        // Silently fail - user might not have permission or code doesn't exist
+        return null;
+      }
+    },
+    enabled: !isNaN(quizId) && !!quiz,
+    retry: false,
+  });
+
+  useEffect(() => {
+    if (existingCodeData?.share_code) {
+      setShareCode(existingCodeData.share_code);
+    }
+  }, [existingCodeData]);
+
+  const generateCodeMutation = useMutation({
+    mutationFn: () => quizApi.generateShareCode(quizId),
+    onSuccess: (data) => {
+      setShareCode(data.share_code);
+    },
+    onError: (error: any) => {
+      console.error('Error generating share code:', error);
+      alert(error?.response?.data?.detail || error?.message || 'Failed to generate share code');
+    },
+  });
+
+  const copyToClipboard = () => {
+    if (shareCode) {
+      navigator.clipboard.writeText(shareCode);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
+  };
 
   if (isLoading) {
     return (
@@ -85,6 +129,74 @@ function QuizDetailPageContent() {
                 </div>
               </div>
             ))}
+          </div>
+
+          {/* Share Code Section */}
+          <div className="mb-6 p-4 bg-indigo-50 border border-indigo-200 rounded-lg">
+            <div className="flex items-center justify-between">
+              <div className="flex-1">
+                <h3 className="font-semibold text-indigo-900 mb-2 flex items-center gap-2">
+                  <Share2 className="w-5 h-5" />
+                  Share This Quiz
+                </h3>
+                {shareCode ? (
+                  <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-2">
+                      <span className="text-2xl font-bold text-indigo-900 font-mono">{shareCode}</span>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={copyToClipboard}
+                        className="flex items-center gap-2"
+                      >
+                        {copied ? (
+                          <>
+                            <Check className="w-4 h-4" />
+                            Copied!
+                          </>
+                        ) : (
+                          <>
+                            <Copy className="w-4 h-4" />
+                            Copy
+                          </>
+                        )}
+                      </Button>
+                    </div>
+                    <p className="text-sm text-indigo-700">
+                      Share this code with others to let them take your quiz
+                    </p>
+                  </div>
+                ) : (
+                  <div>
+                    <p className="text-sm text-indigo-700 mb-3">
+                      Generate a 6-digit code to share this quiz with others
+                    </p>
+                    <Button
+                      variant="primary"
+                      size="sm"
+                      onClick={() => generateCodeMutation.mutate()}
+                      isLoading={generateCodeMutation.isPending}
+                    >
+                      <Share2 className="w-4 h-4 mr-2" />
+                      Generate Share Code
+                    </Button>
+                  </div>
+                )}
+              </div>
+            </div>
+            {shareCode && (
+              <div className="mt-4 pt-4 border-t border-indigo-200">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => router.push(`/quizzes/${quizId}/results`)}
+                  className="flex items-center gap-2"
+                >
+                  <BarChart3 className="w-4 h-4" />
+                  View Results
+                </Button>
+              </div>
+            )}
           </div>
 
           <div className="flex gap-4">
