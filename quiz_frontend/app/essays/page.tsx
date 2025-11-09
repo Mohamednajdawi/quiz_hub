@@ -10,6 +10,7 @@ import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
 import { Alert } from '@/components/ui/Alert';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
+import { LimitReachedModal } from '@/components/LimitReachedModal';
 import { essayApi } from '@/lib/api/essay';
 import { useRouter } from 'next/navigation';
 import { Upload, Link as LinkIcon } from 'lucide-react';
@@ -22,6 +23,12 @@ function EssaysPageContent() {
   const [file, setFile] = useState<File | null>(null);
   const [numQuestions, setNumQuestions] = useState(3);
   const [difficulty, setDifficulty] = useState<'easy' | 'medium' | 'hard'>('medium');
+  const [showLimitModal, setShowLimitModal] = useState(false);
+
+  const { isAuthenticated, user } = useAuth();
+  
+  // Check if user has reached their free token limit
+  const hasReachedLimit = user && typeof user.free_tokens === 'number' && user.free_tokens === 0;
 
   const generateMutation = useMutation({
     mutationFn: async () => {
@@ -39,9 +46,13 @@ function EssaysPageContent() {
     onSuccess: (data) => {
       router.push(`/essays/view?data=${encodeURIComponent(JSON.stringify(data))}`);
     },
+    onError: (error: any) => {
+      // Check if it's a payment required error (402) or token limit error
+      if (error?.response?.status === 402 || error?.message?.toLowerCase().includes('payment') || error?.message?.toLowerCase().includes('upgrade')) {
+        setShowLimitModal(true);
+      }
+    },
   });
-
-  const { isAuthenticated } = useAuth();
   
   // Get user's essays if authenticated, otherwise get all essays
   const { data: topics, error: topicsError, isLoading: topicsLoading } = useQuery({
@@ -67,11 +78,25 @@ function EssaysPageContent() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Check if user has reached limit before submitting
+    if (hasReachedLimit) {
+      setShowLimitModal(true);
+      return;
+    }
+    
     generateMutation.mutate();
   };
 
   return (
     <Layout>
+      {/* Limit Reached Modal */}
+      <LimitReachedModal
+        isOpen={showLimitModal}
+        onClose={() => setShowLimitModal(false)}
+        contentType="essay"
+      />
+
       <div className="px-4 sm:px-6 lg:px-8">
         <div className="max-w-3xl mx-auto">
           <h1 className="text-3xl font-bold text-gray-900 mb-8">Create Essay Q&A</h1>
