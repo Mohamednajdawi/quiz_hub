@@ -2,6 +2,12 @@ import axios from 'axios';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
+// Debug: Log the API URL (only in browser, not during SSR)
+if (typeof window !== 'undefined') {
+  console.log('[API Client] Using API URL:', API_BASE_URL);
+  console.log('[API Client] NEXT_PUBLIC_API_URL env var:', process.env.NEXT_PUBLIC_API_URL);
+}
+
 export const apiClient = axios.create({
   baseURL: API_BASE_URL,
   timeout: 30000, // 30 second timeout
