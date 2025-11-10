@@ -471,6 +471,110 @@ function ContentItem({
   );
 }
 
+// Settings Modal Component
+function SettingsModal({
+  isOpen,
+  onClose,
+  numQuestions,
+  setNumQuestions,
+  numCards,
+  setNumCards,
+  difficulty,
+  setDifficulty,
+}: {
+  isOpen: boolean;
+  onClose: () => void;
+  numQuestions: number;
+  setNumQuestions: (value: number) => void;
+  numCards: number;
+  setNumCards: (value: number) => void;
+  difficulty: 'easy' | 'medium' | 'hard';
+  setDifficulty: (value: 'easy' | 'medium' | 'hard') => void;
+}) {
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 z-50 overflow-y-auto">
+      <div className="flex min-h-screen items-center justify-center p-4">
+        {/* Backdrop */}
+        <div
+          className="fixed inset-0 bg-black bg-opacity-50 transition-opacity"
+          onClick={onClose}
+        />
+        {/* Modal */}
+        <div className="relative bg-white rounded-lg shadow-xl max-w-md w-full p-6">
+          {/* Header */}
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2">
+              <Settings className="w-5 h-5 text-indigo-600" />
+              <h2 className="text-xl font-semibold text-gray-900">Generation Settings</h2>
+            </div>
+            <button
+              onClick={onClose}
+              className="text-gray-400 hover:text-gray-500 transition-colors"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
+          {/* Content */}
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Number of Questions
+              </label>
+              <Input 
+                type="number" 
+                min={1}
+                max={20}
+                value={numQuestions} 
+                onChange={(e) => setNumQuestions(parseInt(e.target.value || '5', 10))} 
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Number of Flashcards
+              </label>
+              <Input 
+                type="number" 
+                min={1}
+                max={50}
+                value={numCards} 
+                onChange={(e) => setNumCards(parseInt(e.target.value || '10', 10))} 
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Difficulty Level
+              </label>
+              <select
+                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                value={difficulty}
+                onChange={(e) => setDifficulty(e.target.value as 'easy' | 'medium' | 'hard')}
+              >
+                <option value="easy">Easy</option>
+                <option value="medium">Medium</option>
+                <option value="hard">Hard</option>
+              </select>
+            </div>
+            <div className="pt-2 border-t border-gray-100">
+              <div className="flex items-start gap-2 text-xs text-gray-600">
+                <HelpCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
+                <p>These settings apply to all generation actions. Adjust before generating content.</p>
+              </div>
+            </div>
+          </div>
+          {/* Footer */}
+          <div className="flex justify-end mt-6">
+            <Button variant="primary" onClick={onClose}>
+              Done
+            </Button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function ProjectDetailContent() {
   const params = useParams();
   const router = useRouter();
@@ -483,6 +587,8 @@ function ProjectDetailContent() {
   const [difficulty, setDifficulty] = useState<'easy' | 'medium' | 'hard'>('medium');
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  const [showProjectMenu, setShowProjectMenu] = useState(false);
+  const [showSettingsModal, setShowSettingsModal] = useState(false);
 
   const { data: project, isLoading: projectLoading } = useQuery<StudentProject>({
     queryKey: ['student-project', projectId],
@@ -638,26 +744,64 @@ function ProjectDetailContent() {
                     Chat with PDFs
                   </Button>
                 </Link>
-                <Button 
-                  variant="outline" 
-                  size="lg"
-                  onClick={() => {
-                    if (confirm(`Are you sure you want to delete the project "${project?.name}"? This will delete all PDFs, quizzes, flashcards, and essays in this project. This action cannot be undone.`)) {
-                      deleteProjectMutation.mutate();
-                    }
-                  }}
-                  isLoading={deleteProjectMutation.isPending}
-                  className="text-red-600 hover:text-red-700 hover:border-red-300"
-                >
-                  <Trash2 className="w-4 h-4 mr-2" />
-                  Delete Project
-                </Button>
+                {/* Project Menu */}
+                <div className="relative project-menu">
+                  <Button 
+                    variant="outline" 
+                    size="lg"
+                    onClick={() => setShowProjectMenu(!showProjectMenu)}
+                    className="flex items-center p-2"
+                    title="Project options"
+                  >
+                    <MoreVertical className="w-5 h-5" />
+                  </Button>
+                  {showProjectMenu && (
+                    <div className="absolute right-0 mt-1 w-56 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-10">
+                      <button
+                        onClick={() => {
+                          setShowSettingsModal(true);
+                          setShowProjectMenu(false);
+                        }}
+                        className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2"
+                      >
+                        <Settings className="w-4 h-4" />
+                        Generation Settings
+                      </button>
+                      <div className="border-t border-gray-100 my-1" />
+                      <button
+                        onClick={() => {
+                          setShowProjectMenu(false);
+                          if (confirm(`Are you sure you want to delete the project "${project?.name}"? This will delete all PDFs, quizzes, flashcards, and essays in this project. This action cannot be undone.`)) {
+                            deleteProjectMutation.mutate();
+                          }
+                        }}
+                        disabled={deleteProjectMutation.isPending}
+                        className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 flex items-center gap-2 disabled:opacity-50"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                        {deleteProjectMutation.isPending ? 'Deleting...' : 'Delete Project'}
+                      </button>
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
           </div>
 
           {error && <Alert type="error" className="mb-6">{error}</Alert>}
           {success && <Alert type="success" className="mb-6">{success}</Alert>}
+
+          {/* Settings Modal */}
+          <SettingsModal
+            isOpen={showSettingsModal}
+            onClose={() => setShowSettingsModal(false)}
+            numQuestions={numQuestions}
+            setNumQuestions={setNumQuestions}
+            numCards={numCards}
+            setNumCards={setNumCards}
+            difficulty={difficulty}
+            setDifficulty={setDifficulty}
+          />
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {/* Sidebar - Upload & Settings */}
@@ -723,60 +867,6 @@ function ProjectDetailContent() {
                     <Upload className="w-4 h-4 mr-2" />
                     Upload {files.length > 1 ? `${files.length} PDFs` : 'PDF'}
                   </Button>
-                </div>
-              </Card>
-
-              {/* Generation Settings */}
-              <Card>
-                <div className="flex items-center gap-2 mb-4">
-                  <Settings className="w-5 h-5 text-indigo-600" />
-                  <h3 className="text-lg font-semibold text-gray-900">Generation Settings</h3>
-                </div>
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Number of Questions
-                    </label>
-                    <Input 
-                      type="number" 
-                      min={1}
-                      max={20}
-                      value={numQuestions} 
-                      onChange={(e) => setNumQuestions(parseInt(e.target.value || '5', 10))} 
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Number of Flashcards
-                    </label>
-                    <Input 
-                      type="number" 
-                      min={1}
-                      max={50}
-                      value={numCards} 
-                      onChange={(e) => setNumCards(parseInt(e.target.value || '10', 10))} 
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Difficulty Level
-                    </label>
-                    <select
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                      value={difficulty}
-                      onChange={(e) => setDifficulty(e.target.value as any)}
-                    >
-                      <option value="easy">Easy</option>
-                      <option value="medium">Medium</option>
-                      <option value="hard">Hard</option>
-                    </select>
-                  </div>
-                  <div className="pt-2 border-t border-gray-100">
-                    <div className="flex items-start gap-2 text-xs text-gray-600">
-                      <HelpCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
-                      <p>These settings apply to all generation actions. Adjust before generating content.</p>
-                    </div>
-                  </div>
                 </div>
               </Card>
             </div>
