@@ -32,6 +32,9 @@ HOST=0.0.0.0
 PORT=8000
 DEBUG=True
 
+# Database file override (optional, for SQLite deployments)
+# DATABASE_SQLITE_PATH=/app/data/quiz_database.db
+
 # CORS Configuration
 # Comma-separated list of allowed origins (e.g., "https://example.com,https://app.example.com")
 # If not set, allows all origins but disables credentials (development mode)

@@ -1,12 +1,12 @@
+import logging
 import os
 import sys
+from pathlib import Path
 
 from logging.config import fileConfig
 
 from sqlalchemy import create_engine
 from sqlalchemy import pool
-from sqlalchemy.engine import Connection
-
 from alembic import context
 
 # Ensure the backend package is importable
@@ -31,14 +31,40 @@ def get_database_url() -> str:
     if env_url:
         if env_url.startswith("postgres://"):
             env_url = env_url.replace("postgres://", "postgresql://", 1)
+        logging.info("[Alembic] Using DATABASE_URL from environment: %s", env_url)
         return env_url
 
-    # Use /app/data directory for Railway volume mounts, fallback to default location
-    if os.path.exists("/app/data"):
-        db_path = "/app/data/quiz_database.db"
-    else:
-        db_path = os.path.join(BACKEND_DIR, "database", "quiz_database.db")
-    return f"sqlite:///{db_path}"
+    default_filename = "quiz_database.db"
+    candidates = []
+
+    env_sqlite_path = os.getenv("DATABASE_SQLITE_PATH")
+    if env_sqlite_path:
+        candidates.append(Path(env_sqlite_path))
+
+    railway_dir = Path("/app/data")
+    if railway_dir.is_dir():
+        candidates.append(railway_dir / default_filename)
+
+    candidates.append(Path(BACKEND_DIR) / "database" / default_filename)
+
+    for candidate in candidates:
+        try:
+            candidate.parent.mkdir(parents=True, exist_ok=True)
+        except PermissionError:
+            logging.warning("[Alembic] Permission denied creating directory for %s", candidate)
+            continue
+        except OSError as exc:
+            logging.warning("[Alembic] Unable to create directory for %s: %s", candidate, exc)
+            continue
+        if os.access(candidate.parent, os.W_OK):
+            logging.info("[Alembic] Using SQLite database at %s", candidate)
+            return f"sqlite:///{candidate}"
+        logging.warning("[Alembic] Directory %s is not writable", candidate.parent)
+
+    raise RuntimeError(
+        "Alembic could not locate a writable SQLite database path. "
+        "Set DATABASE_URL or DATABASE_SQLITE_PATH to a writable path."
+    )
 
 
 def run_migrations_offline() -> None:

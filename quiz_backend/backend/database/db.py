@@ -1,4 +1,6 @@
+import logging
 import os
+from pathlib import Path
 
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
@@ -9,17 +11,48 @@ def _build_database_url() -> str:
     if database_url:
         if database_url.startswith("postgres://"):
             database_url = database_url.replace("postgres://", "postgresql://", 1)
+        logging.info("[DB] Using DATABASE_URL from environment: %s", database_url)
         return database_url
 
-    # Use /app/data directory for Railway volume mounts, fallback to current directory
-    data_dir = "/app/data"
-    if os.path.exists(data_dir) and os.access(data_dir, os.W_OK):
-        # Directory exists and is writable
-        db_path = "/app/data/quiz_database.db"
-    else:
-        # Fallback to current directory
-        db_path = os.path.abspath("quiz_database.db")
-    return f"sqlite:///{db_path}"
+    # Determine SQLite database location
+    default_filename = "quiz_database.db"
+
+    def _ensure_parent(path: Path) -> bool:
+        try:
+            path.parent.mkdir(parents=True, exist_ok=True)
+        except PermissionError:
+            logging.warning("[DB] Permission denied creating directory for %s", path)
+            return False
+        except OSError as exc:
+            logging.warning("[DB] Unable to create directory for %s: %s", path, exc)
+            return False
+        if os.access(path.parent, os.W_OK):
+            return True
+        logging.warning("[DB] Directory %s is not writable", path.parent)
+        return False
+
+    candidates = []
+
+    env_sqlite_path = os.getenv("DATABASE_SQLITE_PATH")
+    if env_sqlite_path:
+        candidates.append(Path(env_sqlite_path))
+
+    railway_dir = Path("/app/data")
+    if railway_dir.is_dir():
+        candidates.append(railway_dir / default_filename)
+
+    candidates.append(Path(default_filename).absolute())
+
+    for candidate in candidates:
+        if _ensure_parent(candidate):
+            sqlite_url = f"sqlite:///{candidate}"
+            logging.info("[DB] Using SQLite database at %s", candidate)
+            return sqlite_url
+
+    raise RuntimeError(
+        "Unable to determine writable location for SQLite database. "
+        "Set DATABASE_URL or DATABASE_SQLITE_PATH to a writable path."
+    )
 
 
 engine = create_engine(
