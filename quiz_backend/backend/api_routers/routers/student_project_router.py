@@ -1,7 +1,7 @@
 import logging
 import os
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, FileResponse
 from sqlalchemy.orm import Session
 from typing import List, Optional
 import datetime
@@ -495,6 +495,50 @@ async def add_project_content(
             },
             status_code=201
         )
+
+
+@router.get("/student-projects/{project_id}/content/{content_id}/view", tags=["Student Projects"])
+async def view_project_content(
+    project_id: int,
+    content_id: int,
+    current_user: UserModel = Depends(get_current_user_dependency),
+    db: Session = Depends(get_db)
+) -> FileResponse:
+    """Serve PDF file for viewing"""
+    user_id = current_user.id
+    
+    # Verify the project exists and belongs to the user
+    project = db.query(StudentProject).filter(
+        StudentProject.id == project_id,
+        StudentProject.user_id == user_id
+    ).first()
+    
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+    
+    # Get the content
+    content = db.query(StudentProjectContent).filter(
+        StudentProjectContent.id == content_id,
+        StudentProjectContent.project_id == project_id
+    ).first()
+    
+    if not content:
+        raise HTTPException(status_code=404, detail="Content not found")
+    
+    if content.content_type != 'pdf':
+        raise HTTPException(status_code=400, detail="Content is not a PDF file")
+    
+    if not content.content_url or not os.path.exists(content.content_url):
+        raise HTTPException(status_code=404, detail="PDF file not found on server")
+    
+    return FileResponse(
+        path=content.content_url,
+        media_type='application/pdf',
+        filename=content.name or 'document.pdf',
+        headers={
+            'Content-Disposition': f'inline; filename="{content.name or "document.pdf"}"'
+        }
+    )
 
 
 @router.delete("/student-projects/{project_id}/content/{content_id}", tags=["Student Projects"])

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { ProtectedRoute } from '@/components/ProtectedRoute';
@@ -10,9 +10,10 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Alert } from '@/components/ui/Alert';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
-import { ArrowLeft, Upload, FileText, Settings, HelpCircle, BookOpen, FileQuestion, PenTool, Sparkles, ChevronDown, ChevronUp, MessageSquare, Trash2 } from 'lucide-react';
+import { ArrowLeft, Upload, FileText, Settings, HelpCircle, BookOpen, FileQuestion, PenTool, Sparkles, ChevronDown, ChevronUp, MessageSquare, Trash2, Eye, X } from 'lucide-react';
 import Link from 'next/link';
 import { studentProjectsApi, type StudentProject, type ProjectContent } from '@/lib/api/studentProjects';
+import { apiClient } from '@/lib/api/client';
 import { format } from 'date-fns';
 import { quizApi } from '@/lib/api/quiz';
 import { flashcardApi } from '@/lib/api/flashcards';
@@ -81,6 +82,8 @@ function ContentItem({
 }) {
   const router = useRouter();
   const [expanded, setExpanded] = useState(false);
+  const [showPdfViewer, setShowPdfViewer] = useState(false);
+  const [pdfUrl, setPdfUrl] = useState<string | null>(null);
   const queryClient = useQueryClient();
 
   const { data: generatedContent, isLoading: loadingGenerated } = useQuery<GeneratedContent>({
@@ -121,6 +124,15 @@ function ContentItem({
     generatedContent.flashcards.length > 0 || 
     generatedContent.essays.length > 0
   );
+
+  // Cleanup blob URL on unmount
+  useEffect(() => {
+    return () => {
+      if (pdfUrl) {
+        URL.revokeObjectURL(pdfUrl);
+      }
+    };
+  }, [pdfUrl]);
 
   return (
     <Card className="hover:shadow-md transition-shadow">
@@ -182,16 +194,44 @@ function ContentItem({
               Essay
             </Button>
             {content.content_type === 'pdf' && (
-              <Link href={`/student-hub/${projectId}/chat?contentId=${content.id}`}>
+              <>
                 <Button 
                   variant="outline" 
                   size="sm"
+                  onClick={async () => {
+                    try {
+                      // Fetch PDF as blob with authentication
+                      const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+                      const baseUrl = apiClient.defaults.baseURL?.replace(/\/$/, '') || '';
+                      const response = await fetch(`${baseUrl}/student-projects/${projectId}/content/${content.id}/view`, {
+                        headers: token ? { Authorization: `Bearer ${token}` } : {},
+                      });
+                      if (!response.ok) throw new Error('Failed to load PDF');
+                      const blob = await response.blob();
+                      const url = URL.createObjectURL(blob);
+                      setPdfUrl(url);
+                      setShowPdfViewer(true);
+                    } catch (error) {
+                      console.error('Failed to load PDF:', error);
+                      alert('Failed to load PDF. Please try again.');
+                    }
+                  }}
                   className="flex items-center gap-1"
                 >
-                  <MessageSquare className="w-4 h-4" />
-                  Chat
+                  <Eye className="w-4 h-4" />
+                  View
                 </Button>
-              </Link>
+                <Link href={`/student-hub/${projectId}/chat?contentId=${content.id}`}>
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    className="flex items-center gap-1"
+                  >
+                    <MessageSquare className="w-4 h-4" />
+                    Chat
+                  </Button>
+                </Link>
+              </>
             )}
             <Button 
               variant="outline" 
@@ -322,6 +362,58 @@ function ContentItem({
           )}
         </div>
       </div>
+
+      {/* PDF Viewer Modal */}
+      {content.content_type === 'pdf' && (
+        <div className={showPdfViewer ? 'fixed inset-0 z-50 overflow-y-auto' : 'hidden'}>
+          <div className="flex min-h-screen items-center justify-center p-4">
+            {/* Backdrop */}
+            <div
+              className="fixed inset-0 bg-black bg-opacity-50 transition-opacity"
+              onClick={() => {
+                setShowPdfViewer(false);
+                if (pdfUrl) {
+                  URL.revokeObjectURL(pdfUrl);
+                  setPdfUrl(null);
+                }
+              }}
+            />
+            {/* Modal */}
+            <div className="relative bg-white rounded-lg shadow-xl max-w-7xl w-full p-6" style={{ maxHeight: '90vh' }}>
+              {/* Header */}
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-xl font-semibold text-gray-900 truncate">{content.name || 'PDF Viewer'}</h2>
+                <button
+                  onClick={() => {
+                    setShowPdfViewer(false);
+                    if (pdfUrl) {
+                      URL.revokeObjectURL(pdfUrl);
+                      setPdfUrl(null);
+                    }
+                  }}
+                  className="text-gray-400 hover:text-gray-500 transition-colors flex-shrink-0 ml-4"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+              {/* PDF Content */}
+              <div className="w-full" style={{ height: 'calc(90vh - 100px)' }}>
+                {pdfUrl ? (
+                  <iframe
+                    src={pdfUrl}
+                    className="w-full h-full border border-gray-200 rounded-lg"
+                    title={content.name || 'PDF Document'}
+                  />
+                ) : (
+                  <div className="flex items-center justify-center h-full">
+                    <LoadingSpinner />
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </Card>
   );
 }
