@@ -68,6 +68,7 @@ function ContentItem({
   isGeneratingFlashcards,
   isGeneratingEssays,
   isDeletingContent,
+  generationMessage,
 }: {
   content: ProjectContent;
   projectId: number;
@@ -79,6 +80,7 @@ function ContentItem({
   isGeneratingFlashcards: boolean;
   isGeneratingEssays: boolean;
   isDeletingContent: boolean;
+  generationMessage: string;
 }) {
   const router = useRouter();
   const [expanded, setExpanded] = useState(false);
@@ -226,33 +228,33 @@ function ContentItem({
                       onGenerateQuiz();
                       setShowGenerateMenu(false);
                     }}
-                    disabled={isGeneratingQuiz}
+                    disabled={isGeneratingQuiz || isGeneratingFlashcards || isGeneratingEssays}
                     className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2 disabled:opacity-50"
                   >
                     <FileQuestion className="w-4 h-4" />
-                    {isGeneratingQuiz ? 'Generating...' : 'Quiz'}
+                    {isGeneratingQuiz ? generationMessage : 'Quiz'}
                   </button>
                   <button
                     onClick={() => {
                       onGenerateFlashcards();
                       setShowGenerateMenu(false);
                     }}
-                    disabled={isGeneratingFlashcards}
+                    disabled={isGeneratingQuiz || isGeneratingFlashcards || isGeneratingEssays}
                     className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2 disabled:opacity-50"
                   >
                     <Sparkles className="w-4 h-4" />
-                    {isGeneratingFlashcards ? 'Generating...' : 'Flashcards'}
+                    {isGeneratingFlashcards ? generationMessage : 'Flashcards'}
                   </button>
                   <button
                     onClick={() => {
                       onGenerateEssays();
                       setShowGenerateMenu(false);
                     }}
-                    disabled={isGeneratingEssays}
+                    disabled={isGeneratingQuiz || isGeneratingFlashcards || isGeneratingEssays}
                     className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2 disabled:opacity-50"
                   >
                     <PenTool className="w-4 h-4" />
-                    {isGeneratingEssays ? 'Generating...' : 'Essay Q&A'}
+                    {isGeneratingEssays ? generationMessage : 'Essay Q&A'}
                   </button>
                 </div>
               )}
@@ -589,6 +591,10 @@ function ProjectDetailContent() {
   const [success, setSuccess] = useState<string | null>(null);
   const [showProjectMenu, setShowProjectMenu] = useState(false);
   const [showSettingsModal, setShowSettingsModal] = useState(false);
+  const [generationStatus, setGenerationStatus] = useState<{
+    type: 'quiz' | 'flashcards' | 'essays' | null;
+    messageIndex: number;
+  }>({ type: null, messageIndex: 0 });
 
   const { data: project, isLoading: projectLoading } = useQuery<StudentProject>({
     queryKey: ['student-project', projectId],
@@ -630,9 +636,60 @@ function ProjectDetailContent() {
     },
   });
 
+  // Predefined generation messages
+  const generationMessages = {
+    quiz: [
+      'Analyzing PDF content...',
+      'Extracting key concepts...',
+      'Generating questions...',
+      'Creating answer options...',
+      'Finalizing quiz...',
+    ],
+    flashcards: [
+      'Reading document...',
+      'Identifying important points...',
+      'Creating flashcard pairs...',
+      'Organizing content...',
+      'Almost done...',
+    ],
+    essays: [
+      'Processing document...',
+      'Understanding context...',
+      'Formulating essay questions...',
+      'Preparing detailed answers...',
+      'Finalizing content...',
+    ],
+  } as const;
+
+  // Cycle through messages during generation
+  useEffect(() => {
+    if (!generationStatus.type) return;
+
+    const messages = generationMessages[generationStatus.type];
+    const interval = setInterval(() => {
+      setGenerationStatus((prev) => ({
+        ...prev,
+        messageIndex: (prev.messageIndex + 1) % messages.length,
+      }));
+    }, 2000); // Change message every 2 seconds
+
+    return () => clearInterval(interval);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [generationStatus.type]);
+
+  const getGenerationMessage = () => {
+    if (!generationStatus.type) return 'Generating...';
+    const messages = generationMessages[generationStatus.type];
+    return messages[generationStatus.messageIndex] || 'Generating...';
+  };
+
   const generateQuizMutation = useMutation({
-    mutationFn: (contentId: number) => studentProjectsApi.generateQuizFromContent(projectId, contentId, numQuestions, difficulty),
+    mutationFn: (contentId: number) => {
+      setGenerationStatus({ type: 'quiz', messageIndex: 0 });
+      return studentProjectsApi.generateQuizFromContent(projectId, contentId, numQuestions, difficulty);
+    },
     onSuccess: (data) => {
+      setGenerationStatus({ type: null, messageIndex: 0 });
       setSuccess('Quiz generated successfully!');
       setError(null);
       // Invalidate generated content queries for all contents
@@ -642,14 +699,19 @@ function ProjectDetailContent() {
       router.push(`/quizzes/take?data=${encodeURIComponent(JSON.stringify(data))}`);
     },
     onError: (e: any) => {
+      setGenerationStatus({ type: null, messageIndex: 0 });
       setError(e.message || 'Failed to generate quiz');
       setSuccess(null);
     },
   });
 
   const generateFlashcardsMutation = useMutation({
-    mutationFn: (contentId: number) => studentProjectsApi.generateFlashcardsFromContent(projectId, contentId, numCards),
+    mutationFn: (contentId: number) => {
+      setGenerationStatus({ type: 'flashcards', messageIndex: 0 });
+      return studentProjectsApi.generateFlashcardsFromContent(projectId, contentId, numCards);
+    },
     onSuccess: (data) => {
+      setGenerationStatus({ type: null, messageIndex: 0 });
       setSuccess('Flashcards generated successfully!');
       setError(null);
       // Invalidate generated content queries for all contents
@@ -659,14 +721,19 @@ function ProjectDetailContent() {
       router.push(`/flashcards/view?data=${encodeURIComponent(JSON.stringify(data))}`);
     },
     onError: (e: any) => {
+      setGenerationStatus({ type: null, messageIndex: 0 });
       setError(e.message || 'Failed to generate flashcards');
       setSuccess(null);
     },
   });
 
   const generateEssaysMutation = useMutation({
-    mutationFn: (contentId: number) => studentProjectsApi.generateEssaysFromContent(projectId, contentId, numQuestions, difficulty),
+    mutationFn: (contentId: number) => {
+      setGenerationStatus({ type: 'essays', messageIndex: 0 });
+      return studentProjectsApi.generateEssaysFromContent(projectId, contentId, numQuestions, difficulty);
+    },
     onSuccess: (data) => {
+      setGenerationStatus({ type: null, messageIndex: 0 });
       setSuccess('Essay Q&A generated successfully!');
       setError(null);
       // Invalidate generated content queries for all contents
@@ -676,6 +743,7 @@ function ProjectDetailContent() {
       router.push(`/essays/view?data=${encodeURIComponent(JSON.stringify(data))}`);
     },
     onError: (e: any) => {
+      setGenerationStatus({ type: null, messageIndex: 0 });
       setError(e.message || 'Failed to generate essay Q&A');
       setSuccess(null);
     },
@@ -790,6 +858,19 @@ function ProjectDetailContent() {
 
           {error && <Alert type="error" className="mb-6">{error}</Alert>}
           {success && <Alert type="success" className="mb-6">{success}</Alert>}
+          
+          {/* Generation Status Alert */}
+          {(generateQuizMutation.isPending || generateFlashcardsMutation.isPending || generateEssaysMutation.isPending) && (
+            <Alert type="info" className="mb-6">
+              <div className="flex items-center gap-3">
+                <LoadingSpinner size="sm" />
+                <div>
+                  <p className="font-medium text-gray-900">{getGenerationMessage()}</p>
+                  <p className="text-sm text-gray-600 mt-1">This may take a few moments...</p>
+                </div>
+              </div>
+            </Alert>
+          )}
 
           {/* Settings Modal */}
           <SettingsModal
@@ -935,6 +1016,7 @@ function ProjectDetailContent() {
                       isGeneratingFlashcards={generateFlashcardsMutation.isPending}
                       isGeneratingEssays={generateEssaysMutation.isPending}
                       isDeletingContent={deleteContentMutation.isPending}
+                      generationMessage={getGenerationMessage()}
                     />
                   ))}
                 </div>
