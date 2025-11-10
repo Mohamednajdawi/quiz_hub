@@ -348,7 +348,7 @@ async def get_quiz(topic_id: int, db: Session = Depends(get_db)) -> JSONResponse
     if not topic:
         raise HTTPException(status_code=404, detail="Quiz topic not found")
 
-    questions = db.query(QuizQuestion).filter(QuizQuestion.topic_id == topic_id).all()
+    questions = db.query(QuizQuestion).filter(QuizQuestion.topic_id == topic_id).order_by(QuizQuestion.id).all()
     return JSONResponse(
         content={
             "topic": topic.topic,
@@ -357,6 +357,7 @@ async def get_quiz(topic_id: int, db: Session = Depends(get_db)) -> JSONResponse
             "creation_timestamp": topic.creation_timestamp.isoformat() if topic.creation_timestamp else None,
             "questions": [
                 {
+                    "id": q.id,
                     "question": q.question,
                     "options": q.options,
                     "right_option": q.right_option,
@@ -567,6 +568,181 @@ async def submit_shared_quiz(
             "timestamp": quiz_attempt.timestamp.isoformat()
         },
         status_code=201
+    )
+
+
+# Quiz editing endpoints
+class QuestionUpdate(BaseModel):
+    question: str
+    options: List[str]
+    right_option: int | str
+
+class QuestionCreate(BaseModel):
+    question: str
+    options: List[str]
+    right_option: int | str
+
+class QuizUpdateRequest(BaseModel):
+    questions: List[dict]  # List of question objects with id (for updates) or without id (for new)
+
+
+@router.put("/quiz/{topic_id}/question/{question_id}", tags=["Quiz"])
+async def update_quiz_question(
+    topic_id: int,
+    question_id: int,
+    question_data: QuestionUpdate,
+    current_user: UserModel = Depends(get_current_user_dependency),
+    db: Session = Depends(get_db)
+) -> JSONResponse:
+    """Update a specific quiz question"""
+    # Verify quiz exists and user owns it
+    quiz = db.query(QuizTopic).filter(QuizTopic.id == topic_id).first()
+    if not quiz:
+        raise HTTPException(status_code=404, detail="Quiz not found")
+    
+    # Check ownership
+    try:
+        is_owner = quiz.created_by_user_id == current_user.id if quiz.created_by_user_id else False
+    except AttributeError:
+        is_owner = False
+    
+    if not is_owner:
+        raise HTTPException(status_code=403, detail="You can only edit quizzes you created")
+    
+    # Verify question exists and belongs to this quiz
+    question = db.query(QuizQuestion).filter(
+        QuizQuestion.id == question_id,
+        QuizQuestion.topic_id == topic_id
+    ).first()
+    
+    if not question:
+        raise HTTPException(status_code=404, detail="Question not found")
+    
+    # Validate right_option
+    right_option_str = str(question_data.right_option)
+    if right_option_str not in [str(i) for i in range(len(question_data.options))]:
+        raise HTTPException(
+            status_code=400,
+            detail=f"right_option must be between 0 and {len(question_data.options) - 1}"
+        )
+    
+    # Update question
+    question.question = question_data.question
+    question.options = question_data.options
+    question.right_option = right_option_str
+    
+    db.commit()
+    db.refresh(question)
+    
+    return JSONResponse(
+        content={
+            "id": question.id,
+            "question": question.question,
+            "options": question.options,
+            "right_option": question.right_option,
+        },
+        headers={"Content-Type": "application/json; charset=utf-8"}
+    )
+
+
+@router.post("/quiz/{topic_id}/question", tags=["Quiz"])
+async def add_quiz_question(
+    topic_id: int,
+    question_data: QuestionCreate,
+    current_user: UserModel = Depends(get_current_user_dependency),
+    db: Session = Depends(get_db)
+) -> JSONResponse:
+    """Add a new question to a quiz"""
+    # Verify quiz exists and user owns it
+    quiz = db.query(QuizTopic).filter(QuizTopic.id == topic_id).first()
+    if not quiz:
+        raise HTTPException(status_code=404, detail="Quiz not found")
+    
+    # Check ownership
+    try:
+        is_owner = quiz.created_by_user_id == current_user.id if quiz.created_by_user_id else False
+    except AttributeError:
+        is_owner = False
+    
+    if not is_owner:
+        raise HTTPException(status_code=403, detail="You can only edit quizzes you created")
+    
+    # Validate right_option
+    right_option_str = str(question_data.right_option)
+    if right_option_str not in [str(i) for i in range(len(question_data.options))]:
+        raise HTTPException(
+            status_code=400,
+            detail=f"right_option must be between 0 and {len(question_data.options) - 1}"
+        )
+    
+    # Create new question
+    new_question = QuizQuestion(
+        question=question_data.question,
+        options=question_data.options,
+        right_option=right_option_str,
+        topic_id=topic_id
+    )
+    
+    db.add(new_question)
+    db.commit()
+    db.refresh(new_question)
+    
+    return JSONResponse(
+        content={
+            "id": new_question.id,
+            "question": new_question.question,
+            "options": new_question.options,
+            "right_option": new_question.right_option,
+        },
+        headers={"Content-Type": "application/json; charset=utf-8"}
+    )
+
+
+@router.delete("/quiz/{topic_id}/question/{question_id}", tags=["Quiz"])
+async def delete_quiz_question(
+    topic_id: int,
+    question_id: int,
+    current_user: UserModel = Depends(get_current_user_dependency),
+    db: Session = Depends(get_db)
+) -> JSONResponse:
+    """Delete a question from a quiz"""
+    # Verify quiz exists and user owns it
+    quiz = db.query(QuizTopic).filter(QuizTopic.id == topic_id).first()
+    if not quiz:
+        raise HTTPException(status_code=404, detail="Quiz not found")
+    
+    # Check ownership
+    try:
+        is_owner = quiz.created_by_user_id == current_user.id if quiz.created_by_user_id else False
+    except AttributeError:
+        is_owner = False
+    
+    if not is_owner:
+        raise HTTPException(status_code=403, detail="You can only edit quizzes you created")
+    
+    # Verify question exists and belongs to this quiz
+    question = db.query(QuizQuestion).filter(
+        QuizQuestion.id == question_id,
+        QuizQuestion.topic_id == topic_id
+    ).first()
+    
+    if not question:
+        raise HTTPException(status_code=404, detail="Question not found")
+    
+    # Don't allow deleting if it's the only question
+    question_count = db.query(QuizQuestion).filter(QuizQuestion.topic_id == topic_id).count()
+    if question_count <= 1:
+        raise HTTPException(
+            status_code=400,
+            detail="Cannot delete the last question. A quiz must have at least one question."
+        )
+    
+    db.delete(question)
+    db.commit()
+    
+    return JSONResponse(
+        content={"message": "Question deleted successfully"},
+        headers={"Content-Type": "application/json; charset=utf-8"}
     )
 
 

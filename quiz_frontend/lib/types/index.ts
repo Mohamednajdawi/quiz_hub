@@ -18,6 +18,7 @@ export interface EssayQARequest {
 }
 
 export interface QuizQuestion {
+  id?: number; // Optional: included when fetched from backend
   question: string;
   options: string[];
   right_option: number | string; // Can be number (0, 1, 2) or string ("a", "b", "c", "0", "1", "2")

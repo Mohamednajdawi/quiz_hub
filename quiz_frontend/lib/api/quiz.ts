@@ -102,5 +102,38 @@ export const quizApi = {
     const response = await apiClient.get(`/quiz/${topicId}/shared-results`);
     return response.data;
   },
+
+  updateQuestion: async (
+    topicId: number,
+    questionId: number,
+    question: string,
+    options: string[],
+    rightOption: number | string
+  ): Promise<{ id: number; question: string; options: string[]; right_option: number | string }> => {
+    const response = await apiClient.put(`/quiz/${topicId}/question/${questionId}`, {
+      question,
+      options,
+      right_option: rightOption,
+    });
+    return response.data;
+  },
+
+  addQuestion: async (
+    topicId: number,
+    question: string,
+    options: string[],
+    rightOption: number | string
+  ): Promise<{ id: number; question: string; options: string[]; right_option: number | string }> => {
+    const response = await apiClient.post(`/quiz/${topicId}/question`, {
+      question,
+      options,
+      right_option: rightOption,
+    });
+    return response.data;
+  },
+
+  deleteQuestion: async (topicId: number, questionId: number): Promise<void> => {
+    await apiClient.delete(`/quiz/${topicId}/question/${questionId}`);
+  },
 };
 
