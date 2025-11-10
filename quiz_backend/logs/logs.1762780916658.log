@@ -1,0 +1,597 @@
+2025-11-10T13:14:31.000000000Z [inf]  Mounting volume on: /var/lib/containers/railwayapp/bind-mounts/508a4987-3671-4a35-8796-f202f53ace46/vol_14fl5ibz8tmso3sp
+2025-11-10T13:14:32.000000000Z [inf]  Starting Container
+2025-11-10T13:14:32.824451916Z [err]  INFO  [alembic.runtime.migration] Context impl SQLiteImpl.
+2025-11-10T13:14:32.824484847Z [err]  INFO  [alembic.runtime.migration] Will assume non-transactional DDL.
+2025-11-10T13:14:32.824494381Z [inf]  🚀 Running Alembic migrations -> head
+2025-11-10T13:14:32.824502664Z [inf]  ✅ Database is up to date
+2025-11-10T13:14:32.824510931Z [inf]  ✅ Starting application server on port 8080...
+2025-11-10T13:14:32.824582517Z [inf]  📁 Setting up data directory...
+2025-11-10T13:14:32.824589615Z [inf]  ✅ Data directory is writable: /app/data
+2025-11-10T13:14:32.824596993Z [inf]  ✅ SQLite database verified at //app/data/quiz_database.db
+2025-11-10T13:14:32.824605324Z [inf]  🚀 Running database migrations...
+2025-11-10T13:14:32.933244115Z [err]  [2025-11-10 13:14:32 +0000] [1] [INFO] Starting gunicorn 23.0.0
+2025-11-10T13:14:32.933249935Z [err]  [2025-11-10 13:14:32 +0000] [1] [INFO] Listening at: http://0.0.0.0:8080 (1)
+2025-11-10T13:14:32.933255443Z [err]  [2025-11-10 13:14:32 +0000] [1] [INFO] Using worker: uvicorn.workers.UvicornWorker
+2025-11-10T13:14:32.938173014Z [err]  [2025-11-10 13:14:32 +0000] [9] [INFO] Booting worker with pid: 9
+2025-11-10T13:14:35.862008149Z [err]  [2025-11-10 13:14:35 +0000] [9] [INFO] Waiting for application startup.
+2025-11-10T13:14:35.862017761Z [err]  [2025-11-10 13:14:35 +0000] [9] [INFO] Application startup complete.
+2025-11-10T13:14:35.862072202Z [err]  [2025-11-10 13:14:35 +0000] [9] [INFO] Started server process [9]
+2025-11-10T13:19:27.393505731Z [err]      |     return await self.app(scope, receive, send)
+2025-11-10T13:19:27.393513286Z [err]    |   File "/usr/local/lib/python3.11/site-packages/starlette/_utils.py", line 79, in collapse_excgroups
+2025-11-10T13:19:27.393515316Z [err]      |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-11-10T13:19:27.393524817Z [err]    |     yield
+2025-11-10T13:19:27.393533782Z [err]    |   File "/usr/local/lib/python3.11/site-packages/starlette/middleware/base.py", line 192, in __call__
+2025-11-10T13:19:27.393536158Z [err]  WARNING:backend.middleware.rate_limit:Rate limit exceeded for ip:185.245.29.130 on /auth/login. Remaining: 0, Reset in: 60s
+2025-11-10T13:19:27.393542917Z [err]  [2025-11-10 13:19:17 +0000] [9] [ERROR] Exception in ASGI application
+2025-11-10T13:19:27.393543539Z [err]    |     async with anyio.create_task_group() as task_group:
+2025-11-10T13:19:27.393549164Z [err]    + Exception Group Traceback (most recent call last):
+2025-11-10T13:19:27.393552424Z [err]    |   File "/usr/local/lib/python3.11/site-packages/anyio/_backends/_asyncio.py", line 781, in __aexit__
+2025-11-10T13:19:27.393559042Z [err]    |     raise BaseExceptionGroup(
+2025-11-10T13:19:27.393566824Z [err]    | ExceptionGroup: unhandled errors in a TaskGroup (1 sub-exception)
+2025-11-10T13:19:27.393573797Z [err]    +-+---------------- 1 ----------------
+2025-11-10T13:19:27.393582385Z [err]      | Traceback (most recent call last):
+2025-11-10T13:19:27.393589621Z [err]      |   File "/usr/local/lib/python3.11/site-packages/uvicorn/protocols/http/httptools_impl.py", line 409, in run_asgi
+2025-11-10T13:19:27.393596435Z [err]      |     result = await app(  # type: ignore[func-returns-value]
+2025-11-10T13:19:27.393602839Z [err]      |              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-11-10T13:19:27.393608623Z [err]      |   File "/usr/local/lib/python3.11/site-packages/uvicorn/middleware/proxy_headers.py", line 60, in __call__
+2025-11-10T13:19:27.396777492Z [err]      |   File "/usr/local/lib/python3.11/site-packages/fastapi/applications.py", line 1134, in __call__
+2025-11-10T13:19:27.396781874Z [err]      |     await super().__call__(scope, receive, send)
+2025-11-10T13:19:27.396786397Z [err]      |   File "/usr/local/lib/python3.11/site-packages/starlette/applications.py", line 113, in __call__
+2025-11-10T13:19:27.396790413Z [err]      |     await self.middleware_stack(scope, receive, send)
+2025-11-10T13:19:27.396794593Z [err]      |   File "/usr/local/lib/python3.11/site-packages/starlette/middleware/errors.py", line 186, in __call__
+2025-11-10T13:19:27.396800200Z [err]      |     raise exc
+2025-11-10T13:19:27.396804579Z [err]      |   File "/usr/local/lib/python3.11/site-packages/starlette/middleware/errors.py", line 164, in __call__
+2025-11-10T13:19:27.396810542Z [err]      |     await self.app(scope, receive, _send)
+2025-11-10T13:19:27.396815979Z [err]      |   File "/usr/local/lib/python3.11/site-packages/starlette/middleware/base.py", line 191, in __call__
+2025-11-10T13:19:27.396823090Z [err]      |     with recv_stream, send_stream, collapse_excgroups():
+2025-11-10T13:19:27.396828759Z [err]      |   File "/usr/local/lib/python3.11/contextlib.py", line 158, in __exit__
+2025-11-10T13:19:27.396834613Z [err]      |     self.gen.throw(typ, value, traceback)
+2025-11-10T13:19:27.396840574Z [err]      |   File "/usr/local/lib/python3.11/site-packages/starlette/_utils.py", line 85, in collapse_excgroups
+2025-11-10T13:19:27.396846338Z [err]      |     raise exc
+2025-11-10T13:19:27.396852047Z [err]      |   File "/usr/local/lib/python3.11/site-packages/starlette/middleware/base.py", line 193, in __call__
+2025-11-10T13:19:27.396856824Z [err]      |     response = await self.dispatch_func(request, call_next)
+2025-11-10T13:19:27.396861055Z [err]      |                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-11-10T13:19:27.396865556Z [err]      |   File "/app/backend/middleware/rate_limit.py", line 191, in dispatch
+2025-11-10T13:19:27.397659344Z [err]  During handling of the above exception, another exception occurred:
+2025-11-10T13:19:27.397661880Z [err]      await self.middleware_stack(scope, receive, send)
+2025-11-10T13:19:27.397667947Z [err]  
+2025-11-10T13:19:27.397671257Z [err]    File "/usr/local/lib/python3.11/site-packages/starlette/middleware/errors.py", line 186, in __call__
+2025-11-10T13:19:27.397673852Z [err]  Traceback (most recent call last):
+2025-11-10T13:19:27.397679245Z [err]    File "/usr/local/lib/python3.11/site-packages/uvicorn/protocols/http/httptools_impl.py", line 409, in run_asgi
+2025-11-10T13:19:27.397679850Z [err]      return await self.app(scope, receive, send)
+2025-11-10T13:19:27.397680963Z [err]      raise exc
+2025-11-10T13:19:27.397684637Z [err]      result = await app(  # type: ignore[func-returns-value]
+2025-11-10T13:19:27.397690926Z [err]               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-11-10T13:19:27.397694669Z [err]             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-11-10T13:19:27.397696729Z [err]    File "/usr/local/lib/python3.11/site-packages/uvicorn/middleware/proxy_headers.py", line 60, in __call__
+2025-11-10T13:19:27.397697479Z [err]    File "/usr/local/lib/python3.11/site-packages/starlette/middleware/errors.py", line 164, in __call__
+2025-11-10T13:19:27.397704469Z [err]    File "/usr/local/lib/python3.11/site-packages/fastapi/applications.py", line 1134, in __call__
+2025-11-10T13:19:27.397711057Z [err]      await super().__call__(scope, receive, send)
+2025-11-10T13:19:27.397717333Z [err]    File "/usr/local/lib/python3.11/site-packages/starlette/applications.py", line 113, in __call__
+2025-11-10T13:19:27.397757036Z [err]      |     raise HTTPException(
+2025-11-10T13:19:27.397763075Z [err]      | fastapi.exceptions.HTTPException: 429: Rate limit exceeded. Please try again in 60 seconds.
+2025-11-10T13:19:27.397769583Z [err]      +------------------------------------
+2025-11-10T13:19:27.397775301Z [err]  
+2025-11-10T13:19:27.399592403Z [err]    File "/usr/local/lib/python3.11/site-packages/starlette/middleware/base.py", line 191, in __call__
+2025-11-10T13:19:27.399599022Z [err]      with recv_stream, send_stream, collapse_excgroups():
+2025-11-10T13:19:27.399600795Z [err]  WARNING:backend.middleware.rate_limit:Rate limit exceeded for ip:185.245.29.130 on /auth/login. Remaining: 0, Reset in: 60s
+2025-11-10T13:19:27.399604721Z [err]    File "/usr/local/lib/python3.11/contextlib.py", line 158, in __exit__
+2025-11-10T13:19:27.399610101Z [err]      self.gen.throw(typ, value, traceback)
+2025-11-10T13:19:27.399614310Z [err]  [2025-11-10 13:19:17 +0000] [9] [ERROR] Exception in ASGI application
+2025-11-10T13:19:27.399617527Z [err]    File "/usr/local/lib/python3.11/site-packages/starlette/_utils.py", line 85, in collapse_excgroups
+2025-11-10T13:19:27.399622381Z [err]    + Exception Group Traceback (most recent call last):
+2025-11-10T13:19:27.399623753Z [err]      raise exc
+2025-11-10T13:19:27.399630121Z [err]    File "/usr/local/lib/python3.11/site-packages/starlette/middleware/base.py", line 193, in __call__
+2025-11-10T13:19:27.399631059Z [err]    |   File "/usr/local/lib/python3.11/site-packages/starlette/_utils.py", line 79, in collapse_excgroups
+2025-11-10T13:19:27.399637605Z [err]      response = await self.dispatch_func(request, call_next)
+2025-11-10T13:19:27.399639095Z [err]    |     yield
+2025-11-10T13:19:27.399643169Z [err]                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-11-10T13:19:27.399647698Z [err]    |   File "/usr/local/lib/python3.11/site-packages/starlette/middleware/base.py", line 192, in __call__
+2025-11-10T13:19:27.399649835Z [err]    File "/app/backend/middleware/rate_limit.py", line 191, in dispatch
+2025-11-10T13:19:27.399655254Z [err]      raise HTTPException(
+2025-11-10T13:19:27.399659462Z [err]  fastapi.exceptions.HTTPException: 429: Rate limit exceeded. Please try again in 60 seconds.
+2025-11-10T13:19:27.399683148Z [err]      await self.app(scope, receive, _send)
+2025-11-10T13:19:27.401693544Z [err]      |     raise exc
+2025-11-10T13:19:27.401699825Z [err]    |     async with anyio.create_task_group() as task_group:
+2025-11-10T13:19:27.401705177Z [err]    |   File "/usr/local/lib/python3.11/site-packages/anyio/_backends/_asyncio.py", line 781, in __aexit__
+2025-11-10T13:19:27.401710259Z [err]    |     raise BaseExceptionGroup(
+2025-11-10T13:19:27.401715563Z [err]    | ExceptionGroup: unhandled errors in a TaskGroup (1 sub-exception)
+2025-11-10T13:19:27.401721174Z [err]    +-+---------------- 1 ----------------
+2025-11-10T13:19:27.401728255Z [err]      | Traceback (most recent call last):
+2025-11-10T13:19:27.401733181Z [err]      |              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-11-10T13:19:27.401736500Z [err]      |   File "/usr/local/lib/python3.11/site-packages/uvicorn/protocols/http/httptools_impl.py", line 409, in run_asgi
+2025-11-10T13:19:27.401742828Z [err]      |     result = await app(  # type: ignore[func-returns-value]
+2025-11-10T13:19:27.401746978Z [err]      |   File "/usr/local/lib/python3.11/site-packages/starlette/applications.py", line 113, in __call__
+2025-11-10T13:19:27.401748015Z [err]      |   File "/usr/local/lib/python3.11/site-packages/uvicorn/middleware/proxy_headers.py", line 60, in __call__
+2025-11-10T13:19:27.401755455Z [err]      |     return await self.app(scope, receive, send)
+2025-11-10T13:19:27.401762679Z [err]      |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-11-10T13:19:27.401769110Z [err]      |     await self.middleware_stack(scope, receive, send)
+2025-11-10T13:19:27.401773676Z [err]      |   File "/usr/local/lib/python3.11/site-packages/fastapi/applications.py", line 1134, in __call__
+2025-11-10T13:19:27.401802296Z [err]      |     await super().__call__(scope, receive, send)
+2025-11-10T13:19:27.401805367Z [err]      |   File "/usr/local/lib/python3.11/site-packages/starlette/middleware/errors.py", line 186, in __call__
+2025-11-10T13:19:27.404030124Z [err]      |     with recv_stream, send_stream, collapse_excgroups():
+2025-11-10T13:19:27.404031512Z [err]  
+2025-11-10T13:19:27.404044124Z [err]  During handling of the above exception, another exception occurred:
+2025-11-10T13:19:27.404044987Z [err]      |   File "/usr/local/lib/python3.11/contextlib.py", line 158, in __exit__
+2025-11-10T13:19:27.404055534Z [err]  
+2025-11-10T13:19:27.404056763Z [err]      |     self.gen.throw(typ, value, traceback)
+2025-11-10T13:19:27.404066032Z [err]  Traceback (most recent call last):
+2025-11-10T13:19:27.404067989Z [err]      |   File "/usr/local/lib/python3.11/site-packages/starlette/_utils.py", line 85, in collapse_excgroups
+2025-11-10T13:19:27.404078692Z [err]    File "/usr/local/lib/python3.11/site-packages/uvicorn/protocols/http/httptools_impl.py", line 409, in run_asgi
+2025-11-10T13:19:27.404079368Z [err]      |     raise exc
+2025-11-10T13:19:27.404087620Z [err]      |   File "/usr/local/lib/python3.11/site-packages/starlette/middleware/base.py", line 193, in __call__
+2025-11-10T13:19:27.404091604Z [err]      |   File "/usr/local/lib/python3.11/site-packages/starlette/middleware/errors.py", line 164, in __call__
+2025-11-10T13:19:27.404095838Z [err]      |     response = await self.dispatch_func(request, call_next)
+2025-11-10T13:19:27.404098337Z [err]      |     await self.app(scope, receive, _send)
+2025-11-10T13:19:27.404101486Z [err]      |                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-11-10T13:19:27.404107232Z [err]      |   File "/app/backend/middleware/rate_limit.py", line 191, in dispatch
+2025-11-10T13:19:27.404107739Z [err]      |   File "/usr/local/lib/python3.11/site-packages/starlette/middleware/base.py", line 191, in __call__
+2025-11-10T13:19:27.404112392Z [err]      |     raise HTTPException(
+2025-11-10T13:19:27.404116756Z [err]      | fastapi.exceptions.HTTPException: 429: Rate limit exceeded. Please try again in 60 seconds.
+2025-11-10T13:19:27.404233368Z [err]      +------------------------------------
+2025-11-10T13:19:27.405842843Z [err]      raise exc
+2025-11-10T13:19:27.405850641Z [err]    File "/usr/local/lib/python3.11/site-packages/starlette/middleware/errors.py", line 164, in __call__
+2025-11-10T13:19:27.405855608Z [err]      await self.app(scope, receive, _send)
+2025-11-10T13:19:27.405859885Z [err]      result = await app(  # type: ignore[func-returns-value]
+2025-11-10T13:19:27.405861437Z [err]    File "/usr/local/lib/python3.11/site-packages/starlette/middleware/base.py", line 191, in __call__
+2025-11-10T13:19:27.405867934Z [err]      with recv_stream, send_stream, collapse_excgroups():
+2025-11-10T13:19:27.405868640Z [err]               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-11-10T13:19:27.405875120Z [err]    File "/usr/local/lib/python3.11/contextlib.py", line 158, in __exit__
+2025-11-10T13:19:27.405875139Z [err]    File "/usr/local/lib/python3.11/site-packages/uvicorn/middleware/proxy_headers.py", line 60, in __call__
+2025-11-10T13:19:27.405881976Z [err]      self.gen.throw(typ, value, traceback)
+2025-11-10T13:19:27.405883200Z [err]      return await self.app(scope, receive, send)
+2025-11-10T13:19:27.405889939Z [err]             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-11-10T13:19:27.405891533Z [err]    File "/usr/local/lib/python3.11/site-packages/starlette/_utils.py", line 85, in collapse_excgroups
+2025-11-10T13:19:27.405899141Z [err]    File "/usr/local/lib/python3.11/site-packages/fastapi/applications.py", line 1134, in __call__
+2025-11-10T13:19:27.405899460Z [err]      raise exc
+2025-11-10T13:19:27.405904956Z [err]      await super().__call__(scope, receive, send)
+2025-11-10T13:19:27.405909340Z [err]    File "/usr/local/lib/python3.11/site-packages/starlette/applications.py", line 113, in __call__
+2025-11-10T13:19:27.405913190Z [err]      await self.middleware_stack(scope, receive, send)
+2025-11-10T13:19:27.405917019Z [err]    File "/usr/local/lib/python3.11/site-packages/starlette/middleware/errors.py", line 186, in __call__
+2025-11-10T13:19:27.407982883Z [err]    File "/usr/local/lib/python3.11/site-packages/starlette/middleware/base.py", line 193, in __call__
+2025-11-10T13:19:27.407989618Z [err]      response = await self.dispatch_func(request, call_next)
+2025-11-10T13:19:27.407994775Z [err]                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-11-10T13:19:27.408000041Z [err]    |   File "/usr/local/lib/python3.11/site-packages/starlette/middleware/base.py", line 192, in __call__
+2025-11-10T13:19:27.408000048Z [err]    File "/app/backend/middleware/rate_limit.py", line 191, in dispatch
+2025-11-10T13:19:27.408004873Z [err]      raise HTTPException(
+2025-11-10T13:19:27.408008898Z [err]  fastapi.exceptions.HTTPException: 429: Rate limit exceeded. Please try again in 60 seconds.
+2025-11-10T13:19:27.408013712Z [err]  WARNING:backend.middleware.rate_limit:Rate limit exceeded for ip:185.245.29.130 on /auth/login. Remaining: 0, Reset in: 60s
+2025-11-10T13:19:27.408017316Z [err]    |     async with anyio.create_task_group() as task_group:
+2025-11-10T13:19:27.408019570Z [err]  [2025-11-10 13:19:17 +0000] [9] [ERROR] Exception in ASGI application
+2025-11-10T13:19:27.408025026Z [err]    |   File "/usr/local/lib/python3.11/site-packages/anyio/_backends/_asyncio.py", line 781, in __aexit__
+2025-11-10T13:19:27.408026390Z [err]    + Exception Group Traceback (most recent call last):
+2025-11-10T13:19:27.408032546Z [err]    |   File "/usr/local/lib/python3.11/site-packages/starlette/_utils.py", line 79, in collapse_excgroups
+2025-11-10T13:19:27.408035734Z [err]    |     raise BaseExceptionGroup(
+2025-11-10T13:19:27.408037048Z [err]    |     yield
+2025-11-10T13:19:27.408040976Z [err]    | ExceptionGroup: unhandled errors in a TaskGroup (1 sub-exception)
+2025-11-10T13:19:27.408047223Z [err]    +-+---------------- 1 ----------------
+2025-11-10T13:19:27.408052224Z [err]      | Traceback (most recent call last):
+2025-11-10T13:19:27.408057103Z [err]      |   File "/usr/local/lib/python3.11/site-packages/uvicorn/protocols/http/httptools_impl.py", line 409, in run_asgi
+2025-11-10T13:19:27.410470866Z [err]      |     result = await app(  # type: ignore[func-returns-value]
+2025-11-10T13:19:27.410478882Z [err]      |              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-11-10T13:19:27.410485610Z [err]      |   File "/usr/local/lib/python3.11/site-packages/uvicorn/middleware/proxy_headers.py", line 60, in __call__
+2025-11-10T13:19:27.410491737Z [err]      |     return await self.app(scope, receive, send)
+2025-11-10T13:19:27.410497039Z [err]      |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-11-10T13:19:27.410502647Z [err]      |   File "/usr/local/lib/python3.11/site-packages/fastapi/applications.py", line 1134, in __call__
+2025-11-10T13:19:27.410515864Z [err]      |     await super().__call__(scope, receive, send)
+2025-11-10T13:19:27.410522007Z [err]      |   File "/usr/local/lib/python3.11/site-packages/starlette/applications.py", line 113, in __call__
+2025-11-10T13:19:27.410526867Z [err]      |     await self.middleware_stack(scope, receive, send)
+2025-11-10T13:19:27.410531756Z [err]      |   File "/usr/local/lib/python3.11/site-packages/starlette/middleware/errors.py", line 186, in __call__
+2025-11-10T13:19:27.410537493Z [err]      |     raise exc
+2025-11-10T13:19:27.410542539Z [err]      |   File "/usr/local/lib/python3.11/site-packages/starlette/middleware/errors.py", line 164, in __call__
+2025-11-10T13:19:27.410554589Z [err]      |     await self.app(scope, receive, _send)
+2025-11-10T13:19:27.410560712Z [err]      |   File "/usr/local/lib/python3.11/site-packages/starlette/middleware/base.py", line 191, in __call__
+2025-11-10T13:19:27.410567013Z [err]      |     with recv_stream, send_stream, collapse_excgroups():
+2025-11-10T13:19:27.410571606Z [err]      |   File "/usr/local/lib/python3.11/contextlib.py", line 158, in __exit__
+2025-11-10T13:19:27.410576447Z [err]      |     self.gen.throw(typ, value, traceback)
+2025-11-10T13:19:27.410582035Z [err]      |   File "/usr/local/lib/python3.11/site-packages/starlette/_utils.py", line 85, in collapse_excgroups
+2025-11-10T13:19:27.413034892Z [err]             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-11-10T13:19:27.413037634Z [err]      |     raise exc
+2025-11-10T13:19:27.413052106Z [err]    File "/usr/local/lib/python3.11/site-packages/fastapi/applications.py", line 1134, in __call__
+2025-11-10T13:19:27.413052906Z [err]      |   File "/usr/local/lib/python3.11/site-packages/starlette/middleware/base.py", line 193, in __call__
+2025-11-10T13:19:27.413064127Z [err]      await super().__call__(scope, receive, send)
+2025-11-10T13:19:27.413065048Z [err]      |     response = await self.dispatch_func(request, call_next)
+2025-11-10T13:19:27.413076631Z [err]      |                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-11-10T13:19:27.413086136Z [err]      |   File "/app/backend/middleware/rate_limit.py", line 191, in dispatch
+2025-11-10T13:19:27.413092459Z [err]      |     raise HTTPException(
+2025-11-10T13:19:27.413100465Z [err]      | fastapi.exceptions.HTTPException: 429: Rate limit exceeded. Please try again in 60 seconds.
+2025-11-10T13:19:27.413108899Z [err]      +------------------------------------
+2025-11-10T13:19:27.413119385Z [err]  
+2025-11-10T13:19:27.413126311Z [err]  During handling of the above exception, another exception occurred:
+2025-11-10T13:19:27.413132072Z [err]  
+2025-11-10T13:19:27.413139779Z [err]  Traceback (most recent call last):
+2025-11-10T13:19:27.413146900Z [err]    File "/usr/local/lib/python3.11/site-packages/uvicorn/protocols/http/httptools_impl.py", line 409, in run_asgi
+2025-11-10T13:19:27.413153591Z [err]      result = await app(  # type: ignore[func-returns-value]
+2025-11-10T13:19:27.413159990Z [err]               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-11-10T13:19:27.413166470Z [err]    File "/usr/local/lib/python3.11/site-packages/uvicorn/middleware/proxy_headers.py", line 60, in __call__
+2025-11-10T13:19:27.413173792Z [err]      return await self.app(scope, receive, send)
+2025-11-10T13:19:27.415657834Z [err]    File "/usr/local/lib/python3.11/site-packages/starlette/middleware/base.py", line 193, in __call__
+2025-11-10T13:19:27.415670202Z [err]      response = await self.dispatch_func(request, call_next)
+2025-11-10T13:19:27.415677328Z [err]                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-11-10T13:19:27.415682793Z [err]    File "/app/backend/middleware/rate_limit.py", line 191, in dispatch
+2025-11-10T13:19:27.415688723Z [err]      raise HTTPException(
+2025-11-10T13:19:27.415694471Z [err]  fastapi.exceptions.HTTPException: 429: Rate limit exceeded. Please try again in 60 seconds.
+2025-11-10T13:19:27.415701158Z [err]  WARNING:backend.middleware.rate_limit:Rate limit exceeded for ip:185.245.29.130 on /auth/login. Remaining: 0, Reset in: 60s
+2025-11-10T13:19:27.415714254Z [err]    File "/usr/local/lib/python3.11/site-packages/starlette/applications.py", line 113, in __call__
+2025-11-10T13:19:27.415721288Z [err]      await self.middleware_stack(scope, receive, send)
+2025-11-10T13:19:27.415727601Z [err]    File "/usr/local/lib/python3.11/site-packages/starlette/middleware/errors.py", line 186, in __call__
+2025-11-10T13:19:27.415733389Z [err]      raise exc
+2025-11-10T13:19:27.415738938Z [err]    File "/usr/local/lib/python3.11/site-packages/starlette/middleware/errors.py", line 164, in __call__
+2025-11-10T13:19:27.415748516Z [err]      await self.app(scope, receive, _send)
+2025-11-10T13:19:27.415754926Z [err]    File "/usr/local/lib/python3.11/site-packages/starlette/middleware/base.py", line 191, in __call__
+2025-11-10T13:19:27.415761599Z [err]      with recv_stream, send_stream, collapse_excgroups():
+2025-11-10T13:19:27.415767443Z [err]    File "/usr/local/lib/python3.11/contextlib.py", line 158, in __exit__
+2025-11-10T13:19:27.415773238Z [err]      self.gen.throw(typ, value, traceback)
+2025-11-10T13:19:27.415778803Z [err]    File "/usr/local/lib/python3.11/site-packages/starlette/_utils.py", line 85, in collapse_excgroups
+2025-11-10T13:19:27.415786173Z [err]      raise exc
+2025-11-10T13:19:27.417710504Z [err]      |     result = await app(  # type: ignore[func-returns-value]
+2025-11-10T13:19:27.417714536Z [err]  [2025-11-10 13:19:17 +0000] [9] [ERROR] Exception in ASGI application
+2025-11-10T13:19:27.417717225Z [err]      |              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-11-10T13:19:27.417722676Z [err]      |   File "/usr/local/lib/python3.11/site-packages/uvicorn/middleware/proxy_headers.py", line 60, in __call__
+2025-11-10T13:19:27.417725880Z [err]    + Exception Group Traceback (most recent call last):
+2025-11-10T13:19:27.417728515Z [err]      |     return await self.app(scope, receive, send)
+2025-11-10T13:19:27.417734115Z [err]      |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-11-10T13:19:27.417735532Z [err]    |   File "/usr/local/lib/python3.11/site-packages/starlette/_utils.py", line 79, in collapse_excgroups
+2025-11-10T13:19:27.417739536Z [err]      |   File "/usr/local/lib/python3.11/site-packages/fastapi/applications.py", line 1134, in __call__
+2025-11-10T13:19:27.417743317Z [err]    |     yield
+2025-11-10T13:19:27.417749420Z [err]    |   File "/usr/local/lib/python3.11/site-packages/starlette/middleware/base.py", line 192, in __call__
+2025-11-10T13:19:27.417756532Z [err]    |     async with anyio.create_task_group() as task_group:
+2025-11-10T13:19:27.417763647Z [err]    |   File "/usr/local/lib/python3.11/site-packages/anyio/_backends/_asyncio.py", line 781, in __aexit__
+2025-11-10T13:19:27.417769892Z [err]    |     raise BaseExceptionGroup(
+2025-11-10T13:19:27.417798082Z [err]    | ExceptionGroup: unhandled errors in a TaskGroup (1 sub-exception)
+2025-11-10T13:19:27.417805395Z [err]    +-+---------------- 1 ----------------
+2025-11-10T13:19:27.417810910Z [err]      | Traceback (most recent call last):
+2025-11-10T13:19:27.417816951Z [err]      |   File "/usr/local/lib/python3.11/site-packages/uvicorn/protocols/http/httptools_impl.py", line 409, in run_asgi
+2025-11-10T13:19:27.419928503Z [err]      |     await super().__call__(scope, receive, send)
+2025-11-10T13:19:27.419939203Z [err]      |   File "/usr/local/lib/python3.11/site-packages/starlette/applications.py", line 113, in __call__
+2025-11-10T13:19:27.419946228Z [err]      |     await self.middleware_stack(scope, receive, send)
+2025-11-10T13:19:27.419952388Z [err]      |   File "/usr/local/lib/python3.11/site-packages/starlette/middleware/errors.py", line 186, in __call__
+2025-11-10T13:19:27.419958386Z [err]      |     raise exc
+2025-11-10T13:19:27.419964749Z [err]      |   File "/usr/local/lib/python3.11/site-packages/starlette/middleware/errors.py", line 164, in __call__
+2025-11-10T13:19:27.419970903Z [err]      |     await self.app(scope, receive, _send)
+2025-11-10T13:19:27.419977451Z [err]      |   File "/usr/local/lib/python3.11/site-packages/starlette/middleware/base.py", line 191, in __call__
+2025-11-10T13:19:27.419983795Z [err]      |     with recv_stream, send_stream, collapse_excgroups():
+2025-11-10T13:19:27.419990185Z [err]      |   File "/usr/local/lib/python3.11/contextlib.py", line 158, in __exit__
+2025-11-10T13:19:27.419996511Z [err]      |     self.gen.throw(typ, value, traceback)
+2025-11-10T13:19:27.420002634Z [err]      |   File "/usr/local/lib/python3.11/site-packages/starlette/_utils.py", line 85, in collapse_excgroups
+2025-11-10T13:19:27.420008434Z [err]      |     raise exc
+2025-11-10T13:19:27.420014046Z [err]      |   File "/usr/local/lib/python3.11/site-packages/starlette/middleware/base.py", line 193, in __call__
+2025-11-10T13:19:27.420019818Z [err]      |     response = await self.dispatch_func(request, call_next)
+2025-11-10T13:19:27.420025358Z [err]      |                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-11-10T13:19:27.420030792Z [err]      |   File "/app/backend/middleware/rate_limit.py", line 191, in dispatch
+2025-11-10T13:19:27.420037406Z [err]      |     raise HTTPException(
+2025-11-10T13:19:27.422542505Z [err]      | fastapi.exceptions.HTTPException: 429: Rate limit exceeded. Please try again in 60 seconds.
+2025-11-10T13:19:27.422551399Z [err]      +------------------------------------
+2025-11-10T13:19:27.422552287Z [err]      raise exc
+2025-11-10T13:19:27.422560045Z [err]  
+2025-11-10T13:19:27.422561818Z [err]      return await self.app(scope, receive, send)
+2025-11-10T13:19:27.422564756Z [err]    File "/usr/local/lib/python3.11/site-packages/starlette/middleware/errors.py", line 164, in __call__
+2025-11-10T13:19:27.422569006Z [err]  During handling of the above exception, another exception occurred:
+2025-11-10T13:19:27.422573215Z [err]             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-11-10T13:19:27.422574260Z [err]      await self.app(scope, receive, _send)
+2025-11-10T13:19:27.422579699Z [err]  
+2025-11-10T13:19:27.422582110Z [err]    File "/usr/local/lib/python3.11/site-packages/fastapi/applications.py", line 1134, in __call__
+2025-11-10T13:19:27.422589028Z [err]  Traceback (most recent call last):
+2025-11-10T13:19:27.422590861Z [err]      await super().__call__(scope, receive, send)
+2025-11-10T13:19:27.422596665Z [err]    File "/usr/local/lib/python3.11/site-packages/uvicorn/protocols/http/httptools_impl.py", line 409, in run_asgi
+2025-11-10T13:19:27.422599155Z [err]    File "/usr/local/lib/python3.11/site-packages/starlette/applications.py", line 113, in __call__
+2025-11-10T13:19:27.422604479Z [err]      result = await app(  # type: ignore[func-returns-value]
+2025-11-10T13:19:27.422607040Z [err]      await self.middleware_stack(scope, receive, send)
+2025-11-10T13:19:27.422611947Z [err]               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-11-10T13:19:27.422616494Z [err]    File "/usr/local/lib/python3.11/site-packages/starlette/middleware/errors.py", line 186, in __call__
+2025-11-10T13:19:27.422619641Z [err]    File "/usr/local/lib/python3.11/site-packages/uvicorn/middleware/proxy_headers.py", line 60, in __call__
+2025-11-10T13:19:27.424824546Z [err]    File "/usr/local/lib/python3.11/site-packages/starlette/middleware/base.py", line 191, in __call__
+2025-11-10T13:19:27.424835398Z [err]      with recv_stream, send_stream, collapse_excgroups():
+2025-11-10T13:19:27.424841804Z [err]    File "/usr/local/lib/python3.11/contextlib.py", line 158, in __exit__
+2025-11-10T13:19:27.424848643Z [err]      self.gen.throw(typ, value, traceback)
+2025-11-10T13:19:27.424854999Z [err]    File "/usr/local/lib/python3.11/site-packages/starlette/_utils.py", line 85, in collapse_excgroups
+2025-11-10T13:19:27.424860160Z [err]      raise exc
+2025-11-10T13:19:27.424867381Z [err]    File "/usr/local/lib/python3.11/site-packages/starlette/middleware/base.py", line 193, in __call__
+2025-11-10T13:19:27.424872960Z [err]      response = await self.dispatch_func(request, call_next)
+2025-11-10T13:19:27.424878698Z [err]                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-11-10T13:19:27.424884881Z [err]    File "/app/backend/middleware/rate_limit.py", line 191, in dispatch
+2025-11-10T13:19:27.424890363Z [err]      raise HTTPException(
+2025-11-10T13:19:27.424896608Z [err]  fastapi.exceptions.HTTPException: 429: Rate limit exceeded. Please try again in 60 seconds.
+2025-11-10T13:19:27.424901756Z [err]  WARNING:backend.middleware.rate_limit:Rate limit exceeded for ip:185.245.29.130 on /auth/login. Remaining: 0, Reset in: 60s
+2025-11-10T13:19:27.424907128Z [err]  [2025-11-10 13:19:17 +0000] [9] [ERROR] Exception in ASGI application
+2025-11-10T13:19:27.424912456Z [err]    + Exception Group Traceback (most recent call last):
+2025-11-10T13:19:27.424919052Z [err]    |   File "/usr/local/lib/python3.11/site-packages/starlette/_utils.py", line 79, in collapse_excgroups
+2025-11-10T13:19:27.424926516Z [err]    |     yield
+2025-11-10T13:19:27.424932264Z [err]    |   File "/usr/local/lib/python3.11/site-packages/starlette/middleware/base.py", line 192, in __call__
+2025-11-10T13:19:27.427454843Z [err]    |     async with anyio.create_task_group() as task_group:
+2025-11-10T13:19:27.427462682Z [err]      |   File "/usr/local/lib/python3.11/site-packages/starlette/middleware/errors.py", line 186, in __call__
+2025-11-10T13:19:27.427466112Z [err]    |   File "/usr/local/lib/python3.11/site-packages/anyio/_backends/_asyncio.py", line 781, in __aexit__
+2025-11-10T13:19:27.427473486Z [err]      |     raise exc
+2025-11-10T13:19:27.427475449Z [err]      |     result = await app(  # type: ignore[func-returns-value]
+2025-11-10T13:19:27.427475706Z [err]    |     raise BaseExceptionGroup(
+2025-11-10T13:19:27.427483158Z [err]    | ExceptionGroup: unhandled errors in a TaskGroup (1 sub-exception)
+2025-11-10T13:19:27.427488898Z [err]      |              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-11-10T13:19:27.427491918Z [err]    +-+---------------- 1 ----------------
+2025-11-10T13:19:27.427498126Z [err]      |   File "/usr/local/lib/python3.11/site-packages/uvicorn/middleware/proxy_headers.py", line 60, in __call__
+2025-11-10T13:19:27.427500410Z [err]      | Traceback (most recent call last):
+2025-11-10T13:19:27.427508077Z [err]      |     return await self.app(scope, receive, send)
+2025-11-10T13:19:27.427509928Z [err]      |   File "/usr/local/lib/python3.11/site-packages/uvicorn/protocols/http/httptools_impl.py", line 409, in run_asgi
+2025-11-10T13:19:27.427517772Z [err]      |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-11-10T13:19:27.427526749Z [err]      |   File "/usr/local/lib/python3.11/site-packages/fastapi/applications.py", line 1134, in __call__
+2025-11-10T13:19:27.427534080Z [err]      |     await super().__call__(scope, receive, send)
+2025-11-10T13:19:27.427540550Z [err]      |   File "/usr/local/lib/python3.11/site-packages/starlette/applications.py", line 113, in __call__
+2025-11-10T13:19:27.427547019Z [err]      |     await self.middleware_stack(scope, receive, send)
+2025-11-10T13:19:27.430277574Z [err]      | fastapi.exceptions.HTTPException: 429: Rate limit exceeded. Please try again in 60 seconds.
+2025-11-10T13:19:27.430284912Z [err]      |   File "/usr/local/lib/python3.11/site-packages/starlette/middleware/errors.py", line 164, in __call__
+2025-11-10T13:19:27.430293849Z [err]      +------------------------------------
+2025-11-10T13:19:27.430296607Z [err]      |     await self.app(scope, receive, _send)
+2025-11-10T13:19:27.430304616Z [err]      |   File "/usr/local/lib/python3.11/site-packages/starlette/middleware/base.py", line 191, in __call__
+2025-11-10T13:19:27.430308502Z [err]  
+2025-11-10T13:19:27.430315523Z [err]      |     with recv_stream, send_stream, collapse_excgroups():
+2025-11-10T13:19:27.430319543Z [err]  During handling of the above exception, another exception occurred:
+2025-11-10T13:19:27.430323905Z [err]      |   File "/usr/local/lib/python3.11/contextlib.py", line 158, in __exit__
+2025-11-10T13:19:27.430330068Z [err]  
+2025-11-10T13:19:27.430335407Z [err]      |     self.gen.throw(typ, value, traceback)
+2025-11-10T13:19:27.430339776Z [err]  Traceback (most recent call last):
+2025-11-10T13:19:27.430347976Z [err]      |   File "/usr/local/lib/python3.11/site-packages/starlette/_utils.py", line 85, in collapse_excgroups
+2025-11-10T13:19:27.430349639Z [err]    File "/usr/local/lib/python3.11/site-packages/uvicorn/protocols/http/httptools_impl.py", line 409, in run_asgi
+2025-11-10T13:19:27.430355487Z [err]      |     raise exc
+2025-11-10T13:19:27.430360623Z [err]      |   File "/usr/local/lib/python3.11/site-packages/starlette/middleware/base.py", line 193, in __call__
+2025-11-10T13:19:27.430365107Z [err]      |     response = await self.dispatch_func(request, call_next)
+2025-11-10T13:19:27.430369672Z [err]      |                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-11-10T13:19:27.430374165Z [err]      |   File "/app/backend/middleware/rate_limit.py", line 191, in dispatch
+2025-11-10T13:19:27.430378605Z [err]      |     raise HTTPException(
+2025-11-10T13:19:27.433078468Z [err]    File "/usr/local/lib/python3.11/site-packages/starlette/middleware/errors.py", line 164, in __call__
+2025-11-10T13:19:27.433085581Z [err]      result = await app(  # type: ignore[func-returns-value]
+2025-11-10T13:19:27.433095171Z [err]      await self.app(scope, receive, _send)
+2025-11-10T13:19:27.433100083Z [err]               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-11-10T13:19:27.433109525Z [err]    File "/usr/local/lib/python3.11/site-packages/starlette/middleware/base.py", line 191, in __call__
+2025-11-10T13:19:27.433111368Z [err]    File "/usr/local/lib/python3.11/site-packages/uvicorn/middleware/proxy_headers.py", line 60, in __call__
+2025-11-10T13:19:27.433123765Z [err]      return await self.app(scope, receive, send)
+2025-11-10T13:19:27.433125660Z [err]      with recv_stream, send_stream, collapse_excgroups():
+2025-11-10T13:19:27.433132990Z [err]             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-11-10T13:19:27.433138183Z [err]    File "/usr/local/lib/python3.11/contextlib.py", line 158, in __exit__
+2025-11-10T13:19:27.433147996Z [err]    File "/usr/local/lib/python3.11/site-packages/fastapi/applications.py", line 1134, in __call__
+2025-11-10T13:19:27.433151599Z [err]      self.gen.throw(typ, value, traceback)
+2025-11-10T13:19:27.433156776Z [err]      await super().__call__(scope, receive, send)
+2025-11-10T13:19:27.433166421Z [err]    File "/usr/local/lib/python3.11/site-packages/starlette/_utils.py", line 85, in collapse_excgroups
+2025-11-10T13:19:27.433166551Z [err]    File "/usr/local/lib/python3.11/site-packages/starlette/applications.py", line 113, in __call__
+2025-11-10T13:19:27.433179950Z [err]      await self.middleware_stack(scope, receive, send)
+2025-11-10T13:19:27.433182720Z [err]      raise exc
+2025-11-10T13:19:27.433188179Z [err]    File "/usr/local/lib/python3.11/site-packages/starlette/middleware/errors.py", line 186, in __call__
+2025-11-10T13:19:27.433194334Z [err]      raise exc
+2025-11-10T13:19:27.436013608Z [err]    File "/usr/local/lib/python3.11/site-packages/starlette/middleware/base.py", line 193, in __call__
+2025-11-10T13:19:27.436020429Z [err]      response = await self.dispatch_func(request, call_next)
+2025-11-10T13:19:27.436027551Z [err]                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-11-10T13:19:27.436032299Z [err]    File "/app/backend/middleware/rate_limit.py", line 191, in dispatch
+2025-11-10T13:19:27.436036531Z [err]      raise HTTPException(
+2025-11-10T13:19:27.436040723Z [err]  fastapi.exceptions.HTTPException: 429: Rate limit exceeded. Please try again in 60 seconds.
+2025-11-10T13:19:27.436044717Z [err]  WARNING:backend.middleware.rate_limit:Rate limit exceeded for ip:185.245.29.130 on /auth/login. Remaining: 0, Reset in: 60s
+2025-11-10T13:19:27.436049007Z [err]  [2025-11-10 13:19:17 +0000] [9] [ERROR] Exception in ASGI application
+2025-11-10T13:19:27.436053599Z [err]    + Exception Group Traceback (most recent call last):
+2025-11-10T13:19:27.436062366Z [err]    |   File "/usr/local/lib/python3.11/site-packages/starlette/_utils.py", line 79, in collapse_excgroups
+2025-11-10T13:19:27.436067846Z [err]    |     yield
+2025-11-10T13:19:27.436072025Z [err]    |   File "/usr/local/lib/python3.11/site-packages/starlette/middleware/base.py", line 192, in __call__
+2025-11-10T13:19:27.436076290Z [err]    |     async with anyio.create_task_group() as task_group:
+2025-11-10T13:19:27.436081429Z [err]    |   File "/usr/local/lib/python3.11/site-packages/anyio/_backends/_asyncio.py", line 781, in __aexit__
+2025-11-10T13:19:27.436085367Z [err]    |     raise BaseExceptionGroup(
+2025-11-10T13:19:27.436089401Z [err]    | ExceptionGroup: unhandled errors in a TaskGroup (1 sub-exception)
+2025-11-10T13:19:27.436094201Z [err]    +-+---------------- 1 ----------------
+2025-11-10T13:19:27.436098949Z [err]      | Traceback (most recent call last):
+2025-11-10T13:19:27.436103063Z [err]      |   File "/usr/local/lib/python3.11/site-packages/uvicorn/protocols/http/httptools_impl.py", line 409, in run_asgi
+2025-11-10T13:19:27.438834981Z [err]      |     result = await app(  # type: ignore[func-returns-value]
+2025-11-10T13:19:27.438842778Z [err]      |              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-11-10T13:19:27.438847676Z [err]      |   File "/usr/local/lib/python3.11/site-packages/uvicorn/middleware/proxy_headers.py", line 60, in __call__
+2025-11-10T13:19:27.438852861Z [err]      |     return await self.app(scope, receive, send)
+2025-11-10T13:19:27.438859954Z [err]      |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-11-10T13:19:27.438866505Z [err]      |   File "/usr/local/lib/python3.11/site-packages/fastapi/applications.py", line 1134, in __call__
+2025-11-10T13:19:27.438872784Z [err]      |     await super().__call__(scope, receive, send)
+2025-11-10T13:19:27.438877729Z [err]      |   File "/usr/local/lib/python3.11/site-packages/starlette/applications.py", line 113, in __call__
+2025-11-10T13:19:27.438883012Z [err]      |     await self.middleware_stack(scope, receive, send)
+2025-11-10T13:19:27.438888403Z [err]      |   File "/usr/local/lib/python3.11/site-packages/starlette/middleware/errors.py", line 186, in __call__
+2025-11-10T13:19:27.438892584Z [err]      |     raise exc
+2025-11-10T13:19:27.438897449Z [err]      |   File "/usr/local/lib/python3.11/site-packages/starlette/middleware/errors.py", line 164, in __call__
+2025-11-10T13:19:27.438902066Z [err]      |     await self.app(scope, receive, _send)
+2025-11-10T13:19:27.438906937Z [err]      |   File "/usr/local/lib/python3.11/site-packages/starlette/middleware/base.py", line 191, in __call__
+2025-11-10T13:19:27.438912444Z [err]      |     with recv_stream, send_stream, collapse_excgroups():
+2025-11-10T13:19:27.438916991Z [err]      |   File "/usr/local/lib/python3.11/contextlib.py", line 158, in __exit__
+2025-11-10T13:19:27.438921861Z [err]      |     self.gen.throw(typ, value, traceback)
+2025-11-10T13:19:27.438929655Z [err]      |   File "/usr/local/lib/python3.11/site-packages/starlette/_utils.py", line 85, in collapse_excgroups
+2025-11-10T13:19:27.442127286Z [err]      |     raise exc
+2025-11-10T13:19:27.442136581Z [err]      |   File "/usr/local/lib/python3.11/site-packages/starlette/middleware/base.py", line 193, in __call__
+2025-11-10T13:19:27.442142081Z [err]      |     response = await self.dispatch_func(request, call_next)
+2025-11-10T13:19:27.442147867Z [err]      |                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-11-10T13:19:27.442153867Z [err]      |   File "/app/backend/middleware/rate_limit.py", line 191, in dispatch
+2025-11-10T13:19:27.442162830Z [err]      |     raise HTTPException(
+2025-11-10T13:19:27.442168343Z [err]      | fastapi.exceptions.HTTPException: 429: Rate limit exceeded. Please try again in 60 seconds.
+2025-11-10T13:19:27.442173713Z [err]      +------------------------------------
+2025-11-10T13:19:27.442179942Z [err]  
+2025-11-10T13:19:27.442185796Z [err]  During handling of the above exception, another exception occurred:
+2025-11-10T13:19:27.442191544Z [err]  
+2025-11-10T13:19:27.442197235Z [err]  Traceback (most recent call last):
+2025-11-10T13:19:27.442203640Z [err]    File "/usr/local/lib/python3.11/site-packages/uvicorn/protocols/http/httptools_impl.py", line 409, in run_asgi
+2025-11-10T13:19:27.442210230Z [err]      result = await app(  # type: ignore[func-returns-value]
+2025-11-10T13:19:27.442216192Z [err]               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-11-10T13:19:27.442223370Z [err]    File "/usr/local/lib/python3.11/site-packages/uvicorn/middleware/proxy_headers.py", line 60, in __call__
+2025-11-10T13:19:27.442229187Z [err]      return await self.app(scope, receive, send)
+2025-11-10T13:19:27.442235212Z [err]             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-11-10T13:19:27.442240590Z [err]    File "/usr/local/lib/python3.11/site-packages/fastapi/applications.py", line 1134, in __call__
+2025-11-10T13:19:27.442245937Z [err]      await super().__call__(scope, receive, send)
+2025-11-10T13:19:27.443917192Z [err]    File "/usr/local/lib/python3.11/site-packages/starlette/applications.py", line 113, in __call__
+2025-11-10T13:19:27.443929303Z [err]      await self.middleware_stack(scope, receive, send)
+2025-11-10T13:19:27.443936423Z [err]    File "/usr/local/lib/python3.11/site-packages/starlette/middleware/errors.py", line 186, in __call__
+2025-11-10T13:19:27.443942914Z [err]      raise exc
+2025-11-10T13:19:27.443969131Z [err]    File "/usr/local/lib/python3.11/site-packages/starlette/middleware/errors.py", line 164, in __call__
+2025-11-10T13:19:27.443976510Z [err]      await self.app(scope, receive, _send)
+2025-11-10T13:19:27.443982313Z [err]    File "/usr/local/lib/python3.11/site-packages/starlette/middleware/base.py", line 191, in __call__
+2025-11-10T13:19:27.443987962Z [err]      with recv_stream, send_stream, collapse_excgroups():
+2025-11-10T13:19:27.443994757Z [err]    File "/usr/local/lib/python3.11/contextlib.py", line 158, in __exit__
+2025-11-10T13:19:27.444000833Z [err]      self.gen.throw(typ, value, traceback)
+2025-11-10T13:19:27.444006727Z [err]    File "/usr/local/lib/python3.11/site-packages/starlette/_utils.py", line 85, in collapse_excgroups
+2025-11-10T13:19:27.444014476Z [err]      raise exc
+2025-11-10T13:19:27.444020323Z [err]    File "/usr/local/lib/python3.11/site-packages/starlette/middleware/base.py", line 193, in __call__
+2025-11-10T13:19:27.444025766Z [err]      response = await self.dispatch_func(request, call_next)
+2025-11-10T13:19:27.444031527Z [err]                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-11-10T13:19:27.444037195Z [err]    File "/app/backend/middleware/rate_limit.py", line 191, in dispatch
+2025-11-10T13:19:27.444043833Z [err]      raise HTTPException(
+2025-11-10T13:19:27.444053357Z [err]  fastapi.exceptions.HTTPException: 429: Rate limit exceeded. Please try again in 60 seconds.
+2025-11-10T13:19:27.444061396Z [err]  WARNING:backend.middleware.rate_limit:Rate limit exceeded for ip:185.245.29.130 on /auth/login. Remaining: 0, Reset in: 60s
+2025-11-10T13:19:27.446951554Z [err]  [2025-11-10 13:19:17 +0000] [9] [ERROR] Exception in ASGI application
+2025-11-10T13:19:27.446958612Z [err]      |   File "/usr/local/lib/python3.11/site-packages/uvicorn/middleware/proxy_headers.py", line 60, in __call__
+2025-11-10T13:19:27.446969094Z [err]    + Exception Group Traceback (most recent call last):
+2025-11-10T13:19:27.446977731Z [err]      |     return await self.app(scope, receive, send)
+2025-11-10T13:19:27.446980282Z [err]    |   File "/usr/local/lib/python3.11/site-packages/starlette/_utils.py", line 79, in collapse_excgroups
+2025-11-10T13:19:27.446992089Z [err]    |     yield
+2025-11-10T13:19:27.446992380Z [err]      |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-11-10T13:19:27.447003066Z [err]    |   File "/usr/local/lib/python3.11/site-packages/starlette/middleware/base.py", line 192, in __call__
+2025-11-10T13:19:27.447005716Z [err]      |   File "/usr/local/lib/python3.11/site-packages/fastapi/applications.py", line 1134, in __call__
+2025-11-10T13:19:27.447012361Z [err]    |     async with anyio.create_task_group() as task_group:
+2025-11-10T13:19:27.447018820Z [err]    |   File "/usr/local/lib/python3.11/site-packages/anyio/_backends/_asyncio.py", line 781, in __aexit__
+2025-11-10T13:19:27.447024715Z [err]    |     raise BaseExceptionGroup(
+2025-11-10T13:19:27.447031129Z [err]    | ExceptionGroup: unhandled errors in a TaskGroup (1 sub-exception)
+2025-11-10T13:19:27.447038098Z [err]    +-+---------------- 1 ----------------
+2025-11-10T13:19:27.447043775Z [err]      | Traceback (most recent call last):
+2025-11-10T13:19:27.447049145Z [err]      |   File "/usr/local/lib/python3.11/site-packages/uvicorn/protocols/http/httptools_impl.py", line 409, in run_asgi
+2025-11-10T13:19:27.447055360Z [err]      |     result = await app(  # type: ignore[func-returns-value]
+2025-11-10T13:19:27.447060885Z [err]      |              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-11-10T13:19:27.449454506Z [err]      |     await super().__call__(scope, receive, send)
+2025-11-10T13:19:27.449467864Z [err]      |   File "/usr/local/lib/python3.11/site-packages/starlette/applications.py", line 113, in __call__
+2025-11-10T13:19:27.449475471Z [err]      |     await self.middleware_stack(scope, receive, send)
+2025-11-10T13:19:27.449483744Z [err]      |   File "/usr/local/lib/python3.11/site-packages/starlette/middleware/errors.py", line 186, in __call__
+2025-11-10T13:19:27.449489926Z [err]      |     raise exc
+2025-11-10T13:19:27.449497973Z [err]      |   File "/usr/local/lib/python3.11/site-packages/starlette/middleware/errors.py", line 164, in __call__
+2025-11-10T13:19:27.449504883Z [err]      |     await self.app(scope, receive, _send)
+2025-11-10T13:19:27.449512111Z [err]      |   File "/usr/local/lib/python3.11/site-packages/starlette/middleware/base.py", line 191, in __call__
+2025-11-10T13:19:27.449519204Z [err]      |     with recv_stream, send_stream, collapse_excgroups():
+2025-11-10T13:19:27.449525834Z [err]      |   File "/usr/local/lib/python3.11/contextlib.py", line 158, in __exit__
+2025-11-10T13:19:27.449532684Z [err]      |     self.gen.throw(typ, value, traceback)
+2025-11-10T13:19:27.449539540Z [err]      |   File "/usr/local/lib/python3.11/site-packages/starlette/_utils.py", line 85, in collapse_excgroups
+2025-11-10T13:19:27.449545818Z [err]      |     raise exc
+2025-11-10T13:19:27.449552670Z [err]      |   File "/usr/local/lib/python3.11/site-packages/starlette/middleware/base.py", line 193, in __call__
+2025-11-10T13:19:27.449561201Z [err]      |     response = await self.dispatch_func(request, call_next)
+2025-11-10T13:19:27.449574162Z [err]      |                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-11-10T13:19:27.449581188Z [err]      |   File "/app/backend/middleware/rate_limit.py", line 191, in dispatch
+2025-11-10T13:19:27.449588662Z [err]      |     raise HTTPException(
+2025-11-10T13:19:27.452105894Z [err]      | fastapi.exceptions.HTTPException: 429: Rate limit exceeded. Please try again in 60 seconds.
+2025-11-10T13:19:27.452117144Z [err]      +------------------------------------
+2025-11-10T13:19:27.452143620Z [err]  
+2025-11-10T13:19:27.452151742Z [err]  During handling of the above exception, another exception occurred:
+2025-11-10T13:19:27.452160433Z [err]  
+2025-11-10T13:19:27.452167484Z [err]  Traceback (most recent call last):
+2025-11-10T13:19:27.452174483Z [err]    File "/usr/local/lib/python3.11/site-packages/uvicorn/protocols/http/httptools_impl.py", line 409, in run_asgi
+2025-11-10T13:19:27.452180242Z [err]      result = await app(  # type: ignore[func-returns-value]
+2025-11-10T13:19:27.452186992Z [err]               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-11-10T13:19:27.452195164Z [err]    File "/usr/local/lib/python3.11/site-packages/uvicorn/middleware/proxy_headers.py", line 60, in __call__
+2025-11-10T13:19:27.452201626Z [err]      return await self.app(scope, receive, send)
+2025-11-10T13:19:27.452208038Z [err]             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-11-10T13:19:27.452214495Z [err]    File "/usr/local/lib/python3.11/site-packages/fastapi/applications.py", line 1134, in __call__
+2025-11-10T13:19:27.452221277Z [err]      await super().__call__(scope, receive, send)
+2025-11-10T13:19:27.452228117Z [err]    File "/usr/local/lib/python3.11/site-packages/starlette/applications.py", line 113, in __call__
+2025-11-10T13:19:27.452234731Z [err]      await self.middleware_stack(scope, receive, send)
+2025-11-10T13:19:27.452242402Z [err]    File "/usr/local/lib/python3.11/site-packages/starlette/middleware/errors.py", line 186, in __call__
+2025-11-10T13:19:27.452249157Z [err]      raise exc
+2025-11-10T13:19:27.452255775Z [err]    File "/usr/local/lib/python3.11/site-packages/starlette/middleware/errors.py", line 164, in __call__
+2025-11-10T13:19:27.452262114Z [err]      await self.app(scope, receive, _send)
+2025-11-10T13:19:27.457308454Z [err]    File "/usr/local/lib/python3.11/site-packages/starlette/middleware/base.py", line 191, in __call__
+2025-11-10T13:19:27.457315155Z [err]      with recv_stream, send_stream, collapse_excgroups():
+2025-11-10T13:19:27.457320929Z [err]    File "/usr/local/lib/python3.11/contextlib.py", line 158, in __exit__
+2025-11-10T13:19:27.457327892Z [err]      self.gen.throw(typ, value, traceback)
+2025-11-10T13:19:27.457333934Z [err]    File "/usr/local/lib/python3.11/site-packages/starlette/_utils.py", line 85, in collapse_excgroups
+2025-11-10T13:19:27.457340162Z [err]      raise exc
+2025-11-10T13:19:27.457345799Z [err]    File "/usr/local/lib/python3.11/site-packages/starlette/middleware/base.py", line 193, in __call__
+2025-11-10T13:19:27.457354031Z [err]      response = await self.dispatch_func(request, call_next)
+2025-11-10T13:19:27.457359996Z [err]                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-11-10T13:19:27.457365455Z [err]    File "/app/backend/middleware/rate_limit.py", line 191, in dispatch
+2025-11-10T13:19:27.457371096Z [err]      raise HTTPException(
+2025-11-10T13:19:27.457376261Z [err]  fastapi.exceptions.HTTPException: 429: Rate limit exceeded. Please try again in 60 seconds.
+2025-11-10T13:19:27.457383181Z [err]  WARNING:backend.middleware.rate_limit:Rate limit exceeded for ip:185.245.29.130 on /auth/login. Remaining: 0, Reset in: 60s
+2025-11-10T13:19:27.457388895Z [err]  [2025-11-10 13:19:17 +0000] [9] [ERROR] Exception in ASGI application
+2025-11-10T13:19:27.457395381Z [err]    + Exception Group Traceback (most recent call last):
+2025-11-10T13:19:27.457402691Z [err]    |   File "/usr/local/lib/python3.11/site-packages/starlette/_utils.py", line 79, in collapse_excgroups
+2025-11-10T13:19:27.457408238Z [err]    |     yield
+2025-11-10T13:19:27.457413768Z [err]    |   File "/usr/local/lib/python3.11/site-packages/starlette/middleware/base.py", line 192, in __call__
+2025-11-10T13:19:27.460322443Z [err]    |     async with anyio.create_task_group() as task_group:
+2025-11-10T13:19:27.460334983Z [err]    |   File "/usr/local/lib/python3.11/site-packages/anyio/_backends/_asyncio.py", line 781, in __aexit__
+2025-11-10T13:19:27.460341582Z [err]    |     raise BaseExceptionGroup(
+2025-11-10T13:19:27.460347301Z [err]    | ExceptionGroup: unhandled errors in a TaskGroup (1 sub-exception)
+2025-11-10T13:19:27.460353220Z [err]    +-+---------------- 1 ----------------
+2025-11-10T13:19:27.460361613Z [err]      | Traceback (most recent call last):
+2025-11-10T13:19:27.460374368Z [err]      |   File "/usr/local/lib/python3.11/site-packages/uvicorn/protocols/http/httptools_impl.py", line 409, in run_asgi
+2025-11-10T13:19:27.460380589Z [err]      |     result = await app(  # type: ignore[func-returns-value]
+2025-11-10T13:19:27.460386521Z [err]      |              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-11-10T13:19:27.460392330Z [err]      |   File "/usr/local/lib/python3.11/site-packages/uvicorn/middleware/proxy_headers.py", line 60, in __call__
+2025-11-10T13:19:27.460398052Z [err]      |     return await self.app(scope, receive, send)
+2025-11-10T13:19:27.460406921Z [err]      |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-11-10T13:19:27.460413696Z [err]      |   File "/usr/local/lib/python3.11/site-packages/fastapi/applications.py", line 1134, in __call__
+2025-11-10T13:19:27.460419843Z [err]      |     await super().__call__(scope, receive, send)
+2025-11-10T13:19:27.460424709Z [err]      |   File "/usr/local/lib/python3.11/site-packages/starlette/applications.py", line 113, in __call__
+2025-11-10T13:19:27.460429216Z [err]      |     await self.middleware_stack(scope, receive, send)
+2025-11-10T13:19:27.460434037Z [err]      |   File "/usr/local/lib/python3.11/site-packages/starlette/middleware/errors.py", line 186, in __call__
+2025-11-10T13:19:27.460439539Z [err]      |     raise exc
+2025-11-10T13:19:27.463435064Z [err]  
+2025-11-10T13:19:27.463449298Z [err]  During handling of the above exception, another exception occurred:
+2025-11-10T13:19:27.463458324Z [err]  
+2025-11-10T13:19:27.463465798Z [err]  Traceback (most recent call last):
+2025-11-10T13:19:27.463477581Z [err]    File "/usr/local/lib/python3.11/site-packages/uvicorn/protocols/http/httptools_impl.py", line 409, in run_asgi
+2025-11-10T13:19:27.463478836Z [err]      |   File "/usr/local/lib/python3.11/site-packages/starlette/middleware/errors.py", line 164, in __call__
+2025-11-10T13:19:27.463487283Z [err]      |     await self.app(scope, receive, _send)
+2025-11-10T13:19:27.463492645Z [err]      |   File "/usr/local/lib/python3.11/site-packages/starlette/middleware/base.py", line 191, in __call__
+2025-11-10T13:19:27.463497940Z [err]      |     with recv_stream, send_stream, collapse_excgroups():
+2025-11-10T13:19:27.463503730Z [err]      |   File "/usr/local/lib/python3.11/contextlib.py", line 158, in __exit__
+2025-11-10T13:19:27.463508804Z [err]      |     self.gen.throw(typ, value, traceback)
+2025-11-10T13:19:27.463513805Z [err]      |   File "/usr/local/lib/python3.11/site-packages/starlette/_utils.py", line 85, in collapse_excgroups
+2025-11-10T13:19:27.463518883Z [err]      |     raise exc
+2025-11-10T13:19:27.463524542Z [err]      |   File "/usr/local/lib/python3.11/site-packages/starlette/middleware/base.py", line 193, in __call__
+2025-11-10T13:19:27.463529977Z [err]      |     response = await self.dispatch_func(request, call_next)
+2025-11-10T13:19:27.463535273Z [err]      |                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-11-10T13:19:27.463540040Z [err]      |   File "/app/backend/middleware/rate_limit.py", line 191, in dispatch
+2025-11-10T13:19:27.463543930Z [err]      |     raise HTTPException(
+2025-11-10T13:19:27.463548227Z [err]      | fastapi.exceptions.HTTPException: 429: Rate limit exceeded. Please try again in 60 seconds.
+2025-11-10T13:19:27.463553034Z [err]      +------------------------------------
+2025-11-10T13:19:27.465519398Z [err]      result = await app(  # type: ignore[func-returns-value]
+2025-11-10T13:19:27.465529300Z [err]               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-11-10T13:19:27.465536219Z [err]    File "/usr/local/lib/python3.11/site-packages/uvicorn/middleware/proxy_headers.py", line 60, in __call__
+2025-11-10T13:19:27.465543622Z [err]      return await self.app(scope, receive, send)
+2025-11-10T13:19:27.465548923Z [err]             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-11-10T13:19:27.465554849Z [err]    File "/usr/local/lib/python3.11/site-packages/fastapi/applications.py", line 1134, in __call__
+2025-11-10T13:19:27.465561163Z [err]      await super().__call__(scope, receive, send)
+2025-11-10T13:19:27.465567004Z [err]    File "/usr/local/lib/python3.11/site-packages/starlette/applications.py", line 113, in __call__
+2025-11-10T13:19:27.465573849Z [err]      await self.middleware_stack(scope, receive, send)
+2025-11-10T13:19:27.468218545Z [err]    File "/usr/local/lib/python3.11/site-packages/starlette/middleware/base.py", line 193, in __call__
+2025-11-10T13:19:27.470480093Z [err]      |     result = await app(  # type: ignore[func-returns-value]
+2025-11-10T13:19:27.472651678Z [err]      |     raise exc
+2025-11-10T13:19:27.474931123Z [err]    File "/usr/local/lib/python3.11/site-packages/starlette/applications.py", line 113, in __call__
+2025-11-10T13:19:27.477128524Z [err]  [2025-11-10 13:19:18 +0000] [9] [ERROR] Exception in ASGI application
+2025-11-10T13:19:27.479427402Z [err]      |     await super().__call__(scope, receive, send)
+2025-11-10T13:19:27.481413932Z [err]      | fastapi.exceptions.HTTPException: 429: Rate limit exceeded. Please try again in 60 seconds.
+2025-11-10T13:19:27.483862720Z [err]    File "/usr/local/lib/python3.11/site-packages/starlette/middleware/base.py", line 191, in __call__
+2025-11-10T13:19:27.483871575Z [err]      with recv_stream, send_stream, collapse_excgroups():
+2025-11-10T13:19:27.486424879Z [err]    |     async with anyio.create_task_group() as task_group:
+2025-11-10T13:19:27.489060949Z [err]      |   File "/usr/local/lib/python3.11/site-packages/starlette/middleware/errors.py", line 164, in __call__
+2025-11-10T13:19:27.491230329Z [err]      result = await app(  # type: ignore[func-returns-value]
+2025-11-10T13:19:27.493880496Z [err]    File "/usr/local/lib/python3.11/site-packages/starlette/middleware/base.py", line 193, in __call__
+2025-11-10T13:19:27.493890905Z [err]      response = await self.dispatch_func(request, call_next)
+2025-11-10T13:19:27.497344961Z [err]      |     result = await app(  # type: ignore[func-returns-value]
+2025-11-10T13:19:27.499865469Z [err]      |     raise exc
+2025-11-10T13:19:27.499874253Z [err]      |   File "/usr/local/lib/python3.11/site-packages/starlette/middleware/base.py", line 193, in __call__
+2025-11-10T13:19:27.502300525Z [err]    File "/usr/local/lib/python3.11/site-packages/starlette/applications.py", line 113, in __call__
+2025-11-10T13:19:27.504701287Z [err]  [2025-11-10 13:19:18 +0000] [9] [ERROR] Exception in ASGI application
+2025-11-10T13:19:27.506999115Z [err]      |     await super().__call__(scope, receive, send)
+2025-11-10T13:19:27.509815756Z [err]      | fastapi.exceptions.HTTPException: 429: Rate limit exceeded. Please try again in 60 seconds.
+2025-11-10T13:19:27.509821311Z [err]      +------------------------------------
+2025-11-10T13:19:27.512105953Z [err]    File "/usr/local/lib/python3.11/site-packages/starlette/middleware/base.py", line 191, in __call__
+2025-11-10T13:19:27.516956826Z [err]    |     async with anyio.create_task_group() as task_group:
+2025-11-10T13:19:27.516967496Z [err]    |   File "/usr/local/lib/python3.11/site-packages/anyio/_backends/_asyncio.py", line 781, in __aexit__
+2025-11-10T13:19:27.520000103Z [err]      |   File "/usr/local/lib/python3.11/site-packages/starlette/middleware/errors.py", line 164, in __call__
+2025-11-10T13:19:27.520009056Z [err]      |     await self.app(scope, receive, _send)
+2025-11-10T13:19:27.522397774Z [err]      result = await app(  # type: ignore[func-returns-value]
+2025-11-10T13:19:27.524519915Z [err]    File "/usr/local/lib/python3.11/site-packages/starlette/middleware/base.py", line 193, in __call__
+2025-11-10T13:19:27.527802805Z [err]      |     result = await app(  # type: ignore[func-returns-value]
+2025-11-10T13:19:27.527812734Z [err]      |              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-11-10T13:19:27.530036729Z [err]      |     raise exc
+2025-11-10T13:19:27.532804867Z [err]    File "/usr/local/lib/python3.11/site-packages/starlette/applications.py", line 113, in __call__
+2025-11-10T13:19:40.839913488Z [err]  Railway rate limit of 500 logs/sec reached for replica, update your application to reduce the logging rate. Messages dropped: 466
+2025-11-10T13:19:56.995113635Z [err]  WARNING:root:[ANALYTICS] Fetching analytics for user_id: fe90c964-b532-421e-bbf6-7d9ef4981370
+2025-11-10T13:19:56.995120036Z [err]  WARNING:root:[ANALYTICS] Found 0 attempts for user_id: fe90c964-b532-421e-bbf6-7d9ef4981370
+2025-11-10T13:19:56.995126559Z [err]  WARNING:root:[QUIZ HISTORY] Fetching for user_id: fe90c964-b532-421e-bbf6-7d9ef4981370
+2025-11-10T13:19:56.995132719Z [err]  WARNING:root:[QUIZ HISTORY] Found 0 attempts for user_id: fe90c964-b532-421e-bbf6-7d9ef4981370
+2025-11-10T13:19:56.995139516Z [err]  WARNING:root:[QUIZ HISTORY] Returning 0 attempts for user_id: fe90c964-b532-421e-bbf6-7d9ef4981370
+2025-11-10T13:19:56.995146304Z [err]  WARNING:root:[STUDENT PROJECT] Fetching projects for user: fe90c964-b532-421e-bbf6-7d9ef4981370
+2025-11-10T13:19:56.995152847Z [err]  WARNING:root:[STUDENT PROJECT] Found 0 projects for user: fe90c964-b532-421e-bbf6-7d9ef4981370
+2025-11-10T13:19:56.995159653Z [err]  WARNING:root:[STUDENT PROJECT] Fetching projects for user: fe90c964-b532-421e-bbf6-7d9ef4981370
+2025-11-10T13:19:56.995165703Z [err]  WARNING:root:[STUDENT PROJECT] Found 0 projects for user: fe90c964-b532-421e-bbf6-7d9ef4981370

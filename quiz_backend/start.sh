@@ -18,7 +18,7 @@ if touch /app/data/.test_write 2>/dev/null; then
     chmod 777 /app/data 2>/dev/null || true
     # Default DATABASE_URL to the volume-backed path if not already set
     if [ -z "$DATABASE_URL" ]; then
-        export DATABASE_URL="sqlite:////app/data/quiz_database.db"
+        export DATABASE_URL="sqlite:///app/data/quiz_database.db"
         echo "ℹ️  DATABASE_URL not set. Defaulting to $DATABASE_URL"
     fi
 else
@@ -46,11 +46,15 @@ if database_url.startswith("sqlite"):
         raise SystemExit(0)
 
     # Handle sqlite:///absolute/path or sqlite:///relative/path
+    # SQLite URLs: sqlite:///path (3 slashes) or sqlite:////path (4 slashes) both work
     if parsed.netloc and parsed.netloc != "":
-        # sqlite:////absolute/path has netloc empty, so this handles unusual cases
         db_path = f"{parsed.netloc}{parsed.path}"
     else:
         db_path = parsed.path
+    
+    # Normalize any double slashes at the start (from sqlite:////path)
+    if db_path.startswith("//"):
+        db_path = db_path[1:]
 
     if not db_path:
         raise SystemExit("DATABASE_URL points to SQLite but has no path component.")
