@@ -5,12 +5,12 @@ import { useParams, useRouter } from 'next/navigation';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { ProtectedRoute } from '@/components/ProtectedRoute';
 import { Layout } from '@/components/Layout';
-import { Card, CardHeader } from '@/components/ui/Card';
+import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Alert } from '@/components/ui/Alert';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
-import { ArrowLeft, Upload, FileText, Settings, HelpCircle, BookOpen, FileQuestion, PenTool, Sparkles, ChevronDown, ChevronUp, MessageSquare, Trash2, Eye, X } from 'lucide-react';
+import { ArrowLeft, Upload, FileText, Settings, HelpCircle, BookOpen, FileQuestion, PenTool, Sparkles, ChevronDown, ChevronUp, MessageSquare, Trash2, Eye, X, MoreVertical } from 'lucide-react';
 import Link from 'next/link';
 import { studentProjectsApi, type StudentProject, type ProjectContent } from '@/lib/api/studentProjects';
 import { apiClient } from '@/lib/api/client';
@@ -84,6 +84,8 @@ function ContentItem({
   const [expanded, setExpanded] = useState(false);
   const [showPdfViewer, setShowPdfViewer] = useState(false);
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
+  const [showGenerateMenu, setShowGenerateMenu] = useState(false);
+  const [showMoreMenu, setShowMoreMenu] = useState(false);
   const queryClient = useQueryClient();
 
   const { data: generatedContent, isLoading: loadingGenerated } = useQuery<GeneratedContent>({
@@ -134,6 +136,19 @@ function ContentItem({
     };
   }, [pdfUrl]);
 
+  // Close menus when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as HTMLElement;
+      if (!target.closest('.generate-menu') && !target.closest('.more-menu')) {
+        setShowGenerateMenu(false);
+        setShowMoreMenu(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
   return (
     <Card className="hover:shadow-md transition-shadow">
       <div className="space-y-4">
@@ -162,87 +177,125 @@ function ContentItem({
               </div>
             </div>
           </div>
-          <div className="flex flex-wrap gap-2 flex-shrink-0">
-            <Button 
-              variant="outline" 
-              size="sm"
-              onClick={onGenerateQuiz} 
-              isLoading={isGeneratingQuiz}
-              className="flex items-center gap-1"
-            >
-              <FileQuestion className="w-4 h-4" />
-              Quiz
-            </Button>
-            <Button 
-              variant="outline" 
-              size="sm"
-              onClick={onGenerateFlashcards} 
-              isLoading={isGeneratingFlashcards}
-              className="flex items-center gap-1"
-            >
-              <Sparkles className="w-4 h-4" />
-              Cards
-            </Button>
-            <Button 
-              variant="outline" 
-              size="sm"
-              onClick={onGenerateEssays} 
-              isLoading={isGeneratingEssays}
-              className="flex items-center gap-1"
-            >
-              <PenTool className="w-4 h-4" />
-              Essay
-            </Button>
+          <div className="flex items-center gap-2 flex-shrink-0">
+            {/* Primary Action: View */}
             {content.content_type === 'pdf' && (
-              <>
-                <Button 
-                  variant="outline" 
-                  size="sm"
-                  onClick={async () => {
-                    try {
-                      // Fetch PDF as blob with authentication
-                      const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
-                      const baseUrl = apiClient.defaults.baseURL?.replace(/\/$/, '') || '';
-                      const response = await fetch(`${baseUrl}/student-projects/${projectId}/content/${content.id}/view`, {
-                        headers: token ? { Authorization: `Bearer ${token}` } : {},
-                      });
-                      if (!response.ok) throw new Error('Failed to load PDF');
-                      const blob = await response.blob();
-                      const url = URL.createObjectURL(blob);
-                      setPdfUrl(url);
-                      setShowPdfViewer(true);
-                    } catch (error) {
-                      console.error('Failed to load PDF:', error);
-                      alert('Failed to load PDF. Please try again.');
-                    }
-                  }}
-                  className="flex items-center gap-1"
-                >
-                  <Eye className="w-4 h-4" />
-                  View
-                </Button>
-                <Link href={`/student-hub/${projectId}/chat?contentId=${content.id}`}>
-                  <Button 
-                    variant="outline" 
-                    size="sm"
-                    className="flex items-center gap-1"
-                  >
-                    <MessageSquare className="w-4 h-4" />
-                    Chat
-                  </Button>
-                </Link>
-              </>
+              <Button 
+                variant="primary" 
+                size="sm"
+                onClick={async () => {
+                  try {
+                    const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+                    const baseUrl = apiClient.defaults.baseURL?.replace(/\/$/, '') || '';
+                    const response = await fetch(`${baseUrl}/student-projects/${projectId}/content/${content.id}/view`, {
+                      headers: token ? { Authorization: `Bearer ${token}` } : {},
+                    });
+                    if (!response.ok) throw new Error('Failed to load PDF');
+                    const blob = await response.blob();
+                    const url = URL.createObjectURL(blob);
+                    setPdfUrl(url);
+                    setShowPdfViewer(true);
+                  } catch (error) {
+                    console.error('Failed to load PDF:', error);
+                    alert('Failed to load PDF. Please try again.');
+                  }
+                }}
+                className="flex items-center gap-1.5"
+              >
+                <Eye className="w-4 h-4" />
+                View
+              </Button>
             )}
-            <Button 
-              variant="outline" 
-              size="sm"
-              onClick={onDeleteContent}
-              isLoading={isDeletingContent}
-              className="flex items-center gap-1 text-red-600 hover:text-red-700 hover:border-red-300"
-            >
-              <Trash2 className="w-4 h-4" />
-              Delete
-            </Button>
+
+            {/* Generate Dropdown */}
+            <div className="relative generate-menu">
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={() => setShowGenerateMenu(!showGenerateMenu)}
+                className="flex items-center gap-1.5"
+              >
+                <Sparkles className="w-4 h-4" />
+                Generate
+                <ChevronDown className={`w-3 h-3 transition-transform ${showGenerateMenu ? 'rotate-180' : ''}`} />
+              </Button>
+              {showGenerateMenu && (
+                <div className="absolute right-0 mt-1 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-10">
+                  <button
+                    onClick={() => {
+                      onGenerateQuiz();
+                      setShowGenerateMenu(false);
+                    }}
+                    disabled={isGeneratingQuiz}
+                    className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2 disabled:opacity-50"
+                  >
+                    <FileQuestion className="w-4 h-4" />
+                    {isGeneratingQuiz ? 'Generating...' : 'Quiz'}
+                  </button>
+                  <button
+                    onClick={() => {
+                      onGenerateFlashcards();
+                      setShowGenerateMenu(false);
+                    }}
+                    disabled={isGeneratingFlashcards}
+                    className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2 disabled:opacity-50"
+                  >
+                    <Sparkles className="w-4 h-4" />
+                    {isGeneratingFlashcards ? 'Generating...' : 'Flashcards'}
+                  </button>
+                  <button
+                    onClick={() => {
+                      onGenerateEssays();
+                      setShowGenerateMenu(false);
+                    }}
+                    disabled={isGeneratingEssays}
+                    className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2 disabled:opacity-50"
+                  >
+                    <PenTool className="w-4 h-4" />
+                    {isGeneratingEssays ? 'Generating...' : 'Essay Q&A'}
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {/* More Menu */}
+            <div className="relative more-menu">
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={() => setShowMoreMenu(!showMoreMenu)}
+                className="flex items-center p-2"
+                title="More options"
+              >
+                <MoreVertical className="w-4 h-4" />
+              </Button>
+              {showMoreMenu && (
+                <div className="absolute right-0 mt-1 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-10">
+                  {content.content_type === 'pdf' && (
+                    <Link href={`/student-hub/${projectId}/chat?contentId=${content.id}`}>
+                      <button
+                        onClick={() => setShowMoreMenu(false)}
+                        className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2"
+                      >
+                        <MessageSquare className="w-4 h-4" />
+                        Chat with PDF
+                      </button>
+                    </Link>
+                  )}
+                  <button
+                    onClick={() => {
+                      onDeleteContent();
+                      setShowMoreMenu(false);
+                    }}
+                    disabled={isDeletingContent}
+                    className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 flex items-center gap-2 disabled:opacity-50"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                    {isDeletingContent ? 'Deleting...' : 'Delete'}
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
         </div>
 
