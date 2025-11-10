@@ -22,11 +22,24 @@ from backend.middleware.rate_limit import RateLimitMiddleware
 app = FastAPI(title="Quiz Maker API")
 
 # Configure CORS
+# Get allowed origins from environment variable (comma-separated)
+# If not set, allow all origins but disable credentials (for development)
+cors_origins_env = os.getenv("CORS_ALLOWED_ORIGINS", "")
+if cors_origins_env:
+    # Parse comma-separated origins
+    allowed_origins = [origin.strip() for origin in cors_origins_env.split(",") if origin.strip()]
+    allow_credentials = True
+else:
+    # Development mode: allow all origins but disable credentials
+    # (browsers don't allow credentials with wildcard origins)
+    allowed_origins = ["*"]
+    allow_credentials = False
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Allow all origins for testing
-    allow_credentials=True,
-    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"], 
+    allow_origins=allowed_origins,
+    allow_credentials=allow_credentials,
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"], 
     allow_headers=["*"],
 )
 

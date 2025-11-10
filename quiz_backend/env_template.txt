@@ -30,4 +30,9 @@ OPENAI_API_KEY=your_openai_api_key_here
 # Server Configuration
 HOST=0.0.0.0
 PORT=8000
-DEBUG=True 
+DEBUG=True
+
+# CORS Configuration
+# Comma-separated list of allowed origins (e.g., "https://example.com,https://app.example.com")
+# If not set, allows all origins but disables credentials (development mode)
+# CORS_ALLOWED_ORIGINS=https://miraculous-energy-production.up.railway.app,http://localhost:3000 
