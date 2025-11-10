@@ -15,6 +15,7 @@ chmod 777 /app/data 2>/dev/null || chmod 755 /app/data 2>/dev/null || true
 if touch /app/data/.test_write 2>/dev/null; then
     rm -f /app/data/.test_write
     echo "✅ Data directory is writable: /app/data"
+    chmod 777 /app/data 2>/dev/null || true
     # Default DATABASE_URL to the volume-backed path if not already set
     if [ -z "$DATABASE_URL" ]; then
         export DATABASE_URL="sqlite:////app/data/quiz_database.db"
@@ -31,6 +32,46 @@ else
         echo "⚠️ DATABASE_URL already provided, continuing with its value."
     fi
 fi
+
+# Ensure the SQLite database path exists and is writable
+python <<'PY'
+import os
+import pathlib
+from urllib.parse import urlparse
+
+database_url = os.environ.get("DATABASE_URL", "")
+if database_url.startswith("sqlite"):
+    parsed = urlparse(database_url)
+    if parsed.scheme != "sqlite":
+        raise SystemExit(0)
+
+    # Handle sqlite:///absolute/path or sqlite:///relative/path
+    if parsed.netloc and parsed.netloc != "":
+        # sqlite:////absolute/path has netloc empty, so this handles unusual cases
+        db_path = f"{parsed.netloc}{parsed.path}"
+    else:
+        db_path = parsed.path
+
+    if not db_path:
+        raise SystemExit("DATABASE_URL points to SQLite but has no path component.")
+
+    # Normalise relative paths
+    if not db_path.startswith("/"):
+        db_path = os.path.abspath(db_path)
+
+    db_file = pathlib.Path(db_path)
+    try:
+        db_file.parent.mkdir(parents=True, exist_ok=True)
+    except PermissionError as exc:
+        raise SystemExit(f"❌ Unable to create directory for database at {db_file.parent}: {exc}")
+
+    try:
+        db_file.touch(exist_ok=True)
+    except PermissionError as exc:
+        raise SystemExit(f"❌ Unable to create or touch database file at {db_file}: {exc}")
+
+    print(f"✅ SQLite database verified at {db_file}")
+PY
 
 echo "🚀 Running database migrations..."
 python run_migration.py

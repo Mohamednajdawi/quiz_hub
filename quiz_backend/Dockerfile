@@ -21,12 +21,10 @@ COPY . .
 # Make startup script executable (before switching to non-root user)
 RUN chmod +x start.sh
 
-# Create a non-root user and switch to it for security
+# Create a non-root user (optional runtime drop)
 RUN useradd -m appuser
 # Create data directory for Railway volume mounts with proper permissions
 RUN mkdir -p /app/data && chmod 777 /app/data
-RUN chown -R appuser:appuser /app
-USER appuser
 
 # Expose the port the app runs on
 EXPOSE 8000
