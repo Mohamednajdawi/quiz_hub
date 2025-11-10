@@ -41,7 +41,7 @@ export const studentProjectsApi = {
     return data.contents ?? [];
   },
 
-  uploadPdf: async (projectId: number, file: File): Promise<{ content: ProjectContent[] }> => {
+  uploadPdf: async (projectId: number, file: File): Promise<{ content: ProjectContent[]; errors?: string[]; partial_success?: boolean }> => {
     const form = new FormData();
     form.append('pdf_files', file);
 
