@@ -39,6 +39,7 @@ export default function Home() {
               </h1>
               <p className="mt-6 max-w-3xl mx-auto text-xl text-gray-700 leading-relaxed">
                 Generate interactive quizzes, flashcards, and essay questions from any PDF or URL. 
+                Chat with your documents, share quizzes with friends, and track your progress. 
                 Powered by advanced AI to help you study smarter, not harder.
               </p>
               <div className="mt-10 flex flex-col sm:flex-row gap-4 justify-center">
@@ -99,15 +100,19 @@ export default function Home() {
                   <ul className="space-y-2 mb-6">
                     <li className="flex items-center text-sm text-gray-600">
                       <CheckCircle2 className="w-4 h-4 text-indigo-600 mr-2 flex-shrink-0" />
-                      Multiple difficulty levels
+                      Multiple difficulty levels (easy/medium/hard)
                     </li>
                     <li className="flex items-center text-sm text-gray-600">
                       <CheckCircle2 className="w-4 h-4 text-indigo-600 mr-2 flex-shrink-0" />
-                      Instant feedback
+                      Instant feedback & detailed results
                     </li>
                     <li className="flex items-center text-sm text-gray-600">
                       <CheckCircle2 className="w-4 h-4 text-indigo-600 mr-2 flex-shrink-0" />
-                      Performance tracking
+                      Share quizzes with 6-digit codes
+                    </li>
+                    <li className="flex items-center text-sm text-gray-600">
+                      <CheckCircle2 className="w-4 h-4 text-indigo-600 mr-2 flex-shrink-0" />
+                      Performance tracking & analytics
                     </li>
                   </ul>
                   <Link href="/quizzes">
@@ -230,6 +235,15 @@ export default function Home() {
                       <CheckCircle2 className="w-4 h-4 text-indigo-600" />
                     </div>
                     <div>
+                      <h4 className="font-semibold text-gray-900 mb-1">AI Chat with PDFs</h4>
+                      <p className="text-gray-700">Ask questions and get instant answers from your uploaded documents</p>
+                    </div>
+                  </li>
+                  <li className="flex items-start gap-3">
+                    <div className="w-6 h-6 bg-indigo-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                      <CheckCircle2 className="w-4 h-4 text-indigo-600" />
+                    </div>
+                    <div>
                       <h4 className="font-semibold text-gray-900 mb-1">Track Progress</h4>
                       <p className="text-gray-700">See all your generated content in one organized view</p>
                     </div>
@@ -325,6 +339,47 @@ export default function Home() {
           </div>
         </section>
 
+        {/* Additional Features Section */}
+        <section className="py-20 bg-white">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="text-center mb-16">
+              <h2 className="text-4xl font-bold text-gray-900 mb-4">More Powerful Features</h2>
+              <p className="text-xl text-gray-700 max-w-2xl mx-auto">
+                Everything you need for effective studying and collaboration
+              </p>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+              <Card className="p-6 border-2 hover:border-indigo-200 transition-all">
+                <div className="w-12 h-12 bg-indigo-100 rounded-lg flex items-center justify-center mb-4">
+                  <Users className="w-6 h-6 text-indigo-600" />
+                </div>
+                <h3 className="text-lg font-bold text-gray-900 mb-2">Quiz Sharing</h3>
+                <p className="text-gray-700 text-sm">
+                  Share quizzes with friends using 6-digit codes. Perfect for study groups and classroom activities.
+                </p>
+              </Card>
+              <Card className="p-6 border-2 hover:border-purple-200 transition-all">
+                <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center mb-4">
+                  <Star className="w-6 h-6 text-purple-600" />
+                </div>
+                <h3 className="text-lg font-bold text-gray-900 mb-2">Referral Program</h3>
+                <p className="text-gray-700 text-sm">
+                  Invite friends and earn bonus generations. Get 5 free generations for each successful referral.
+                </p>
+              </Card>
+              <Card className="p-6 border-2 hover:border-pink-200 transition-all">
+                <div className="w-12 h-12 bg-pink-100 rounded-lg flex items-center justify-center mb-4">
+                  <BarChart3 className="w-6 h-6 text-pink-600" />
+                </div>
+                <h3 className="text-lg font-bold text-gray-900 mb-2">Analytics Dashboard</h3>
+                <p className="text-gray-700 text-sm">
+                  Track your performance with detailed statistics, category breakdowns, and progress visualization.
+                </p>
+              </Card>
+            </div>
+          </div>
+        </section>
+
         {/* Benefits Section */}
         <section className="py-20 bg-gradient-to-br from-indigo-50 to-purple-50">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -371,7 +426,7 @@ export default function Home() {
               Ready to Transform Your Study Habits?
             </h2>
             <p className="text-xl text-indigo-100 mb-8">
-              Join thousands of students who are already studying smarter with AI-powered tools.
+              Start with free AI generations. Upgrade to Pro for unlimited access, advanced features, and priority support.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Link href="/register">
