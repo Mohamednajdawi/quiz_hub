@@ -6,7 +6,7 @@ limits:
   free_tier:
     max_projects: 3
   pro_tier:
-    max_projects: -1  # Unlimited
+    max_projects: -1 # Unlimited
 
 pricing:
   currency: "EUR"
@@ -33,15 +33,15 @@ pricing:
       highlighted: false
     - id: pro
       name: "Pro"
-      price: "€19"
+      price: "€9"
       price_suffix: " / month"
-      price_annual: "€159"
+      price_annual: "€90"
       price_suffix_annual: " / year"
-      annual_savings: "Save €69 per year (€13.25/month)"
+      annual_savings: "Save €18 per year (€7.50/month)"
       tagline: "For students who rely on Quiz Hub daily"
-      description: "Unlimited generations, faster responses, and priority support. Ideal for heavy study loads and exam prep."
+      description: "200 AI generations per month, faster responses, and priority support. Ideal for heavy study loads and exam prep."
       features:
-        - "Unlimited AI generations and chats"
+        - "200 AI generations and chats per month"
         - "Unlimited projects in Student Hub"
         - "Export Flashcards to Anki format"
         - "Export Quizzes and Essays to PDF format"
@@ -70,4 +70,3 @@ pricing:
         href: "mailto:sales@quizhub.com?subject=Quiz%20Hub%20Teams"
         variant: "outline"
       highlighted: false
-
