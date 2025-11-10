@@ -35,4 +35,9 @@ DEBUG=True
 # CORS Configuration
 # Comma-separated list of allowed origins (e.g., "https://example.com,https://app.example.com")
 # If not set, allows all origins but disables credentials (development mode)
-# CORS_ALLOWED_ORIGINS=https://miraculous-energy-production.up.railway.app,http://localhost:3000 
+# CORS_ALLOWED_ORIGINS=https://miraculous-energy-production.up.railway.app,http://localhost:3000
+
+# File Storage Configuration
+# Directory for persistent PDF storage. Must be writable by the application.
+# Defaults to /app/data/student_project_pdfs on Railway (if available) or ./student_project_pdfs locally.
+# PDF_STORAGE_DIR=/app/data/student_project_pdfs

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 import os
 from functools import lru_cache
 from pathlib import Path
@@ -85,17 +86,53 @@ def get_free_generation_quota() -> int:
 
 def get_pdf_storage_dir() -> str:
     """
-    Get the directory path for storing PDF files.
-    Uses Railway volume at /app/data if it exists, otherwise falls back to local storage.
+    Determine a writable directory for storing PDF files.
+
+    Preference order:
+    1. Explicit `PDF_STORAGE_DIR` environment variable
+    2. Railway volume under `/app/data/student_project_pdfs`
+    3. Local project directory (`./student_project_pdfs`)
     """
-    # Check if Railway volume exists
+
+    # Helper to validate and create candidate directories
+    def _ensure_dir(path: str) -> str | None:
+        try:
+            os.makedirs(path, exist_ok=True)
+        except PermissionError:
+            logging.warning("[PDF STORAGE] Permission denied when creating directory: %s", path)
+            return None
+        except OSError as exc:
+            logging.warning("[PDF STORAGE] Unable to create directory %s: %s", path, exc)
+            return None
+
+        if os.access(path, os.W_OK):
+            return path
+
+        logging.warning("[PDF STORAGE] Directory exists but is not writable: %s", path)
+        return None
+
+    candidates = []
+
+    # Highest priority: explicit override
+    env_override = os.getenv("PDF_STORAGE_DIR")
+    if env_override:
+        candidates.append(env_override)
+
+    # Railway volume (if mounted)
     railway_volume = "/app/data"
-    if os.path.exists(railway_volume) and os.path.isdir(railway_volume):
-        storage_dir = os.path.join(railway_volume, "student_project_pdfs")
-    else:
-        # Fallback to local storage for development
-        storage_dir = os.path.join(os.getcwd(), "student_project_pdfs")
-    
-    # Ensure directory exists
-    os.makedirs(storage_dir, exist_ok=True)
-    return storage_dir
+    if os.path.isdir(railway_volume):
+        candidates.append(os.path.join(railway_volume, "student_project_pdfs"))
+
+    # Local development fallback
+    candidates.append(os.path.join(os.getcwd(), "student_project_pdfs"))
+
+    for candidate in candidates:
+        ensured = _ensure_dir(candidate)
+        if ensured:
+            logging.debug("[PDF STORAGE] Using directory: %s", ensured)
+            return ensured
+
+    raise RuntimeError(
+        "Unable to locate a writable directory for PDF storage. "
+        "Set PDF_STORAGE_DIR environment variable to a writable path."
+    )
