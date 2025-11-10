@@ -10,12 +10,11 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Alert } from '@/components/ui/Alert';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
-import { ArrowLeft, Upload, FileText, Settings, HelpCircle, BookOpen, FileQuestion, PenTool, Sparkles, ChevronDown, ChevronUp, MessageSquare, Trash2, Eye, X, MoreVertical } from 'lucide-react';
+import { ArrowLeft, Upload, FileText, Settings, HelpCircle, BookOpen, FileQuestion, PenTool, Sparkles, ChevronDown, ChevronUp, MessageSquare, Trash2, Eye, X, MoreVertical, Edit2 } from 'lucide-react';
 import Link from 'next/link';
 import { studentProjectsApi, type StudentProject, type ProjectContent } from '@/lib/api/studentProjects';
 import { apiClient } from '@/lib/api/client';
 import { format } from 'date-fns';
-import { quizApi } from '@/lib/api/quiz';
 import { flashcardApi } from '@/lib/api/flashcards';
 import { essayApi } from '@/lib/api/essay';
 
@@ -98,8 +97,8 @@ function ContentItem({
 
   const handleViewQuiz = async (quizId: number) => {
     try {
-      const quizData = await quizApi.getQuiz(quizId);
-      router.push(`/quizzes/take?data=${encodeURIComponent(JSON.stringify(quizData))}`);
+      // Navigate directly to quiz detail page where editing is available
+      router.push(`/quizzes/${quizId}`);
     } catch (error) {
       console.error('Failed to load quiz:', error);
     }
@@ -341,17 +340,28 @@ function ContentItem({
                       </h5>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                         {generatedContent.quizzes.map((quiz) => (
-                          <button
+                          <div
                             key={quiz.id}
-                            onClick={() => handleViewQuiz(quiz.id)}
-                            className="text-left p-3 bg-indigo-50 hover:bg-indigo-100 rounded-md transition-colors border border-indigo-200"
+                            className="text-left p-3 bg-indigo-50 hover:bg-indigo-100 rounded-md transition-colors border border-indigo-200 flex items-center justify-between gap-2"
                           >
-                            <div className="font-medium text-sm text-gray-900 truncate">{quiz.topic}</div>
-                            <div className="text-xs text-gray-600 mt-1">
-                              {quiz.question_count} questions
-                              {quiz.difficulty && ` • ${quiz.difficulty.charAt(0).toUpperCase() + quiz.difficulty.slice(1)}`}
-                            </div>
-                          </button>
+                            <button
+                              onClick={() => handleViewQuiz(quiz.id)}
+                              className="flex-1 text-left min-w-0"
+                            >
+                              <div className="font-medium text-sm text-gray-900 truncate">{quiz.topic}</div>
+                              <div className="text-xs text-gray-600 mt-1">
+                                {quiz.question_count} questions
+                                {quiz.difficulty && ` • ${quiz.difficulty.charAt(0).toUpperCase() + quiz.difficulty.slice(1)}`}
+                              </div>
+                            </button>
+                            <button
+                              onClick={() => handleViewQuiz(quiz.id)}
+                              className="flex-shrink-0 p-1.5 text-indigo-600 hover:bg-indigo-200 rounded transition-colors"
+                              title="Edit quiz"
+                            >
+                              <Edit2 className="w-4 h-4" />
+                            </button>
+                          </div>
                         ))}
                       </div>
                     </div>
@@ -696,7 +706,12 @@ function ProjectDetailContent() {
       contents?.forEach((c) => {
         queryClient.invalidateQueries({ queryKey: ['generated-content', projectId, c.id] });
       });
-      router.push(`/quizzes/take?data=${encodeURIComponent(JSON.stringify(data))}`);
+      // Navigate to quiz detail page if it has an ID (for editing), otherwise to take page
+      if (data.quiz_id) {
+        router.push(`/quizzes/${data.quiz_id}`);
+      } else {
+        router.push(`/quizzes/take?data=${encodeURIComponent(JSON.stringify(data))}`);
+      }
     },
     onError: (e: any) => {
       setGenerationStatus({ type: null, messageIndex: 0 });
