@@ -41,9 +41,9 @@ export const studentProjectsApi = {
     return data.contents ?? [];
   },
 
-  uploadPdf: async (projectId: number, file: File): Promise<ProjectContent> => {
+  uploadPdf: async (projectId: number, file: File): Promise<{ content: ProjectContent[] }> => {
     const form = new FormData();
-    form.append('pdf_file', file);
+    form.append('pdf_files', file);
 
     // For file uploads, we need to remove the default Content-Type header
     // and let the browser/axios set it automatically with the boundary
@@ -52,7 +52,27 @@ export const studentProjectsApi = {
         // Don't set Content-Type - let axios/browser set it with boundary for multipart/form-data
       },
     });
-    return data.content ?? data;
+    // Ensure content is always an array
+    if (Array.isArray(data.content)) {
+      return data;
+    }
+    return { content: [data.content ?? data] };
+  },
+
+  uploadPdfs: async (projectId: number, files: File[]): Promise<{ content: ProjectContent[]; errors?: string[]; partial_success?: boolean }> => {
+    const form = new FormData();
+    files.forEach((file) => {
+      form.append('pdf_files', file);
+    });
+
+    // For file uploads, we need to remove the default Content-Type header
+    // and let the browser/axios set it automatically with the boundary
+    const { data } = await apiClient.post(`/student-projects/${projectId}/content`, form, {
+      headers: {
+        // Don't set Content-Type - let axios/browser set it with boundary for multipart/form-data
+      },
+    });
+    return data;
   },
 
   generateQuizFromContent: async (

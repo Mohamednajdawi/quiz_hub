@@ -332,7 +332,7 @@ function ProjectDetailContent() {
   const projectId = parseInt(params.id as string, 10);
   const queryClient = useQueryClient();
 
-  const [file, setFile] = useState<File | null>(null);
+  const [files, setFiles] = useState<File[]>([]);
   const [numQuestions, setNumQuestions] = useState(5);
   const [numCards, setNumCards] = useState(10);
   const [difficulty, setDifficulty] = useState<'easy' | 'medium' | 'hard'>('medium');
@@ -351,15 +351,27 @@ function ProjectDetailContent() {
 
   const uploadMutation = useMutation({
     mutationFn: () => {
-      if (!file) throw new Error('Select a PDF to upload');
-      return studentProjectsApi.uploadPdf(projectId, file);
+      if (files.length === 0) throw new Error('Select at least one PDF to upload');
+      if (files.length === 1) {
+        return studentProjectsApi.uploadPdf(projectId, files[0]);
+      }
+      return studentProjectsApi.uploadPdfs(projectId, files);
     },
-    onSuccess: () => {
-      setFile(null);
-      setSuccess('PDF uploaded successfully!');
-      setError(null);
+    onSuccess: (data) => {
+      setFiles([]);
+      const uploadedCount = data.content?.length || 0;
+      if (data.partial_success && data.errors) {
+        setSuccess(`Successfully uploaded ${uploadedCount} file(s). ${data.errors.length} file(s) failed.`);
+        setError(data.errors.join('; '));
+      } else {
+        setSuccess(`${uploadedCount} PDF${uploadedCount > 1 ? 's' : ''} uploaded successfully!`);
+        setError(null);
+      }
       queryClient.invalidateQueries({ queryKey: ['student-project-contents', projectId] });
-      setTimeout(() => setSuccess(null), 3000);
+      setTimeout(() => {
+        setSuccess(null);
+        setError(null);
+      }, 5000);
     },
     onError: (e: any) => {
       setError(e.message || 'Upload failed');
@@ -509,27 +521,50 @@ function ProjectDetailContent() {
               <Card>
                 <div className="flex items-center gap-2 mb-4">
                   <Upload className="w-5 h-5 text-indigo-600" />
-                  <h3 className="text-lg font-semibold text-gray-900">Upload PDF</h3>
+                  <h3 className="text-lg font-semibold text-gray-900">Upload PDFs</h3>
                 </div>
                 <div className="space-y-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Select PDF File
+                      Select PDF Files
                     </label>
                     <input
                       type="file"
                       accept="application/pdf"
-                      onChange={(e) => setFile(e.target.files?.[0] || null)}
+                      multiple
+                      onChange={(e) => {
+                        const selectedFiles = Array.from(e.target.files || []);
+                        setFiles(selectedFiles);
+                      }}
                       className="block w-full text-sm text-gray-700 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100 transition-colors"
                     />
-                    {file && (
-                      <div className="mt-2 p-2 bg-gray-50 rounded-md">
-                        <div className="flex items-center gap-2 text-sm text-gray-700">
-                          <FileText className="w-4 h-4" />
-                          <span className="truncate">{file.name}</span>
-                          <span className="text-gray-500">({Math.round(file.size / 1024)} KB)</span>
-                        </div>
+                    {files.length > 0 && (
+                      <div className="mt-2 space-y-2 max-h-48 overflow-y-auto">
+                        {files.map((file, index) => (
+                          <div key={index} className="p-2 bg-gray-50 rounded-md flex items-center justify-between gap-2">
+                            <div className="flex items-center gap-2 text-sm text-gray-700 flex-1 min-w-0">
+                              <FileText className="w-4 h-4 flex-shrink-0" />
+                              <span className="truncate">{file.name}</span>
+                              <span className="text-gray-500 flex-shrink-0">({Math.round(file.size / 1024)} KB)</span>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const newFiles = files.filter((_, i) => i !== index);
+                                setFiles(newFiles);
+                              }}
+                              className="text-red-600 hover:text-red-700 text-xs font-medium"
+                            >
+                              Remove
+                            </button>
+                          </div>
+                        ))}
                       </div>
+                    )}
+                    {files.length > 0 && (
+                      <p className="mt-2 text-xs text-gray-600">
+                        {files.length} file{files.length > 1 ? 's' : ''} selected
+                      </p>
                     )}
                   </div>
                   <Button
@@ -537,11 +572,11 @@ function ProjectDetailContent() {
                     variant="primary"
                     onClick={() => uploadMutation.mutate()}
                     isLoading={uploadMutation.isPending}
-                    disabled={!file}
+                    disabled={files.length === 0}
                     size="lg"
                   >
                     <Upload className="w-4 h-4 mr-2" />
-                    Upload PDF
+                    Upload {files.length > 1 ? `${files.length} PDFs` : 'PDF'}
                   </Button>
                 </div>
               </Card>

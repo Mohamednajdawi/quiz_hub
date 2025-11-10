@@ -382,11 +382,11 @@ async def delete_student_project(
 @router.post("/student-projects/{project_id}/content", tags=["Student Projects"])
 async def add_project_content(
     project_id: int,
-    pdf_file: UploadFile = File(...),
+    pdf_files: List[UploadFile] = File(...),
     current_user: UserModel = Depends(get_current_user_dependency),
     db: Session = Depends(get_db)
 ) -> JSONResponse:
-    """Add PDF content to a student project"""
+    """Add PDF content to a student project (supports multiple files)"""
     user_id = current_user.id
     logging.warning(f"[STUDENT PROJECT] Adding content to project {project_id} for user: {user_id}")
     
@@ -399,69 +399,102 @@ async def add_project_content(
     if not project:
         raise HTTPException(status_code=404, detail="Project not found")
     
-    # Handle PDF file upload
+    # Handle PDF file uploads
     import shutil
     import uuid
-    
-    # Validate file type - check both filename and content type
-    filename = pdf_file.filename or ''
-    content_type = pdf_file.content_type or ''
-    
-    logging.warning(f"[STUDENT PROJECT] File upload - filename: {filename}, content_type: {content_type}")
-    
-    # Check filename extension
-    is_pdf_filename = filename.lower().endswith('.pdf')
-    # Check MIME type (common PDF MIME types)
-    is_pdf_mime = content_type.lower() in ['application/pdf', 'application/x-pdf', 'application/x-bzpdf', 'application/x-gzpdf']
-    
-    if not is_pdf_filename and not is_pdf_mime:
-        logging.error(f"[STUDENT PROJECT] Invalid file type - filename: {filename}, content_type: {content_type}")
-        raise HTTPException(
-            status_code=400, 
-            detail=f"Only PDF files are accepted. Received: filename='{filename}', content_type='{content_type}'"
-        )
     
     # Get persistent storage directory for PDFs (uses Railway volume if available)
     storage_dir = get_pdf_storage_dir()
     
-    # Generate a unique filename to avoid conflicts
-    file_extension = os.path.splitext(pdf_file.filename or 'uploaded_file.pdf')[1] or '.pdf'
-    unique_filename = f"{project_id}_{uuid.uuid4().hex}{file_extension}"
-    file_path = os.path.join(storage_dir, unique_filename)
+    uploaded_contents = []
+    errors = []
     
-    # Save file to persistent storage
-    with open(file_path, 'wb') as f:
-        shutil.copyfileobj(pdf_file.file, f)
-    file_size = os.path.getsize(file_path)
-    
-    # Create content entry
-    content = StudentProjectContent(
-        project_id=project_id,
-        content_type='pdf',
-        name=pdf_file.filename or 'uploaded_file.pdf',
-        content_url=file_path,  # Store persistent path
-        file_size=file_size,
-        uploaded_at=datetime.datetime.now()
-    )
-    
-    db.add(content)
-    db.commit()
-    db.refresh(content)
-    
-    return JSONResponse(
-        content={
-            "message": "Content added successfully",
-            "content": {
+    for pdf_file in pdf_files:
+        try:
+            # Validate file type - check both filename and content type
+            filename = pdf_file.filename or ''
+            content_type = pdf_file.content_type or ''
+            
+            logging.warning(f"[STUDENT PROJECT] File upload - filename: {filename}, content_type: {content_type}")
+            
+            # Check filename extension
+            is_pdf_filename = filename.lower().endswith('.pdf')
+            # Check MIME type (common PDF MIME types)
+            is_pdf_mime = content_type.lower() in ['application/pdf', 'application/x-pdf', 'application/x-bzpdf', 'application/x-gzpdf']
+            
+            if not is_pdf_filename and not is_pdf_mime:
+                logging.error(f"[STUDENT PROJECT] Invalid file type - filename: {filename}, content_type: {content_type}")
+                errors.append(f"'{filename}': Only PDF files are accepted")
+                continue
+            
+            # Generate a unique filename to avoid conflicts
+            file_extension = os.path.splitext(pdf_file.filename or 'uploaded_file.pdf')[1] or '.pdf'
+            unique_filename = f"{project_id}_{uuid.uuid4().hex}{file_extension}"
+            file_path = os.path.join(storage_dir, unique_filename)
+            
+            # Save file to persistent storage
+            with open(file_path, 'wb') as f:
+                shutil.copyfileobj(pdf_file.file, f)
+            file_size = os.path.getsize(file_path)
+            
+            # Create content entry
+            content = StudentProjectContent(
+                project_id=project_id,
+                content_type='pdf',
+                name=pdf_file.filename or 'uploaded_file.pdf',
+                content_url=file_path,  # Store persistent path
+                file_size=file_size,
+                uploaded_at=datetime.datetime.now()
+            )
+            
+            db.add(content)
+            db.flush()  # Flush to get the ID without committing
+            db.refresh(content)
+            
+            uploaded_contents.append({
                 "id": content.id,
                 "content_type": content.content_type,
                 "name": content.name,
                 "content_url": content.content_url,
                 "file_size": content.file_size,
                 "uploaded_at": content.uploaded_at.isoformat()
-            }
-        },
-        status_code=201
-    )
+            })
+        except Exception as e:
+            logging.error(f"[STUDENT PROJECT] Error uploading file {pdf_file.filename}: {e}")
+            errors.append(f"'{pdf_file.filename}': {str(e)}")
+            continue
+    
+    # Commit all successful uploads at once
+    if uploaded_contents:
+        db.commit()
+    
+    # Return response
+    if errors and not uploaded_contents:
+        # All uploads failed
+        raise HTTPException(
+            status_code=400,
+            detail=f"All uploads failed: {'; '.join(errors)}"
+        )
+    elif errors:
+        # Some uploads succeeded, some failed
+        return JSONResponse(
+            content={
+                "message": f"Successfully uploaded {len(uploaded_contents)} file(s). {len(errors)} file(s) failed.",
+                "content": uploaded_contents,
+                "errors": errors,
+                "partial_success": True
+            },
+            status_code=207  # Multi-Status
+        )
+    else:
+        # All uploads succeeded
+        return JSONResponse(
+            content={
+                "message": f"Successfully uploaded {len(uploaded_contents)} file(s)",
+                "content": uploaded_contents,
+            },
+            status_code=201
+        )
 
 
 @router.delete("/student-projects/{project_id}/content/{content_id}", tags=["Student Projects"])
