@@ -82,3 +82,20 @@ def get_app_config() -> Dict[str, Any]:
 def get_free_generation_quota() -> int:
     return get_app_config().get("free_generation_quota", DEFAULT_CONFIG["free_generation_quota"])
 
+
+def get_pdf_storage_dir() -> str:
+    """
+    Get the directory path for storing PDF files.
+    Uses Railway volume at /app/data if it exists, otherwise falls back to local storage.
+    """
+    # Check if Railway volume exists
+    railway_volume = "/app/data"
+    if os.path.exists(railway_volume) and os.path.isdir(railway_volume):
+        storage_dir = os.path.join(railway_volume, "student_project_pdfs")
+    else:
+        # Fallback to local storage for development
+        storage_dir = os.path.join(os.getcwd(), "student_project_pdfs")
+    
+    # Ensure directory exists
+    os.makedirs(storage_dir, exist_ok=True)
+    return storage_dir

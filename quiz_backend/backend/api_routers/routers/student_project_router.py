@@ -30,7 +30,7 @@ from backend.database.sqlite_dal import (
 from backend.api_routers.routers.auth_router import get_current_user_dependency
 from backend.utils.credits import consume_generation_token
 from backend.database.sqlite_dal import User as UserModel
-from backend.config.settings import get_app_config
+from backend.config.settings import get_app_config, get_pdf_storage_dir
 
 router = APIRouter()
 
@@ -421,9 +421,8 @@ async def add_project_content(
             detail=f"Only PDF files are accepted. Received: filename='{filename}', content_type='{content_type}'"
         )
     
-    # Create persistent storage directory for PDFs
-    storage_dir = os.path.join(os.getcwd(), 'student_project_pdfs')
-    os.makedirs(storage_dir, exist_ok=True)
+    # Get persistent storage directory for PDFs (uses Railway volume if available)
+    storage_dir = get_pdf_storage_dir()
     
     # Generate a unique filename to avoid conflicts
     file_extension = os.path.splitext(pdf_file.filename or 'uploaded_file.pdf')[1] or '.pdf'
