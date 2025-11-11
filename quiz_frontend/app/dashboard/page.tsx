@@ -2,6 +2,7 @@
 
 import { useQuery } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
+import { useState } from 'react';
 import { ProtectedRoute } from '@/components/ProtectedRoute';
 import { useAuth } from '@/contexts/AuthContext';
 import { Layout } from '@/components/Layout';
@@ -241,49 +242,7 @@ function DashboardPageContent() {
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
                   {history.attempts.slice(0, 10).map((attempt) => (
-                    <tr key={attempt.id}>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm font-medium text-gray-900">
-                          {attempt.topic_name}
-                        </div>
-                        <div className="text-sm text-gray-700">
-                          {attempt.category} • {attempt.subcategory}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span
-                          className={`text-sm font-medium ${
-                            attempt.percentage_score >= 70
-                              ? 'text-green-600'
-                              : attempt.percentage_score >= 50
-                              ? 'text-yellow-600'
-                              : 'text-red-600'
-                          }`}
-                        >
-                          {attempt.percentage_score.toFixed(1)}%
-                        </span>
-                        <div className="text-xs text-gray-700">
-                          {attempt.score}/{attempt.total_questions}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
-                        {Math.floor(attempt.time_taken_seconds / 60)}m{' '}
-                        {attempt.time_taken_seconds % 60}s
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
-                        {format(new Date(attempt.timestamp), 'MMM d, yyyy')}
-                      </td>
-                      <td className="px-6 py-4 text-xs text-gray-700 whitespace-normal max-w-xs">
-                        {attempt.ai_feedback ? (
-                          <div
-                            className="leading-relaxed"
-                            dangerouslySetInnerHTML={{ __html: formatFeedbackToHtml(attempt.ai_feedback) }}
-                          />
-                        ) : (
-                          <span className="italic text-gray-400">Feedback not available</span>
-                        )}
-                      </td>
-                    </tr>
+                    <HistoryRow key={attempt.id} attempt={attempt} />
                   ))}
                 </tbody>
               </table>
@@ -311,6 +270,92 @@ export default function DashboardPage() {
     <ProtectedRoute>
       <DashboardPageContent />
     </ProtectedRoute>
+  );
+}
+
+function HistoryRow({
+  attempt,
+}: {
+  attempt: {
+    id: number;
+    topic_name: string;
+    category: string;
+    subcategory: string;
+    timestamp: string;
+    score: number;
+    total_questions: number;
+    percentage_score: number;
+    time_taken_seconds: number;
+    ai_feedback?: string;
+  };
+}) {
+  const [expanded, setExpanded] = useState(false);
+
+  const formattedFeedback = attempt.ai_feedback
+    ? formatFeedbackToHtml(attempt.ai_feedback)
+    : '';
+
+  const plainText = formattedFeedback
+    ? formattedFeedback.replace(/<br\s*\/?>/gi, ' ').replace(/<[^>]+>/g, ' ')
+    : '';
+
+  const normalizedText = plainText.replace(/\s+/g, ' ').trim();
+  const preview =
+    normalizedText.length > 160 ? `${normalizedText.slice(0, 160).trim()}…` : normalizedText;
+
+  return (
+    <tr>
+      <td className="px-6 py-4 whitespace-nowrap">
+        <div className="text-sm font-medium text-gray-900">{attempt.topic_name}</div>
+        <div className="text-sm text-gray-700">
+          {attempt.category} • {attempt.subcategory}
+        </div>
+      </td>
+      <td className="px-6 py-4 whitespace-nowrap">
+        <span
+          className={`text-sm font-medium ${
+            attempt.percentage_score >= 70
+              ? 'text-green-600'
+              : attempt.percentage_score >= 50
+              ? 'text-yellow-600'
+              : 'text-red-600'
+          }`}
+        >
+          {attempt.percentage_score.toFixed(1)}%
+        </span>
+        <div className="text-xs text-gray-700">
+          {attempt.score}/{attempt.total_questions}
+        </div>
+      </td>
+      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
+        {Math.floor(attempt.time_taken_seconds / 60)}m {attempt.time_taken_seconds % 60}s
+      </td>
+      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
+        {format(new Date(attempt.timestamp), 'MMM d, yyyy')}
+      </td>
+      <td className="px-6 py-4 text-xs text-gray-700 whitespace-normal max-w-xs">
+        {formattedFeedback ? (
+          <div className="leading-relaxed">
+            {expanded ? (
+              <div dangerouslySetInnerHTML={{ __html: formattedFeedback }} />
+            ) : (
+              <span>{preview}</span>
+            )}
+            {normalizedText.length > 160 && (
+              <button
+                type="button"
+                onClick={() => setExpanded((prev) => !prev)}
+                className="mt-2 inline-flex items-center text-xs font-medium text-indigo-600 hover:text-indigo-700"
+              >
+                {expanded ? 'See less' : 'See more'}
+              </button>
+            )}
+          </div>
+        ) : (
+          <span className="italic text-gray-400">Feedback not available</span>
+        )}
+      </td>
+    </tr>
   );
 }
 
