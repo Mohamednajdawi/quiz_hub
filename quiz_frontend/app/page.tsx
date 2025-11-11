@@ -28,7 +28,7 @@ export default function Home() {
             <div className="text-center">
               <div className="inline-flex items-center gap-2 px-4 py-2 bg-indigo-100 rounded-full text-sm font-medium text-indigo-700 mb-6">
                 <Sparkles className="w-4 h-4" />
-                AI-Powered Learning Platform
+                Freshly Updated AI Learning Workspace
               </div>
               <h1 className="text-5xl sm:text-6xl md:text-7xl font-bold text-gray-900 mb-6 leading-tight">
                 Transform Your
@@ -39,7 +39,7 @@ export default function Home() {
               </h1>
               <p className="mt-6 max-w-3xl mx-auto text-xl text-gray-700 leading-relaxed">
                 Generate interactive quizzes, flashcards, and essay questions from any PDF or URL. 
-                Chat with your documents, share quizzes with friends, and track your progress. 
+                Chat with your documents, get concept-level AI feedback after every quiz, and let adaptive flashcards reinforce your weak spots. 
                 Powered by advanced AI to help you study smarter, not harder.
               </p>
               <div className="mt-10 flex flex-col sm:flex-row gap-4 justify-center">
@@ -69,6 +69,71 @@ export default function Home() {
                   <span>Instant generation</span>
                 </div>
               </div>
+            </div>
+          </div>
+        </section>
+
+        {/* What's New Section */}
+        <section className="py-16 bg-white border-b border-gray-100">
+          <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="text-center mb-12">
+              <h2 className="text-3xl font-bold text-gray-900 mb-3">What’s New in QuizHub</h2>
+              <p className="text-lg text-gray-700 max-w-3xl mx-auto">
+                Recent upgrades that make studying even more personal, organized, and effective.
+              </p>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              <Card className="p-6 border border-gray-200 hover:border-indigo-200 transition-shadow">
+                <div className="flex items-center gap-3 mb-4">
+                  <BarChart3 className="w-5 h-5 text-indigo-600" />
+                  <span className="text-sm font-semibold text-indigo-600 uppercase tracking-wide">
+                    Smart Insights
+                  </span>
+                </div>
+                <h3 className="text-lg font-bold text-gray-900 mb-2">Concept-Level AI Feedback</h3>
+                <p className="text-sm text-gray-700 leading-relaxed">
+                  Every quiz now returns a focused, one-paragraph summary that highlights the exact concepts you missed and how to master them.
+                </p>
+              </Card>
+
+              <Card className="p-6 border border-gray-200 hover:border-purple-200 transition-shadow">
+                <div className="flex items-center gap-3 mb-4">
+                  <Sparkles className="w-5 h-5 text-purple-600" />
+                  <span className="text-sm font-semibold text-purple-600 uppercase tracking-wide">
+                    Adaptive Practice
+                  </span>
+                </div>
+                <h3 className="text-lg font-bold text-gray-900 mb-2">Feedback-Aware Flashcards</h3>
+                <p className="text-sm text-gray-700 leading-relaxed">
+                  Flashcards generated from project PDFs automatically prioritize weak topics from your latest quiz attempts.
+                </p>
+              </Card>
+
+              <Card className="p-6 border border-gray-200 hover:border-pink-200 transition-shadow">
+                <div className="flex items-center gap-3 mb-4">
+                  <Clock className="w-5 h-5 text-pink-600" />
+                  <span className="text-sm font-semibold text-pink-600 uppercase tracking-wide">
+                    Effortless Setup
+                  </span>
+                </div>
+                <h3 className="text-lg font-bold text-gray-900 mb-2">Auto Question Count</h3>
+                <p className="text-sm text-gray-700 leading-relaxed">
+                  Let QuizHub choose an optimal number of questions automatically—switch to manual mode only when you want fine control.
+                </p>
+              </Card>
+
+              <Card className="p-6 border border-gray-200 hover:border-amber-200 transition-shadow">
+                <div className="flex items-center gap-3 mb-4">
+                  <FolderOpen className="w-5 h-5 text-amber-600" />
+                  <span className="text-sm font-semibold text-amber-600 uppercase tracking-wide">
+                    Organized Projects
+                  </span>
+                </div>
+                <h3 className="text-lg font-bold text-gray-900 mb-2">Versioned Student Hub</h3>
+                <p className="text-sm text-gray-700 leading-relaxed">
+                  Upload multiple PDFs at once, keep every generated asset, and instantly see the latest quiz, flashcard, or essay version for each file.
+                </p>
+              </Card>
             </div>
           </div>
         </section>
@@ -104,7 +169,11 @@ export default function Home() {
                     </li>
                     <li className="flex items-center text-sm text-gray-600">
                       <CheckCircle2 className="w-4 h-4 text-indigo-600 mr-2 flex-shrink-0" />
-                      Instant feedback & detailed results
+                      Auto or custom question counts with one click
+                    </li>
+                    <li className="flex items-center text-sm text-gray-600">
+                      <CheckCircle2 className="w-4 h-4 text-indigo-600 mr-2 flex-shrink-0" />
+                      Instant, concept-level AI feedback summaries
                     </li>
                     <li className="flex items-center text-sm text-gray-600">
                       <CheckCircle2 className="w-4 h-4 text-indigo-600 mr-2 flex-shrink-0" />
@@ -138,11 +207,11 @@ export default function Home() {
                   <ul className="space-y-2 mb-6">
                     <li className="flex items-center text-sm text-gray-600">
                       <CheckCircle2 className="w-4 h-4 text-purple-600 mr-2 flex-shrink-0" />
-                      Flip animation
+                      Learns from your quiz feedback automatically
                     </li>
                     <li className="flex items-center text-sm text-gray-600">
                       <CheckCircle2 className="w-4 h-4 text-purple-600 mr-2 flex-shrink-0" />
-                      Organized by topic
+                      Flip animation & spaced repetition tips
                     </li>
                     <li className="flex items-center text-sm text-gray-600">
                       <CheckCircle2 className="w-4 h-4 text-purple-600 mr-2 flex-shrink-0" />
@@ -218,7 +287,7 @@ export default function Home() {
                     </div>
                     <div>
                       <h4 className="font-semibold text-gray-900 mb-1">Project Organization</h4>
-                      <p className="text-gray-700">Group your PDFs by subject or topic for easy access</p>
+                      <p className="text-gray-700">Group your PDFs by subject or topic and upload multiple files in one go.</p>
                     </div>
                   </li>
                   <li className="flex items-start gap-3">
@@ -226,8 +295,8 @@ export default function Home() {
                       <CheckCircle2 className="w-4 h-4 text-indigo-600" />
                     </div>
                     <div>
-                      <h4 className="font-semibold text-gray-900 mb-1">Quick Generation</h4>
-                      <p className="text-gray-700">Generate study materials directly from your uploaded PDFs</p>
+                      <h4 className="font-semibold text-gray-900 mb-1">Inline PDF Workspace</h4>
+                      <p className="text-gray-700">Preview every PDF inside the hub and launch generators without leaving the page.</p>
                     </div>
                   </li>
                   <li className="flex items-start gap-3">
@@ -244,8 +313,8 @@ export default function Home() {
                       <CheckCircle2 className="w-4 h-4 text-indigo-600" />
                     </div>
                     <div>
-                      <h4 className="font-semibold text-gray-900 mb-1">Track Progress</h4>
-                      <p className="text-gray-700">See all your generated content in one organized view</p>
+                      <h4 className="font-semibold text-gray-900 mb-1">Version Timeline</h4>
+                      <p className="text-gray-700">See the latest quiz, flashcard, or essay version and roll back through your history.</p>
                     </div>
                   </li>
                 </ul>
@@ -348,7 +417,7 @@ export default function Home() {
                 Everything you need for effective studying and collaboration
               </p>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
               <Card className="p-6 border-2 hover:border-indigo-200 transition-all">
                 <div className="w-12 h-12 bg-indigo-100 rounded-lg flex items-center justify-center mb-4">
                   <Users className="w-6 h-6 text-indigo-600" />
@@ -374,6 +443,15 @@ export default function Home() {
                 <h3 className="text-lg font-bold text-gray-900 mb-2">Analytics Dashboard</h3>
                 <p className="text-gray-700 text-sm">
                   Track your performance with detailed statistics, category breakdowns, and progress visualization.
+                </p>
+              </Card>
+              <Card className="p-6 border-2 hover:border-amber-200 transition-all">
+                <div className="w-12 h-12 bg-amber-100 rounded-lg flex items-center justify-center mb-4">
+                  <Shield className="w-6 h-6 text-amber-600" />
+                </div>
+                <h3 className="text-lg font-bold text-gray-900 mb-2">Persistent Workspace</h3>
+                <p className="text-gray-700 text-sm">
+                  Your PDFs, versions, and quiz history live on Railway-backed storage—no more disappearing data after redeployments.
                 </p>
               </Card>
             </div>
