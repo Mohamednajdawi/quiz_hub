@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { BookOpen, FileText, GraduationCap, Home, BarChart3, LogOut, User, ChevronDown, CreditCard, Sparkles, Shield } from 'lucide-react';
+import { BookOpen, FileText, GraduationCap, Home, BarChart3, LogOut, User, ChevronDown, CreditCard, Sparkles, Shield, MoreVertical } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 
 const studyTools = [
@@ -27,7 +27,9 @@ export function Navigation() {
   const pathname = usePathname();
   const { isAuthenticated, user, logout, isAdmin } = useAuth();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const userMenuRef = useRef<HTMLDivElement>(null);
 
   // Check if any study tool is active
   const isStudyToolActive = studyTools.some(tool => pathname === tool.href || pathname.startsWith(tool.href + '/'));
@@ -38,11 +40,14 @@ export function Navigation() {
 
   const remainingGenerations = typeof user?.free_tokens === 'number' ? user.free_tokens : null;
 
-  // Close dropdown when clicking outside
+  // Close dropdowns when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
         setIsDropdownOpen(false);
+      }
+      if (userMenuRef.current && !userMenuRef.current.contains(event.target as Node)) {
+        setIsUserMenuOpen(false);
       }
     };
 
@@ -143,12 +148,6 @@ export function Navigation() {
             <div className="flex items-center gap-4">
               {isAuthenticated ? (
                 <>
-                  <Link
-                    href="/profile"
-                    className="hidden sm:inline-flex items-center px-3 py-2 border border-transparent text-sm font-medium rounded-md text-gray-700 hover:text-gray-900 hover:bg-gray-50"
-                  >
-                    Profile
-                  </Link>
                   <div className="hidden sm:flex items-center gap-2 text-sm text-gray-700">
                     <User className="w-4 h-4" />
                     <span>{displayName}</span>
@@ -162,13 +161,41 @@ export function Navigation() {
                       </span>
                     )}
                   </div>
-                  <button
-                    onClick={logout}
-                    className="inline-flex items-center px-3 py-2 border border-transparent text-sm font-medium rounded-md text-gray-700 hover:text-gray-900 hover:bg-gray-50"
-                  >
-                    <LogOut className="w-4 h-4 mr-1" />
-                    Logout
-                  </button>
+                  {/* User Menu Dropdown */}
+                  <div className="relative" ref={userMenuRef}>
+                    <button
+                      onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
+                      className="inline-flex items-center p-2 text-sm font-medium text-gray-700 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                      aria-label="User menu"
+                    >
+                      <MoreVertical className="w-5 h-5" />
+                    </button>
+                    
+                    {isUserMenuOpen && (
+                      <div className="absolute right-0 mt-2 w-48 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 z-50">
+                        <div className="py-1">
+                          <Link
+                            href="/profile"
+                            onClick={() => setIsUserMenuOpen(false)}
+                            className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                          >
+                            <User className="w-4 h-4 mr-2" />
+                            Profile
+                          </Link>
+                          <button
+                            onClick={() => {
+                              setIsUserMenuOpen(false);
+                              logout();
+                            }}
+                            className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                          >
+                            <LogOut className="w-4 h-4 mr-2" />
+                            Logout
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 </>
               ) : (
                 <div className="flex items-center gap-2">
@@ -273,17 +300,6 @@ export function Navigation() {
           </div>
           {isAuthenticated ? (
             <div className="pt-2 border-t border-gray-200 space-y-1">
-              <Link
-                href="/profile"
-                className={`flex items-center pl-3 pr-4 py-2 text-base font-medium ${
-                  pathname.startsWith('/profile')
-                    ? 'bg-indigo-50 border-indigo-500 text-indigo-700'
-                    : 'border-transparent text-gray-600 hover:bg-gray-50 hover:border-gray-300 hover:text-gray-800'
-                }`}
-              >
-                <User className="w-5 h-5 mr-3" />
-                Profile
-              </Link>
               <div className="px-3 py-2 text-sm text-gray-700 space-y-1">
                 <div>
                   <User className="w-4 h-4 inline mr-2" />
@@ -296,6 +312,17 @@ export function Navigation() {
                   </div>
                 )}
               </div>
+              <Link
+                href="/profile"
+                className={`flex items-center pl-3 pr-4 py-2 text-base font-medium ${
+                  pathname.startsWith('/profile')
+                    ? 'bg-indigo-50 border-indigo-500 text-indigo-700'
+                    : 'border-transparent text-gray-600 hover:bg-gray-50 hover:border-gray-300 hover:text-gray-800'
+                }`}
+              >
+                <User className="w-5 h-5 mr-3" />
+                Profile
+              </Link>
               <button
                 onClick={logout}
                 className="flex items-center w-full pl-3 pr-4 py-2 text-base font-medium text-gray-600 hover:bg-gray-50"
