@@ -1,7 +1,6 @@
 'use client';
 
 import { useQuery } from '@tanstack/react-query';
-import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { ProtectedRoute } from '@/components/ProtectedRoute';
 import { useAuth } from '@/contexts/AuthContext';
@@ -9,7 +8,6 @@ import { Layout } from '@/components/Layout';
 import { Card, CardHeader } from '@/components/ui/Card';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { Alert } from '@/components/ui/Alert';
-import { Button } from '@/components/ui/Button';
 import { attemptApi } from '@/lib/api/attempts';
 import { formatFeedbackToHtml } from '@/lib/utils/formatFeedback';
 import { format } from 'date-fns';
@@ -37,8 +35,6 @@ function DashboardPageContent() {
     },
     enabled: !!userId,
   });
-
-  const router = useRouter();
 
   if (isLoading) {
     return (
@@ -273,22 +269,20 @@ export default function DashboardPage() {
   );
 }
 
-function HistoryRow({
-  attempt,
-}: {
-  attempt: {
-    id: number;
-    topic_name: string;
-    category: string;
-    subcategory: string;
-    timestamp: string;
-    score: number;
-    total_questions: number;
-    percentage_score: number;
-    time_taken_seconds: number;
-    ai_feedback?: string;
-  };
-}) {
+type HistoryAttempt = {
+  id: number;
+  topic_name?: string;
+  category?: string;
+  subcategory?: string;
+  timestamp: string;
+  score: number;
+  total_questions: number;
+  percentage_score: number;
+  time_taken_seconds: number;
+  ai_feedback?: string;
+};
+
+function HistoryRow({ attempt }: { attempt: HistoryAttempt }) {
   const [expanded, setExpanded] = useState(false);
 
   const formattedFeedback = attempt.ai_feedback
@@ -306,9 +300,9 @@ function HistoryRow({
   return (
     <tr>
       <td className="px-6 py-4 whitespace-nowrap">
-        <div className="text-sm font-medium text-gray-900">{attempt.topic_name}</div>
+        <div className="text-sm font-medium text-gray-900">{attempt.topic_name ?? 'Quiz'}</div>
         <div className="text-sm text-gray-700">
-          {attempt.category} • {attempt.subcategory}
+          {(attempt.category ?? 'Unknown Category')} • {(attempt.subcategory ?? 'Quiz')}
         </div>
       </td>
       <td className="px-6 py-4 whitespace-nowrap">
