@@ -77,22 +77,27 @@ def generate_quiz_feedback(
     if context_entries:
         details_text_lines = []
         for entry in context_entries:
-            status = "correct" if entry["is_correct"] else "incorrect"
+            status_icon = "✅" if entry["is_correct"] else "❌"
             details_text_lines.append(
-                f"{entry['number']}. {entry['question']}\n"
-                f"   - User answer: {entry['user_answer']}\n"
-                f"   - Correct answer: {entry['correct_answer']}\n"
-                f"   - Result: {status}"
+                f"{status_icon} Q{entry['number']}: {entry['question']} | "
+                f"User: {entry['user_answer']} | Correct: {entry['correct_answer']}"
             )
         question_context = "\n".join(details_text_lines)
     else:
         question_context = "No question-level details were available."
+
+    # Identify focus topics (up to 2 most recent incorrect answers)
+    focus_topics = [
+        entry["question"] for entry in incorrect[:2]
+    ]
+    focus_text = "; ".join(focus_topics) if focus_topics else "No particular gaps detected"
 
     time_taken_text = _format_time(time_taken_seconds)
     summary_text = (
         f"Quiz topic: {topic_name}\n"
         f"Score: {score}/{total_questions} ({percentage:.1f}%)\n"
         f"Time taken: {time_taken_text}\n"
+        f"Primary focus areas: {focus_text}\n"
         f"Question insights:\n{question_context}\n"
     )
 
@@ -104,9 +109,11 @@ def generate_quiz_feedback(
                     "role": "system",
                     "content": (
                         "You are an encouraging study coach. "
-                        "Given quiz performance data, provide constructive feedback in one paragraph. "
-                        "Highlight strengths briefly, focus on areas for improvement, and end with an encouraging action step. "
-                        "Avoid bullet points; write in 3-5 sentences."
+                        "Given quiz performance data, provide constructive feedback in ONE paragraph (3-5 sentences). "
+                        "Always include a sentence that starts with 'Focus on' that references the weak topics. "
+                        "Bold key skills, topics, or action verbs using **double asterisks**. "
+                        "Acknowledge strengths briefly, then emphasize what to improve and close with a motivating action step. "
+                        "Do not use bullet points or numbered lists."
                     ),
                 },
                 {
