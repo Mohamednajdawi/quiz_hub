@@ -25,7 +25,7 @@ const adminNavigation = [
 
 export function Navigation() {
   const pathname = usePathname();
-  const { isAuthenticated, user, logout } = useAuth();
+  const { isAuthenticated, user, logout, isAdmin } = useAuth();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -80,8 +80,8 @@ export function Navigation() {
                   );
                 })}
                 
-                {/* Admin Link - Only show if authenticated */}
-                {isAuthenticated && adminNavigation.map((item) => {
+                {/* Admin Link - Only show if authenticated AND is admin */}
+                {isAuthenticated && isAdmin && adminNavigation.map((item) => {
                   const isActive = pathname === item.href;
                   return (
                     <Link
@@ -212,8 +212,8 @@ export function Navigation() {
             );
           })}
           
-          {/* Admin Link for Mobile - Only show if authenticated */}
-          {isAuthenticated && adminNavigation.map((item) => {
+          {/* Admin Link for Mobile - Only show if authenticated AND is admin */}
+          {isAuthenticated && isAdmin && adminNavigation.map((item) => {
             const isActive = pathname === item.href;
             return (
               <Link

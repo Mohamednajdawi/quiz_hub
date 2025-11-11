@@ -3,11 +3,13 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
 import { authApi, AuthResponse, RegisterRequest, UpdateProfileRequest, User } from '@/lib/api/auth';
+import { adminApi } from '@/lib/api/admin';
 
 interface AuthContextType {
   user: User | null;
   token: string | null;
   isLoading: boolean;
+  isAdmin: boolean;
   login: (email: string, password: string) => Promise<void>;
   register: (data: RegisterRequest) => Promise<void>;
   updateProfile: (data: UpdateProfileRequest) => Promise<User>;
@@ -21,7 +23,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [token, setToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isAdmin, setIsAdmin] = useState(false);
   const router = useRouter();
+
+  const checkAdminStatus = async () => {
+    try {
+      const response = await adminApi.checkAdminStatus();
+      setIsAdmin(response.is_admin);
+    } catch (error) {
+      // If check fails, user is not admin
+      setIsAdmin(false);
+    }
+  };
+
+  const logout = () => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    setToken(null);
+    setUser(null);
+    setIsAdmin(false);
+    router.push('/login');
+  };
 
   useEffect(() => {
     // Check for stored token and user
@@ -39,6 +61,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           .then((freshUser) => {
             setUser(freshUser);
             localStorage.setItem('user', JSON.stringify(freshUser));
+            // Check admin status
+            checkAdminStatus();
           })
           .catch(() => {
             // Token invalid, clear storage
@@ -64,6 +88,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setToken(response.access_token);
       setUser(response.user);
       
+      // Check admin status after login
+      await checkAdminStatus();
+      
       router.push('/dashboard');
     } catch (error) {
       throw error;
@@ -80,6 +107,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       
       setToken(response.access_token);
       setUser(response.user);
+      
+      // Check admin status after registration
+      await checkAdminStatus();
       
       router.push('/dashboard');
     } catch (error) {
@@ -98,20 +128,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return updatedUser;
   };
 
-  const logout = () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
-    setToken(null);
-    setUser(null);
-    router.push('/login');
-  };
-
   return (
     <AuthContext.Provider
       value={{
         user,
         token,
         isLoading,
+        isAdmin,
         login,
         register,
         updateProfile,

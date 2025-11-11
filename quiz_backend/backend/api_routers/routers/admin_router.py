@@ -48,6 +48,21 @@ async def get_all_users(
         )
 
 
+@router.get("/admin/check", tags=["Admin"])
+async def check_admin_status(
+    current_user: User = Depends(get_current_user_dependency)
+) -> JSONResponse:
+    """
+    Check if the current user is an admin.
+    Returns admin status without requiring admin privileges.
+    """
+    is_admin = is_admin_user(current_user)
+    return JSONResponse(
+        content={"is_admin": is_admin},
+        headers={"Content-Type": "application/json; charset=utf-8"}
+    )
+
+
 @router.get("/admin/stats", tags=["Admin"])
 async def get_admin_stats(
     current_user: User = Depends(require_admin),

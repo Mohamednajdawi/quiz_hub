@@ -26,7 +26,16 @@ export interface AdminStats {
   total_quizzes: number;
 }
 
+export interface AdminCheckResponse {
+  is_admin: boolean;
+}
+
 export const adminApi = {
+  checkAdminStatus: async (): Promise<AdminCheckResponse> => {
+    const response = await apiClient.get('/admin/check');
+    return response.data;
+  },
+
   getAllUsers: async (): Promise<AdminUsersResponse> => {
     const response = await apiClient.get('/admin/users');
     return response.data;
