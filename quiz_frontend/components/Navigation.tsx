@@ -55,204 +55,260 @@ export function Navigation() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
+  // Get user initials for avatar
+  const getUserInitials = () => {
+    if (!user) return '';
+    if (user.first_name && user.last_name) {
+      return `${user.first_name[0]}${user.last_name[0]}`.toUpperCase();
+    }
+    if (user.first_name) {
+      return user.first_name[0].toUpperCase();
+    }
+    if (user.email) {
+      return user.email[0].toUpperCase();
+    }
+    return 'U';
+  };
+
   return (
-    <nav className="bg-white shadow-sm border-b border-gray-200">
+    <nav className="bg-white border-b border-gray-200 sticky top-0 z-40 backdrop-blur-sm bg-white/95">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between h-16">
-          <div className="flex justify-between items-center w-full">
-            <div className="flex">
-              <div className="flex-shrink-0 flex items-center">
-                <Link href="/" className="text-xl font-bold text-indigo-600">
-                  Quiz Maker
+        <div className="flex justify-between items-center h-16">
+          {/* Logo */}
+          <div className="flex-shrink-0 flex items-center">
+            <Link href="/" className="flex items-center group">
+              <span className="text-2xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
+                Quiz Hub
+              </span>
+            </Link>
+          </div>
+
+          {/* Desktop Navigation */}
+          <div className="hidden md:flex md:items-center md:space-x-1 md:flex-1 md:justify-center md:ml-8">
+            {navigation.map((item) => {
+              const isActive = pathname === item.href || (item.href !== '/' && pathname.startsWith(item.href));
+              return (
+                <Link
+                  key={item.name}
+                  href={item.href}
+                  className={`group relative flex items-center px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
+                    isActive
+                      ? 'bg-indigo-50 text-indigo-700'
+                      : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'
+                  }`}
+                >
+                  <item.icon className={`w-4 h-4 mr-2 transition-colors ${isActive ? 'text-indigo-600' : 'text-gray-500 group-hover:text-gray-700'}`} />
+                  <span>{item.name}</span>
+                  {isActive && (
+                    <span className="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-1 h-1 bg-indigo-600 rounded-full" />
+                  )}
                 </Link>
-              </div>
-              <div className="hidden sm:ml-6 sm:flex sm:space-x-8">
-                {navigation.map((item) => {
-                  const isActive = pathname === item.href;
-                  return (
-                    <Link
-                      key={item.name}
-                      href={item.href}
-                      className={`inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium ${
-                        isActive
-                          ? 'border-indigo-500 text-gray-900'
-                          : 'border-transparent text-gray-700 hover:border-gray-300 hover:text-gray-900'
-                      }`}
-                    >
-                      <item.icon className="w-4 h-4 mr-2" />
-                      {item.name}
-                    </Link>
-                  );
-                })}
-                
-                {/* Admin Link - Only show if authenticated AND is admin */}
-                {isAuthenticated && isAdmin && adminNavigation.map((item) => {
-                  const isActive = pathname === item.href;
-                  return (
-                    <Link
-                      key={item.name}
-                      href={item.href}
-                      className={`inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium ${
-                        isActive
-                          ? 'border-indigo-500 text-gray-900'
-                          : 'border-transparent text-gray-700 hover:border-gray-300 hover:text-gray-900'
-                      }`}
-                    >
-                      <item.icon className="w-4 h-4 mr-2" />
-                      {item.name}
-                    </Link>
-                  );
-                })}
-                
-                {/* Study Tools Dropdown */}
-                <div className="relative" ref={dropdownRef}>
+              );
+            })}
+            
+            {/* Admin Link - Only show if authenticated AND is admin */}
+            {isAuthenticated && isAdmin && adminNavigation.map((item) => {
+              const isActive = pathname === item.href || pathname.startsWith(item.href);
+              return (
+                <Link
+                  key={item.name}
+                  href={item.href}
+                  className={`group relative flex items-center px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
+                    isActive
+                      ? 'bg-red-50 text-red-700'
+                      : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'
+                  }`}
+                >
+                  <item.icon className={`w-4 h-4 mr-2 transition-colors ${isActive ? 'text-red-600' : 'text-gray-500 group-hover:text-gray-700'}`} />
+                  <span>{item.name}</span>
+                  {isActive && (
+                    <span className="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-1 h-1 bg-red-600 rounded-full" />
+                  )}
+                </Link>
+              );
+            })}
+            
+            {/* Study Tools Dropdown */}
+            <div className="relative" ref={dropdownRef}>
+              <button
+                onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                className={`group flex items-center px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
+                  isStudyToolActive
+                    ? 'bg-indigo-50 text-indigo-700'
+                    : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'
+                }`}
+              >
+                <GraduationCap className={`w-4 h-4 mr-2 transition-colors ${isStudyToolActive ? 'text-indigo-600' : 'text-gray-500 group-hover:text-gray-700'}`} />
+                <span>Study Tools</span>
+                <ChevronDown className={`w-4 h-4 ml-2 transition-all duration-200 ${isDropdownOpen ? 'rotate-180' : ''} ${isStudyToolActive ? 'text-indigo-600' : 'text-gray-500'}`} />
+              </button>
+              
+              {isDropdownOpen && (
+                <div className="absolute left-0 mt-2 w-56 rounded-xl shadow-lg bg-white ring-1 ring-black ring-opacity-5 z-50 overflow-hidden">
+                  <div className="py-1.5">
+                    {studyTools.map((tool) => {
+                      const isActive = pathname === tool.href || pathname.startsWith(tool.href + '/');
+                      return (
+                        <Link
+                          key={tool.name}
+                          href={tool.href}
+                          onClick={() => setIsDropdownOpen(false)}
+                          className={`flex items-center px-4 py-2.5 text-sm transition-colors ${
+                            isActive
+                              ? 'bg-indigo-50 text-indigo-700 font-medium'
+                              : 'text-gray-700 hover:bg-gray-50'
+                          }`}
+                        >
+                          <tool.icon className={`w-4 h-4 mr-3 ${isActive ? 'text-indigo-600' : 'text-gray-400'}`} />
+                          {tool.name}
+                        </Link>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Right Side - User Actions */}
+          <div className="flex items-center gap-3">
+            {isAuthenticated ? (
+              <>
+                {/* User Info - Desktop Only */}
+                <div className="hidden lg:flex items-center gap-3 px-3 py-1.5 rounded-lg bg-gray-50">
+                  {/* Avatar */}
+                  <div className="flex-shrink-0 w-8 h-8 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white text-xs font-semibold">
+                    {getUserInitials()}
+                  </div>
+                  <div className="flex flex-col min-w-0">
+                    <span className="text-sm font-medium text-gray-900 truncate max-w-[120px]">
+                      {displayName}
+                    </span>
+                    {remainingGenerations !== null && (
+                      <div className="flex items-center gap-1 text-xs text-indigo-600">
+                        <Sparkles className="h-3 w-3" />
+                        <span>{remainingGenerations} left</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* User Menu Dropdown */}
+                <div className="relative" ref={userMenuRef}>
                   <button
-                    onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                    className={`inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium ${
-                      isStudyToolActive
-                        ? 'border-indigo-500 text-gray-900'
-                        : 'border-transparent text-gray-700 hover:border-gray-300 hover:text-gray-900'
-                    }`}
+                    onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
+                    className="flex items-center justify-center w-10 h-10 rounded-lg text-gray-700 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors"
+                    aria-label="User menu"
                   >
-                    Study Tools
-                    <ChevronDown className={`w-4 h-4 ml-1 transition-transform ${isDropdownOpen ? 'rotate-180' : ''}`} />
+                    <MoreVertical className="w-5 h-5" />
                   </button>
                   
-                  {isDropdownOpen && (
-                    <div className="absolute left-0 mt-2 w-48 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 z-50">
-                      <div className="py-1">
-                        {studyTools.map((tool) => {
-                          const isActive = pathname === tool.href || pathname.startsWith(tool.href + '/');
-                          return (
-                            <Link
-                              key={tool.name}
-                              href={tool.href}
-                              onClick={() => setIsDropdownOpen(false)}
-                              className={`flex items-center px-4 py-2 text-sm ${
-                                isActive
-                                  ? 'bg-indigo-50 text-indigo-700 font-medium'
-                                  : 'text-gray-700 hover:bg-gray-100'
-                              }`}
-                            >
-                              <tool.icon className="w-4 h-4 mr-2" />
-                              {tool.name}
-                            </Link>
-                          );
-                        })}
+                  {isUserMenuOpen && (
+                    <div className="absolute right-0 mt-2 w-56 rounded-xl shadow-lg bg-white ring-1 ring-black ring-opacity-5 z-50 overflow-hidden">
+                      <div className="py-1.5">
+                        {/* User Info in Dropdown */}
+                        <div className="px-4 py-3 border-b border-gray-100">
+                          <div className="flex items-center gap-3">
+                            <div className="flex-shrink-0 w-10 h-10 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white text-sm font-semibold">
+                              {getUserInitials()}
+                            </div>
+                            <div className="flex flex-col min-w-0 flex-1">
+                              <span className="text-sm font-medium text-gray-900 truncate">
+                                {displayName}
+                              </span>
+                              <span className="text-xs text-gray-500 truncate">
+                                {user?.email}
+                              </span>
+                            </div>
+                          </div>
+                          {remainingGenerations !== null && (
+                            <div className="mt-2 flex items-center gap-1.5 px-2 py-1 rounded-md bg-indigo-50">
+                              <Sparkles className="h-3.5 w-3.5 text-indigo-600" />
+                              <span className="text-xs font-medium text-indigo-700">
+                                {remainingGenerations} free generation{remainingGenerations === 1 ? '' : 's'} remaining
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                        
+                        <Link
+                          href="/profile"
+                          onClick={() => setIsUserMenuOpen(false)}
+                          className="flex items-center px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                        >
+                          <User className="w-4 h-4 mr-3 text-gray-400" />
+                          Profile Settings
+                        </Link>
+                        <button
+                          onClick={() => {
+                            setIsUserMenuOpen(false);
+                            logout();
+                          }}
+                          className="flex items-center w-full px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors"
+                        >
+                          <LogOut className="w-4 h-4 mr-3" />
+                          Sign Out
+                        </button>
                       </div>
                     </div>
                   )}
                 </div>
+              </>
+            ) : (
+              <div className="flex items-center gap-2">
+                <Link
+                  href="/login"
+                  className="px-4 py-2 text-sm font-medium text-gray-700 hover:text-gray-900 transition-colors"
+                >
+                  Login
+                </Link>
+                <Link
+                  href="/register"
+                  className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors"
+                >
+                  Sign Up
+                </Link>
               </div>
-            </div>
-            <div className="flex items-center gap-4">
-              {isAuthenticated ? (
-                <>
-                  <div className="hidden sm:flex items-center gap-2 text-sm text-gray-700">
-                    <User className="w-4 h-4" />
-                    <span>{displayName}</span>
-                    {remainingGenerations !== null && (
-                      <span
-                        className="inline-flex items-center gap-1 rounded-full border border-indigo-100 bg-indigo-50 px-2 py-0.5 text-xs font-medium text-indigo-700"
-                        title="Free generations remaining"
-                      >
-                        <Sparkles className="h-3 w-3" aria-hidden="true" />
-                        <span>{remainingGenerations}</span>
-                      </span>
-                    )}
-                  </div>
-                  {/* User Menu Dropdown */}
-                  <div className="relative" ref={userMenuRef}>
-                    <button
-                      onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
-                      className="inline-flex items-center p-2 text-sm font-medium text-gray-700 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-                      aria-label="User menu"
-                    >
-                      <MoreVertical className="w-5 h-5" />
-                    </button>
-                    
-                    {isUserMenuOpen && (
-                      <div className="absolute right-0 mt-2 w-48 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 z-50">
-                        <div className="py-1">
-                          <Link
-                            href="/profile"
-                            onClick={() => setIsUserMenuOpen(false)}
-                            className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                          >
-                            <User className="w-4 h-4 mr-2" />
-                            Profile
-                          </Link>
-                          <button
-                            onClick={() => {
-                              setIsUserMenuOpen(false);
-                              logout();
-                            }}
-                            className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                          >
-                            <LogOut className="w-4 h-4 mr-2" />
-                            Logout
-                          </button>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </>
-              ) : (
-                <div className="flex items-center gap-2">
-                  <Link
-                    href="/login"
-                    className="px-3 py-2 text-sm font-medium text-gray-700 hover:text-gray-900"
-                  >
-                    Login
-                  </Link>
-                  <Link
-                    href="/register"
-                    className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-md hover:bg-indigo-700"
-                  >
-                    Sign Up
-                  </Link>
-                </div>
-              )}
-            </div>
+            )}
           </div>
         </div>
       </div>
 
       {/* Mobile menu */}
-      <div className="sm:hidden">
-        <div className="pt-2 pb-3 space-y-1">
+      <div className="md:hidden border-t border-gray-200">
+        <div className="px-2 pt-2 pb-3 space-y-1">
           {navigation.map((item) => {
-            const isActive = pathname === item.href;
+            const isActive = pathname === item.href || (item.href !== '/' && pathname.startsWith(item.href));
             return (
               <Link
                 key={item.name}
                 href={item.href}
-                className={`flex items-center pl-3 pr-4 py-2 border-l-4 text-base font-medium ${
+                className={`flex items-center px-3 py-2.5 rounded-lg text-base font-medium transition-colors ${
                   isActive
-                    ? 'bg-indigo-50 border-indigo-500 text-indigo-700'
-                    : 'border-transparent text-gray-600 hover:bg-gray-50 hover:border-gray-300 hover:text-gray-800'
+                    ? 'bg-indigo-50 text-indigo-700'
+                    : 'text-gray-700 hover:bg-gray-50'
                 }`}
               >
-                <item.icon className="w-5 h-5 mr-3" />
+                <item.icon className={`w-5 h-5 mr-3 ${isActive ? 'text-indigo-600' : 'text-gray-400'}`} />
                 {item.name}
               </Link>
             );
           })}
           
-          {/* Admin Link for Mobile - Only show if authenticated AND is admin */}
+          {/* Admin Link for Mobile */}
           {isAuthenticated && isAdmin && adminNavigation.map((item) => {
-            const isActive = pathname === item.href;
+            const isActive = pathname === item.href || pathname.startsWith(item.href);
             return (
               <Link
                 key={item.name}
                 href={item.href}
-                className={`flex items-center pl-3 pr-4 py-2 border-l-4 text-base font-medium ${
+                className={`flex items-center px-3 py-2.5 rounded-lg text-base font-medium transition-colors ${
                   isActive
-                    ? 'bg-indigo-50 border-indigo-500 text-indigo-700'
-                    : 'border-transparent text-gray-600 hover:bg-gray-50 hover:border-gray-300 hover:text-gray-800'
+                    ? 'bg-red-50 text-red-700'
+                    : 'text-gray-700 hover:bg-gray-50'
                 }`}
               >
-                <item.icon className="w-5 h-5 mr-3" />
+                <item.icon className={`w-5 h-5 mr-3 ${isActive ? 'text-red-600' : 'text-gray-400'}`} />
                 {item.name}
               </Link>
             );
@@ -262,21 +318,21 @@ export function Navigation() {
           <div>
             <button
               onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-              className={`flex items-center justify-between w-full pl-3 pr-4 py-2 border-l-4 text-base font-medium ${
+              className={`flex items-center justify-between w-full px-3 py-2.5 rounded-lg text-base font-medium transition-colors ${
                 isStudyToolActive
-                  ? 'bg-indigo-50 border-indigo-500 text-indigo-700'
-                  : 'border-transparent text-gray-600 hover:bg-gray-50 hover:border-gray-300 hover:text-gray-800'
+                  ? 'bg-indigo-50 text-indigo-700'
+                  : 'text-gray-700 hover:bg-gray-50'
               }`}
             >
               <span className="flex items-center">
-                <GraduationCap className="w-5 h-5 mr-3" />
+                <GraduationCap className={`w-5 h-5 mr-3 ${isStudyToolActive ? 'text-indigo-600' : 'text-gray-400'}`} />
                 Study Tools
               </span>
-              <ChevronDown className={`w-4 h-4 transition-transform ${isDropdownOpen ? 'rotate-180' : ''}`} />
+              <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${isDropdownOpen ? 'rotate-180' : ''}`} />
             </button>
             
             {isDropdownOpen && (
-              <div className="pl-6 space-y-1">
+              <div className="pl-4 mt-1 space-y-1">
                 {studyTools.map((tool) => {
                   const isActive = pathname === tool.href || pathname.startsWith(tool.href + '/');
                   return (
@@ -284,13 +340,13 @@ export function Navigation() {
                       key={tool.name}
                       href={tool.href}
                       onClick={() => setIsDropdownOpen(false)}
-                      className={`flex items-center pl-3 pr-4 py-2 border-l-4 text-sm font-medium ${
+                      className={`flex items-center px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
                         isActive
-                          ? 'bg-indigo-50 border-indigo-500 text-indigo-700'
-                          : 'border-transparent text-gray-600 hover:bg-gray-50 hover:border-gray-300 hover:text-gray-800'
+                          ? 'bg-indigo-50 text-indigo-700'
+                          : 'text-gray-600 hover:bg-gray-50'
                       }`}
                     >
-                      <tool.icon className="w-4 h-4 mr-3" />
+                      <tool.icon className={`w-4 h-4 mr-3 ${isActive ? 'text-indigo-600' : 'text-gray-400'}`} />
                       {tool.name}
                     </Link>
                   );
@@ -298,50 +354,59 @@ export function Navigation() {
               </div>
             )}
           </div>
+          
           {isAuthenticated ? (
             <div className="pt-2 border-t border-gray-200 space-y-1">
-              <div className="px-3 py-2 text-sm text-gray-700 space-y-1">
-                <div>
-                  <User className="w-4 h-4 inline mr-2" />
-                  {displayName}
-                </div>
-                {remainingGenerations !== null && (
-                  <div className="flex items-center gap-1 text-indigo-600">
-                    <Sparkles className="h-4 w-4" aria-hidden="true" />
-                    <span>{remainingGenerations} free generation{remainingGenerations === 1 ? '' : 's'} left</span>
+              {/* User Info */}
+              <div className="px-3 py-3 bg-gray-50 rounded-lg">
+                <div className="flex items-center gap-3">
+                  <div className="flex-shrink-0 w-10 h-10 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white text-sm font-semibold">
+                    {getUserInitials()}
                   </div>
-                )}
+                  <div className="flex flex-col min-w-0 flex-1">
+                    <span className="text-sm font-medium text-gray-900 truncate">
+                      {displayName}
+                    </span>
+                    {remainingGenerations !== null && (
+                      <div className="flex items-center gap-1 mt-1 text-xs text-indigo-600">
+                        <Sparkles className="h-3 w-3" />
+                        <span>{remainingGenerations} free generation{remainingGenerations === 1 ? '' : 's'} left</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
               </div>
+              
               <Link
                 href="/profile"
-                className={`flex items-center pl-3 pr-4 py-2 text-base font-medium ${
+                className={`flex items-center px-3 py-2.5 rounded-lg text-base font-medium transition-colors ${
                   pathname.startsWith('/profile')
-                    ? 'bg-indigo-50 border-indigo-500 text-indigo-700'
-                    : 'border-transparent text-gray-600 hover:bg-gray-50 hover:border-gray-300 hover:text-gray-800'
+                    ? 'bg-indigo-50 text-indigo-700'
+                    : 'text-gray-700 hover:bg-gray-50'
                 }`}
               >
-                <User className="w-5 h-5 mr-3" />
+                <User className="w-5 h-5 mr-3 text-gray-400" />
                 Profile
               </Link>
               <button
                 onClick={logout}
-                className="flex items-center w-full pl-3 pr-4 py-2 text-base font-medium text-gray-600 hover:bg-gray-50"
+                className="flex items-center w-full px-3 py-2.5 rounded-lg text-base font-medium text-red-600 hover:bg-red-50 transition-colors"
               >
                 <LogOut className="w-5 h-5 mr-3" />
-                Logout
+                Sign Out
               </button>
             </div>
           ) : (
             <div className="pt-2 border-t border-gray-200 space-y-1">
               <Link
                 href="/login"
-                className="flex items-center pl-3 pr-4 py-2 text-base font-medium text-gray-600 hover:bg-gray-50"
+                className="flex items-center px-3 py-2.5 rounded-lg text-base font-medium text-gray-700 hover:bg-gray-50 transition-colors"
               >
                 Login
               </Link>
               <Link
                 href="/register"
-                className="flex items-center pl-3 pr-4 py-2 text-base font-medium text-indigo-600 hover:bg-indigo-50"
+                className="flex items-center px-3 py-2.5 rounded-lg text-base font-medium text-white bg-indigo-600 hover:bg-indigo-700 transition-colors"
               >
                 Sign Up
               </Link>
