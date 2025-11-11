@@ -128,6 +128,33 @@ function ContentItem({
     generatedContent.essays.length > 0
   );
 
+  const sortByRecency = <T extends { creation_timestamp?: string | null }>(items: T[]) =>
+    [...items].sort((a, b) => {
+      const aTime = a.creation_timestamp ? new Date(a.creation_timestamp).getTime() : 0;
+      const bTime = b.creation_timestamp ? new Date(b.creation_timestamp).getTime() : 0;
+      return bTime - aTime;
+    });
+
+  const renderMeta = (creationTimestamp?: string | null, version?: number, isLatest?: boolean) => (
+    <div className="flex flex-wrap items-center gap-2 text-xs text-gray-600 mt-2">
+      {isLatest && (
+        <span className="px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-700 font-medium">
+          Latest
+        </span>
+      )}
+      {version !== undefined && (
+        <span className="px-2 py-0.5 rounded-full border border-gray-200 bg-white font-medium text-gray-700">
+          v{version}
+        </span>
+      )}
+      {creationTimestamp && (
+        <span className="text-gray-500">
+          {format(new Date(creationTimestamp), 'MMM d, yyyy • h:mm a')}
+        </span>
+      )}
+    </div>
+  );
+
   // Cleanup blob URL on unmount
   useEffect(() => {
     return () => {
@@ -339,7 +366,10 @@ function ContentItem({
                         Quizzes ({generatedContent.quizzes.length})
                       </h5>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                        {generatedContent.quizzes.map((quiz) => (
+                        {sortByRecency(generatedContent.quizzes).map((quiz, index, array) => {
+                          const version = array.length - index;
+                          const isLatest = index === 0;
+                          return (
                           <div
                             key={quiz.id}
                             className="text-left p-3 bg-indigo-50 hover:bg-indigo-100 rounded-md transition-colors border border-indigo-200 flex items-center justify-between gap-2"
@@ -353,6 +383,7 @@ function ContentItem({
                                 {quiz.question_count} questions
                                 {quiz.difficulty && ` • ${quiz.difficulty.charAt(0).toUpperCase() + quiz.difficulty.slice(1)}`}
                               </div>
+                              {renderMeta(quiz.creation_timestamp, version, isLatest)}
                             </button>
                             <button
                               onClick={() => handleViewQuiz(quiz.id)}
@@ -363,7 +394,7 @@ function ContentItem({
                               <Edit2 className="w-4 h-4" />
                             </button>
                           </div>
-                        ))}
+                        )})}
                       </div>
                     </div>
                   )}
@@ -376,7 +407,10 @@ function ContentItem({
                         Flashcards ({generatedContent.flashcards.length})
                       </h5>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                        {generatedContent.flashcards.map((flashcard) => (
+                        {sortByRecency(generatedContent.flashcards).map((flashcard, index, array) => {
+                          const version = array.length - index;
+                          const isLatest = index === 0;
+                          return (
                           <button
                             key={flashcard.id}
                             onClick={() => handleViewFlashcards(flashcard.id)}
@@ -387,8 +421,9 @@ function ContentItem({
                               {flashcard.card_count} cards
                               {flashcard.difficulty && ` • ${flashcard.difficulty.charAt(0).toUpperCase() + flashcard.difficulty.slice(1)}`}
                             </div>
+                            {renderMeta(flashcard.creation_timestamp, version, isLatest)}
                           </button>
-                        ))}
+                        )})}
                       </div>
                     </div>
                   )}
@@ -401,7 +436,10 @@ function ContentItem({
                         Essays ({generatedContent.essays.length})
                       </h5>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                        {generatedContent.essays.map((essay) => (
+                        {sortByRecency(generatedContent.essays).map((essay, index, array) => {
+                          const version = array.length - index;
+                          const isLatest = index === 0;
+                          return (
                           <button
                             key={essay.id}
                             onClick={() => handleViewEssay(essay.id)}
@@ -412,8 +450,9 @@ function ContentItem({
                               {essay.question_count} questions
                               {essay.difficulty && ` • ${essay.difficulty.charAt(0).toUpperCase() + essay.difficulty.slice(1)}`}
                             </div>
+                            {renderMeta(essay.creation_timestamp, version, isLatest)}
                           </button>
-                        ))}
+                        )})}
                       </div>
                     </div>
                   )}

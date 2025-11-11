@@ -121,8 +121,8 @@ def generate_quiz_feedback(
                     "content": summary_text,
                 },
             ],
-            max_tokens=250,
-            temperature=0.6,
+            max_tokens=2000,
+            temperature=0.2,
         )
 
         message = response.choices[0].message.content if response.choices else None
