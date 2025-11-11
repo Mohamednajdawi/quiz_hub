@@ -6,7 +6,7 @@ from pydantic import BaseModel, HttpUrl, EmailStr
 
 class URLRequest(BaseModel):
     url: HttpUrl
-    num_questions: int = 5  # Default to 5 questions
+    num_questions: Optional[int] = None  # Automatic question count by default
     difficulty: str = (
         "medium"  # Default to medium difficulty, options: easy, medium, hard
     )

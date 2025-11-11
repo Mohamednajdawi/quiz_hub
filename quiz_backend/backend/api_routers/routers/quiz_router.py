@@ -53,7 +53,11 @@ async def create_quiz(
                 detail="Invalid difficulty level. Choose from: easy, medium, hard",
             )
 
-        quiz_data = generate_quiz(url, request.num_questions, request.difficulty) # Renamed to avoid conflict
+        requested_questions = (
+            request.num_questions if request.num_questions and request.num_questions > 0 else None
+        )
+
+        quiz_data = generate_quiz(url, requested_questions, request.difficulty)
 
         # Store quiz in database
         quiz_topic = QuizTopic(
@@ -101,7 +105,7 @@ async def create_quiz(
 @router.post("/generate-quiz-from-pdf", tags=["Quiz"])
 async def create_quiz_from_pdf(
     pdf_file: UploadFile = File(None),  # Make optional when content_id is provided
-    num_questions: int = Form(5),
+    num_questions: Optional[int] = Form(None),
     difficulty: str = Form("medium"),
     project_id: int = Form(None),  # Optional project ID
     content_id: int = Form(None),  # Optional content ID
@@ -166,7 +170,11 @@ async def create_quiz_from_pdf(
             
         try:
             # Generate quiz from the PDF
-            quiz_data = generate_quiz_from_pdf(temp_file_path, num_questions, difficulty)
+            requested_questions = (
+                num_questions if num_questions and num_questions > 0 else None
+            )
+
+            quiz_data = generate_quiz_from_pdf(temp_file_path, requested_questions, difficulty)
             
             # Store quiz in database
             try:

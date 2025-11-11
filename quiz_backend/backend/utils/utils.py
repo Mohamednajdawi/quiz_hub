@@ -1,4 +1,4 @@
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 
 from backend.pipelines.content_pipelines import (
     pdf_quiz_generation_pipeline, 
@@ -11,13 +11,15 @@ from backend.pipelines.content_pipelines import (
 
 
 def generate_quiz(
-    url: str, num_questions: int = 5, difficulty: str = "medium"
+    url: str, num_questions: Optional[int] = None, difficulty: str = "medium"
 ) -> Dict[str, Any]:
+    auto_question_mode = num_questions is None or num_questions <= 0
     return url_quiz_generation_pipeline.run(
         {
             "link_content_fetcher": {"urls": [url]},
             "prompt_builder": {
-                "num_questions": num_questions,
+                "num_questions": num_questions if not auto_question_mode else 0,
+                "auto_question_mode": auto_question_mode,
                 "difficulty": difficulty,
             },
         }
@@ -25,24 +27,28 @@ def generate_quiz(
 
 
 def generate_quiz_from_pdf(
-    pdf_path: str, num_questions: int = 5, difficulty: str = "medium"
+    pdf_path: str,
+    num_questions: Optional[int] = None,
+    difficulty: str = "medium",
 ) -> Dict[str, Any]:
     """
     Generate a quiz from a PDF file.
     
     Args:
         pdf_path: Path to the PDF file
-        num_questions: Number of questions to generate
+        num_questions: Number of questions to generate. If None or <= 0, the model should pick an appropriate count automatically.
         difficulty: Difficulty level of the questions (easy, medium, hard)
         
     Returns:
         dict: A dictionary containing the quiz data
     """
+    auto_question_mode = num_questions is None or num_questions <= 0
     return pdf_quiz_generation_pipeline.run(
         {
             "pdf_extractor": {"file_path": pdf_path},
             "prompt_builder": {
-                "num_questions": num_questions,
+                "num_questions": num_questions if not auto_question_mode else 0,
+                "auto_question_mode": auto_question_mode,
                 "difficulty": difficulty,
             },
         }

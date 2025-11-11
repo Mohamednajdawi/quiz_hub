@@ -527,6 +527,8 @@ function ContentItem({
 function SettingsModal({
   isOpen,
   onClose,
+  questionMode,
+  setQuestionMode,
   numQuestions,
   setNumQuestions,
   numCards,
@@ -536,6 +538,8 @@ function SettingsModal({
 }: {
   isOpen: boolean;
   onClose: () => void;
+  questionMode: 'auto' | 'custom';
+  setQuestionMode: (value: 'auto' | 'custom') => void;
   numQuestions: number;
   setNumQuestions: (value: number) => void;
   numCards: number;
@@ -574,13 +578,33 @@ function SettingsModal({
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Number of Questions
               </label>
-              <Input 
-                type="number" 
-                min={1}
-                max={20}
-                value={numQuestions} 
-                onChange={(e) => setNumQuestions(parseInt(e.target.value || '5', 10))} 
-              />
+            <select
+              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+              value={questionMode}
+              onChange={(e) => setQuestionMode(e.target.value as 'auto' | 'custom')}
+            >
+              <option value="auto">Auto (recommended)</option>
+              <option value="custom">Specify manually</option>
+            </select>
+            {questionMode === 'custom' && (
+              <div className="mt-3">
+                <Input
+                  label="Custom Question Count"
+                  type="number"
+                  min={1}
+                  max={20}
+                  value={numQuestions}
+                  onChange={(e) =>
+                    setNumQuestions(
+                      Math.max(
+                        1,
+                        Math.min(20, parseInt(e.target.value || '0', 10) || 1)
+                      )
+                    )
+                  }
+                />
+              </div>
+            )}
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -634,7 +658,8 @@ function ProjectDetailContent() {
   const queryClient = useQueryClient();
 
   const [files, setFiles] = useState<File[]>([]);
-  const [numQuestions, setNumQuestions] = useState(5);
+  const [questionMode, setQuestionMode] = useState<'auto' | 'custom'>('auto');
+  const [numQuestions, setNumQuestions] = useState(8);
   const [numCards, setNumCards] = useState(10);
   const [difficulty, setDifficulty] = useState<'easy' | 'medium' | 'hard'>('medium');
   const [error, setError] = useState<string | null>(null);
@@ -680,8 +705,8 @@ function ProjectDetailContent() {
         setError(null);
       }, 5000);
     },
-    onError: (e: any) => {
-      setError(e.message || 'Upload failed');
+    onError: (error: unknown) => {
+      setError(error instanceof Error ? error.message : 'Upload failed');
       setSuccess(null);
     },
   });
@@ -736,7 +761,14 @@ function ProjectDetailContent() {
   const generateQuizMutation = useMutation({
     mutationFn: (contentId: number) => {
       setGenerationStatus({ type: 'quiz', messageIndex: 0 });
-      return studentProjectsApi.generateQuizFromContent(projectId, contentId, numQuestions, difficulty);
+    const desiredQuestions =
+      questionMode === 'custom' ? numQuestions : undefined;
+    return studentProjectsApi.generateQuizFromContent(
+      projectId,
+      contentId,
+      desiredQuestions,
+      difficulty
+    );
     },
     onSuccess: (data) => {
       setGenerationStatus({ type: null, messageIndex: 0 });
@@ -753,9 +785,11 @@ function ProjectDetailContent() {
         router.push(`/quizzes/take?data=${encodeURIComponent(JSON.stringify(data))}`);
       }
     },
-    onError: (e: any) => {
+    onError: (error: unknown) => {
       setGenerationStatus({ type: null, messageIndex: 0 });
-      setError(e.message || 'Failed to generate quiz');
+      setError(
+        error instanceof Error ? error.message : 'Failed to generate quiz'
+      );
       setSuccess(null);
     },
   });
@@ -775,9 +809,11 @@ function ProjectDetailContent() {
       });
       router.push(`/flashcards/view?data=${encodeURIComponent(JSON.stringify(data))}`);
     },
-    onError: (e: any) => {
+    onError: (error: unknown) => {
       setGenerationStatus({ type: null, messageIndex: 0 });
-      setError(e.message || 'Failed to generate flashcards');
+      setError(
+        error instanceof Error ? error.message : 'Failed to generate flashcards'
+      );
       setSuccess(null);
     },
   });
@@ -797,9 +833,11 @@ function ProjectDetailContent() {
       });
       router.push(`/essays/view?data=${encodeURIComponent(JSON.stringify(data))}`);
     },
-    onError: (e: any) => {
+    onError: (error: unknown) => {
       setGenerationStatus({ type: null, messageIndex: 0 });
-      setError(e.message || 'Failed to generate essay Q&A');
+      setError(
+        error instanceof Error ? error.message : 'Failed to generate essay Q&A'
+      );
       setSuccess(null);
     },
   });
@@ -813,8 +851,10 @@ function ProjectDetailContent() {
       queryClient.invalidateQueries({ queryKey: ['student-project', projectId] });
       setTimeout(() => setSuccess(null), 3000);
     },
-    onError: (e: any) => {
-      setError(e.message || 'Failed to delete PDF');
+    onError: (error: unknown) => {
+      setError(
+        error instanceof Error ? error.message : 'Failed to delete PDF'
+      );
       setSuccess(null);
     },
   });
@@ -825,8 +865,10 @@ function ProjectDetailContent() {
       queryClient.invalidateQueries({ queryKey: ['student-projects'] });
       router.push('/student-hub');
     },
-    onError: (e: any) => {
-      setError(e.message || 'Failed to delete project');
+    onError: (error: unknown) => {
+      setError(
+        error instanceof Error ? error.message : 'Failed to delete project'
+      );
       setSuccess(null);
     },
   });
@@ -931,6 +973,8 @@ function ProjectDetailContent() {
           <SettingsModal
             isOpen={showSettingsModal}
             onClose={() => setShowSettingsModal(false)}
+            questionMode={questionMode}
+            setQuestionMode={setQuestionMode}
             numQuestions={numQuestions}
             setNumQuestions={setNumQuestions}
             numCards={numCards}

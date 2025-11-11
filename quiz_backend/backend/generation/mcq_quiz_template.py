@@ -1,4 +1,8 @@
-QUIZ_GENERATION_PROMPT = """Given the following text, create {{ num_questions }} multiple choice quizzes in JSON format with {{ difficulty }} difficulty level in the same language as the text.
+QUIZ_GENERATION_PROMPT = """{% if auto_question_mode %}
+Given the following text, create a well-balanced set of multiple choice quizzes in JSON format with {{ difficulty }} difficulty level in the same language as the text. Choose an appropriate number of high-quality questions (typically 6-10) that cover the breadth of the material and avoid redundancy.
+{% else %}
+Given the following text, create {{ num_questions }} multiple choice quizzes in JSON format with {{ difficulty }} difficulty level in the same language as the text.
+{% endif %}
 
 DIFFICULTY GUIDELINES:
 {% if difficulty == "easy" %}

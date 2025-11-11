@@ -78,12 +78,14 @@ export const studentProjectsApi = {
   generateQuizFromContent: async (
     projectId: number,
     contentId: number,
-    numQuestions: number,
+    numQuestions: number | undefined,
     difficulty: 'easy' | 'medium' | 'hard'
   ) => {
     // When using content_id, we don't need to send a file
     const form = new FormData();
-    form.append('num_questions', String(numQuestions));
+    if (typeof numQuestions === 'number') {
+      form.append('num_questions', String(numQuestions));
+    }
     form.append('difficulty', difficulty);
     form.append('project_id', String(projectId));
     form.append('content_id', String(contentId));

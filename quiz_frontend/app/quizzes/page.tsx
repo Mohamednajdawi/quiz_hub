@@ -12,6 +12,7 @@ import { Alert } from '@/components/ui/Alert';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { LimitReachedModal } from '@/components/LimitReachedModal';
 import { quizApi } from '@/lib/api/quiz';
+import type { URLRequest } from '@/lib/types';
 import { useRouter } from 'next/navigation';
 import { Upload, Link as LinkIcon, Key } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
@@ -21,7 +22,8 @@ function QuizzesPageContent() {
   const [sourceType, setSourceType] = useState<'url' | 'pdf'>('url');
   const [url, setUrl] = useState('');
   const [file, setFile] = useState<File | null>(null);
-  const [numQuestions, setNumQuestions] = useState(5);
+  const [questionMode, setQuestionMode] = useState<'auto' | 'custom'>('auto');
+  const [numQuestions, setNumQuestions] = useState(8);
   const [difficulty, setDifficulty] = useState<'easy' | 'medium' | 'hard'>('medium');
   const [showLimitModal, setShowLimitModal] = useState(false);
 
@@ -33,14 +35,21 @@ function QuizzesPageContent() {
   const generateMutation = useMutation({
     mutationFn: async () => {
       if (sourceType === 'url') {
-        return quizApi.generateFromURL({
+        const payload: URLRequest = {
           url,
-          num_questions: numQuestions,
           difficulty,
-        });
+        };
+        if (questionMode === 'custom') {
+          payload.num_questions = numQuestions;
+        }
+        return quizApi.generateFromURL(payload);
       } else {
         if (!file) throw new Error('Please select a PDF file');
-        return quizApi.generateFromPDF(file, numQuestions, difficulty);
+        return quizApi.generateFromPDF(
+          file,
+          questionMode === 'custom' ? numQuestions : undefined,
+          difficulty
+        );
       }
     },
     onSuccess: (data) => {
@@ -52,9 +61,26 @@ function QuizzesPageContent() {
         router.push(`/quizzes/take?data=${encodeURIComponent(JSON.stringify(data))}`);
       }
     },
-    onError: (error: any) => {
-      // Check if it's a payment required error (402) or token limit error
-      if (error?.response?.status === 402 || error?.message?.toLowerCase().includes('payment') || error?.message?.toLowerCase().includes('upgrade')) {
+    onError: (error: unknown) => {
+      if (
+        typeof error === 'object' &&
+        error !== null &&
+        'response' in error &&
+        typeof (error as { response?: { status?: number } }).response?.status === 'number' &&
+        (
+          (error as { response?: { status?: number } }).response?.status === 402 ||
+          (
+            'message' in error &&
+            typeof (error as { message?: string }).message === 'string' &&
+            ((error as { message?: string }).message ?? '').toLowerCase().includes('payment')
+          ) ||
+          (
+            'message' in error &&
+            typeof (error as { message?: string }).message === 'string' &&
+            ((error as { message?: string }).message ?? '').toLowerCase().includes('upgrade')
+          )
+        )
+      ) {
         setShowLimitModal(true);
       }
     },
@@ -179,15 +205,36 @@ function QuizzesPageContent() {
               )}
 
               <div className="grid grid-cols-2 gap-4">
-                <Input
-                  label="Number of Questions"
-                  type="number"
-                  min={1}
-                  max={20}
-                  value={numQuestions}
-                  onChange={(e) => setNumQuestions(parseInt(e.target.value) || 5)}
-                  required
-                />
+                <div className="space-y-3">
+                  <Select
+                    label="Question Count"
+                    value={questionMode}
+                    onChange={(e) =>
+                      setQuestionMode(e.target.value as 'auto' | 'custom')
+                    }
+                    options={[
+                      { value: 'auto', label: 'Auto (recommended)' },
+                      { value: 'custom', label: 'Specify manually' },
+                    ]}
+                  />
+                  {questionMode === 'custom' && (
+                    <Input
+                      label="Custom Question Count"
+                      type="number"
+                      min={1}
+                      max={20}
+                      value={numQuestions}
+                      onChange={(e) =>
+                        setNumQuestions(
+                          Math.max(
+                            1,
+                            Math.min(20, parseInt(e.target.value, 10) || 1)
+                          )
+                        )
+                      }
+                    />
+                  )}
+                </div>
 
                 <Select
                   label="Difficulty"

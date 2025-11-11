@@ -9,14 +9,16 @@ export const quizApi = {
 
   generateFromPDF: async (
     file: File,
-    numQuestions: number = 5,
+    numQuestions?: number,
     difficulty: 'easy' | 'medium' | 'hard' = 'medium',
     projectId?: number,
     contentId?: number
   ): Promise<QuizData> => {
     const formData = new FormData();
     formData.append('pdf_file', file);
-    formData.append('num_questions', numQuestions.toString());
+    if (typeof numQuestions === 'number') {
+      formData.append('num_questions', numQuestions.toString());
+    }
     formData.append('difficulty', difficulty);
     if (projectId !== undefined) {
       formData.append('project_id', projectId.toString());
