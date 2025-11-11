@@ -271,43 +271,25 @@ function QuizDetailPageContent() {
           {!isEditMode ? (
             // View Mode
             <div className="space-y-6 mb-6">
+              {canEdit && (
+                <div className="rounded-md border border-indigo-200 bg-indigo-50 p-4 text-sm text-indigo-900">
+                  Answers are hidden in view mode. Switch to <span className="font-semibold">Edit Quiz</span> to reveal and modify correct choices.
+                </div>
+              )}
               {quiz.questions.map((question, index) => (
                 <div key={question.id || index} className="border-b border-gray-200 pb-6">
                   <h3 className="text-lg font-semibold text-gray-900 mb-3">
                     Question {index + 1}: {question.question}
                   </h3>
                   <div className="space-y-2">
-                    {question.options.map((option, optIndex) => {
-                      // Handle right_option as both number and string
-                      const rightOptionStr = String(question.right_option);
-                      const rightOptionNum = parseInt(rightOptionStr);
-                      const isCorrect = !isNaN(rightOptionNum) 
-                        ? rightOptionNum === optIndex 
-                        : rightOptionStr.toLowerCase() === String.fromCharCode(97 + optIndex);
-                      return (
-                        <div
-                          key={optIndex}
-                          className={`p-3 rounded-lg ${
-                            isCorrect
-                              ? 'bg-green-50 border-2 border-green-200'
-                              : 'bg-gray-50'
-                          }`}
-                        >
-                          <div className="flex items-center">
-                            <span
-                              className={`font-medium ${
-                                isCorrect
-                                  ? 'text-green-700'
-                                  : 'text-gray-700'
-                              }`}
-                            >
-                              {isCorrect && '✓ '}
-                              {option}
-                            </span>
-                          </div>
-                        </div>
-                      );
-                    })}
+                    {question.options.map((option, optIndex) => (
+                      <div
+                        key={optIndex}
+                        className="p-3 rounded-lg bg-gray-50 border border-gray-200"
+                      >
+                        <span className="text-gray-800">{option}</span>
+                      </div>
+                    ))}
                   </div>
                 </div>
               ))}
