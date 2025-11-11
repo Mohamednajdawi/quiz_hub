@@ -82,7 +82,7 @@ export default function Home() {
                 Recent upgrades that make studying even more personal, organized, and effective.
               </p>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               <Card className="p-6 border border-gray-200 hover:border-indigo-200 transition-shadow">
                 <div className="flex items-center gap-3 mb-4">
                   <BarChart3 className="w-5 h-5 text-indigo-600" />
@@ -106,19 +106,6 @@ export default function Home() {
                 <h3 className="text-lg font-bold text-gray-900 mb-2">Feedback-Aware Flashcards</h3>
                 <p className="text-sm text-gray-700 leading-relaxed">
                   Flashcards generated from project PDFs automatically prioritize weak topics from your latest quiz attempts.
-                </p>
-              </Card>
-
-              <Card className="p-6 border border-gray-200 hover:border-pink-200 transition-shadow">
-                <div className="flex items-center gap-3 mb-4">
-                  <Clock className="w-5 h-5 text-pink-600" />
-                  <span className="text-sm font-semibold text-pink-600 uppercase tracking-wide">
-                    Effortless Setup
-                  </span>
-                </div>
-                <h3 className="text-lg font-bold text-gray-900 mb-2">Auto Question Count</h3>
-                <p className="text-sm text-gray-700 leading-relaxed">
-                  Let QuizHub choose an optimal number of questions automatically—switch to manual mode only when you want fine control.
                 </p>
               </Card>
 
@@ -153,7 +140,7 @@ export default function Home() {
             <div className="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-3">
               {/* Quiz Feature */}
               <Card className="group hover:shadow-xl transition-all duration-300 border-2 hover:border-indigo-200">
-                <div className="p-6">
+                <div className="p-6 flex flex-col h-full">
                   <div className="w-14 h-14 bg-gradient-to-br from-indigo-500 to-indigo-600 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
                     <GraduationCap className="h-7 w-7 text-white" />
                   </div>
@@ -162,7 +149,7 @@ export default function Home() {
                     Generate multiple-choice quizzes with customizable difficulty levels. 
                     Track your progress and identify areas for improvement.
                   </p>
-                  <ul className="space-y-2 mb-6">
+                  <ul className="space-y-2 mb-6 text-sm text-gray-600">
                     <li className="flex items-center text-sm text-gray-600">
                       <CheckCircle2 className="w-4 h-4 text-indigo-600 mr-2 flex-shrink-0" />
                       Multiple difficulty levels (easy/medium/hard)
@@ -184,18 +171,20 @@ export default function Home() {
                       Performance tracking & analytics
                     </li>
                   </ul>
-                  <Link href="/quizzes">
-                    <Button variant="primary" className="w-full group-hover:bg-indigo-700">
-                      Create Quiz
-                      <ArrowRight className="ml-2 w-4 h-4" />
-                    </Button>
-                  </Link>
+                  <div className="mt-auto">
+                    <Link href="/quizzes">
+                      <Button variant="primary" className="w-full group-hover:bg-indigo-700">
+                        Create Quiz
+                        <ArrowRight className="ml-2 w-4 h-4" />
+                      </Button>
+                    </Link>
+                  </div>
                 </div>
               </Card>
 
               {/* Flashcard Feature */}
               <Card className="group hover:shadow-xl transition-all duration-300 border-2 hover:border-indigo-200">
-                <div className="p-6">
+                <div className="p-6 flex flex-col h-full">
                   <div className="w-14 h-14 bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
                     <BookOpen className="h-7 w-7 text-white" />
                   </div>
@@ -204,7 +193,7 @@ export default function Home() {
                     Create interactive flashcards from your study materials. 
                     Perfect for memorizing key concepts, definitions, and facts.
                   </p>
-                  <ul className="space-y-2 mb-6">
+                  <ul className="space-y-2 mb-6 text-sm text-gray-600">
                     <li className="flex items-center text-sm text-gray-600">
                       <CheckCircle2 className="w-4 h-4 text-purple-600 mr-2 flex-shrink-0" />
                       Learns from your quiz feedback automatically
@@ -218,18 +207,20 @@ export default function Home() {
                       Study anywhere
                     </li>
                   </ul>
-                  <Link href="/flashcards">
-                    <Button variant="primary" className="w-full group-hover:bg-indigo-700">
-                      Create Flashcards
-                      <ArrowRight className="ml-2 w-4 h-4" />
-                    </Button>
-                  </Link>
+                  <div className="mt-auto">
+                    <Link href="/flashcards">
+                      <Button variant="primary" className="w-full group-hover:bg-indigo-700">
+                        Create Flashcards
+                        <ArrowRight className="ml-2 w-4 h-4" />
+                      </Button>
+                    </Link>
+                  </div>
                 </div>
               </Card>
 
               {/* Essay Feature */}
               <Card className="group hover:shadow-xl transition-all duration-300 border-2 hover:border-indigo-200">
-                <div className="p-6">
+                <div className="p-6 flex flex-col h-full">
                   <div className="w-14 h-14 bg-gradient-to-br from-pink-500 to-pink-600 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
                     <FileText className="h-7 w-7 text-white" />
                   </div>
@@ -238,7 +229,7 @@ export default function Home() {
                     Generate comprehensive essay questions with detailed answers. 
                     Practice writing and deepen your understanding of complex topics.
                   </p>
-                  <ul className="space-y-2 mb-6">
+                  <ul className="space-y-2 mb-6 text-sm text-gray-600">
                     <li className="flex items-center text-sm text-gray-600">
                       <CheckCircle2 className="w-4 h-4 text-pink-600 mr-2 flex-shrink-0" />
                       Detailed answers
@@ -252,12 +243,14 @@ export default function Home() {
                       Writing practice
                     </li>
                   </ul>
-                  <Link href="/essays">
-                    <Button variant="primary" className="w-full group-hover:bg-indigo-700">
-                      Create Essay Q&A
-                      <ArrowRight className="ml-2 w-4 h-4" />
-                    </Button>
-                  </Link>
+                  <div className="mt-auto">
+                    <Link href="/essays">
+                      <Button variant="primary" className="w-full group-hover:bg-indigo-700">
+                        Create Essay Q&A
+                        <ArrowRight className="ml-2 w-4 h-4" />
+                      </Button>
+                    </Link>
+                  </div>
                 </div>
               </Card>
             </div>
