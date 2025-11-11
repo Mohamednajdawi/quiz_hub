@@ -93,11 +93,11 @@ Example 1 - Easy Level (from a text about photosynthesis):
       "question": "According to the text about photosynthesis, what do plants primarily use to convert carbon dioxide and water into glucose?",
       "options": [
         "a. Moonlight and minerals",
-        "b. Sunlight and chlorophyll", 
-        "c. Wind and soil nutrients",
+        "b. Wind and soil nutrients", 
+        "c. Sunlight and chlorophyll",
         "d. Heat and oxygen"
       ],
-      "right_option": "b"
+      "right_option": "c"
     }
   ]
 }

@@ -65,18 +65,24 @@ def generate_flashcards(url: str, num_cards: int = 10) -> Dict[str, Any]:
             "link_content_fetcher": {"urls": [url]},
             "prompt_builder": {
                 "num_cards": num_cards,
+                "feedback": "",
             },
         }
     )["flashcard_parser"]["flashcards"]
 
 
-def generate_flashcards_from_pdf(pdf_path: str, num_cards: int = 10) -> Dict[str, Any]:
+def generate_flashcards_from_pdf(
+    pdf_path: str,
+    num_cards: int = 10,
+    feedback: str | None = None,
+) -> Dict[str, Any]:
     """
     Generate flashcards from a PDF file.
     
     Args:
         pdf_path: Path to the PDF file
         num_cards: Number of flashcards to generate (default: 10)
+        feedback: Optional string that highlights learner weaknesses to prioritize
         
     Returns:
         dict: A dictionary containing the flashcard data
@@ -86,6 +92,7 @@ def generate_flashcards_from_pdf(pdf_path: str, num_cards: int = 10) -> Dict[str
             "pdf_extractor": {"file_path": pdf_path},
             "prompt_builder": {
                 "num_cards": num_cards,
+                "feedback": feedback or "",
             },
         }
     )["flashcard_parser"]["flashcards"]

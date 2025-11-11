@@ -1,5 +1,11 @@
 FLASHCARD_GENERATION_PROMPT = """Given the following text, create {{ num_cards }} flashcards with key concepts, terms, definitions, and important information. In the same language as the text.
 
+{% if feedback %}
+Learner performance feedback indicates that the following areas need reinforcement:
+{{ feedback }}
+Prioritize creating flashcards that focus on clarifying, reinforcing, and drilling these weaker topics while still covering the essential content in the provided text.
+{% endif %}
+
 For each flashcard:
 1. The front should contain a clear, concise question or term
 2. The back should contain the answer, explanation, or definition

@@ -103,10 +103,15 @@ async def create_flashcards_from_pdf(
 ) -> JSONResponse:
     try:
         temp_file_path = None
+        feedback_context = None
         
         # If content_id is provided, use the stored PDF file
         if content_id is not None:
-            from backend.database.sqlite_dal import StudentProjectContent
+            from backend.database.sqlite_dal import (
+                StudentProjectContent,
+                StudentProjectQuizReference,
+                QuizAttempt,
+            )
             content = db.query(StudentProjectContent).filter(
                 StudentProjectContent.id == content_id
             ).first()
@@ -123,6 +128,41 @@ async def create_flashcards_from_pdf(
             # Use the stored PDF file path
             temp_file_path = content.content_url
             logging.warning(f"[FLASHCARDS] Using stored PDF from content_id {content_id}: {temp_file_path}")
+
+            # Aggregate AI feedback from related quiz attempts to guide flashcard generation
+            quiz_query = db.query(StudentProjectQuizReference).filter(
+                StudentProjectQuizReference.content_id == content_id
+            )
+            if project_id is not None:
+                quiz_query = quiz_query.filter(
+                    StudentProjectQuizReference.project_id == project_id
+                )
+            associated_quizzes = quiz_query.all()
+            topic_ids = [ref.quiz_topic_id for ref in associated_quizzes if ref.quiz_topic_id]
+
+            if topic_ids:
+                feedback_rows = (
+                    db.query(QuizAttempt.ai_feedback)
+                    .filter(
+                        QuizAttempt.topic_id.in_(topic_ids),
+                        QuizAttempt.ai_feedback.isnot(None),
+                        QuizAttempt.ai_feedback != "",
+                    )
+                    .order_by(QuizAttempt.timestamp.desc())
+                    .limit(3)
+                    .all()
+                )
+
+                feedback_snippets = [
+                    row.ai_feedback.strip()
+                    for row in feedback_rows
+                    if row.ai_feedback and row.ai_feedback.strip()
+                ]
+
+                if feedback_snippets:
+                    combined_feedback = "\n".join(feedback_snippets)
+                    # Keep feedback concise for the prompt
+                    feedback_context = combined_feedback[:1500]
         else:
             # No content_id provided, require PDF file upload
             if pdf_file is None:
@@ -152,7 +192,11 @@ async def create_flashcards_from_pdf(
             
         try:
             # Generate flashcards from the PDF
-            flashcard_data = generate_flashcards_from_pdf(temp_file_path, num_cards=num_cards)
+            flashcard_data = generate_flashcards_from_pdf(
+                temp_file_path,
+                num_cards=num_cards,
+                feedback=feedback_context,
+            )
             
             # Store flashcards in database
             try:
