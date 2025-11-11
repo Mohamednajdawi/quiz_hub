@@ -16,6 +16,7 @@ from backend.api_routers.routers import (
     student_project_router,
     auth_router,
     config_router,
+    admin_router,
 )
 from backend.middleware.rate_limit import RateLimitMiddleware
 
@@ -57,3 +58,4 @@ app.include_router(attempt_router.router)
 app.include_router(health_router.router)
 app.include_router(student_project_router.router)
 app.include_router(config_router.router)
+app.include_router(admin_router.router)

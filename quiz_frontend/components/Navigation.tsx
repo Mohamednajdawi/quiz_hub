@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { BookOpen, FileText, GraduationCap, Home, BarChart3, LogOut, User, ChevronDown, CreditCard, Sparkles } from 'lucide-react';
+import { BookOpen, FileText, GraduationCap, Home, BarChart3, LogOut, User, ChevronDown, CreditCard, Sparkles, Shield } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 
 const studyTools = [
@@ -17,6 +17,10 @@ const navigation = [
   { name: 'Dashboard', href: '/dashboard', icon: BarChart3 },
   { name: 'Student Hub', href: '/student-hub', icon: FileText },
   { name: 'Pricing', href: '/pricing', icon: CreditCard },
+];
+
+const adminNavigation = [
+  { name: 'Admin', href: '/admin', icon: Shield },
 ];
 
 export function Navigation() {
@@ -59,6 +63,25 @@ export function Navigation() {
               </div>
               <div className="hidden sm:ml-6 sm:flex sm:space-x-8">
                 {navigation.map((item) => {
+                  const isActive = pathname === item.href;
+                  return (
+                    <Link
+                      key={item.name}
+                      href={item.href}
+                      className={`inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium ${
+                        isActive
+                          ? 'border-indigo-500 text-gray-900'
+                          : 'border-transparent text-gray-700 hover:border-gray-300 hover:text-gray-900'
+                      }`}
+                    >
+                      <item.icon className="w-4 h-4 mr-2" />
+                      {item.name}
+                    </Link>
+                  );
+                })}
+                
+                {/* Admin Link - Only show if authenticated */}
+                {isAuthenticated && adminNavigation.map((item) => {
                   const isActive = pathname === item.href;
                   return (
                     <Link
@@ -172,6 +195,25 @@ export function Navigation() {
       <div className="sm:hidden">
         <div className="pt-2 pb-3 space-y-1">
           {navigation.map((item) => {
+            const isActive = pathname === item.href;
+            return (
+              <Link
+                key={item.name}
+                href={item.href}
+                className={`flex items-center pl-3 pr-4 py-2 border-l-4 text-base font-medium ${
+                  isActive
+                    ? 'bg-indigo-50 border-indigo-500 text-indigo-700'
+                    : 'border-transparent text-gray-600 hover:bg-gray-50 hover:border-gray-300 hover:text-gray-800'
+                }`}
+              >
+                <item.icon className="w-5 h-5 mr-3" />
+                {item.name}
+              </Link>
+            );
+          })}
+          
+          {/* Admin Link for Mobile - Only show if authenticated */}
+          {isAuthenticated && adminNavigation.map((item) => {
             const isActive = pathname === item.href;
             return (
               <Link

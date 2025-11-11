@@ -1,0 +1,40 @@
+import apiClient from './client';
+
+export interface AdminUser {
+  id: string;
+  email: string;
+  first_name?: string | null;
+  last_name?: string | null;
+  full_name?: string | null;
+  account_type: 'free' | 'pro';
+  quiz_count: number;
+  is_active: boolean;
+  created_at?: string | null;
+  free_tokens?: number | null;
+}
+
+export interface AdminUsersResponse {
+  users: AdminUser[];
+  total: number;
+}
+
+export interface AdminStats {
+  total_users: number;
+  free_users: number;
+  pro_users: number;
+  active_users: number;
+  total_quizzes: number;
+}
+
+export const adminApi = {
+  getAllUsers: async (): Promise<AdminUsersResponse> => {
+    const response = await apiClient.get('/admin/users');
+    return response.data;
+  },
+
+  getStats: async (): Promise<AdminStats> => {
+    const response = await apiClient.get('/admin/stats');
+    return response.data;
+  },
+};
+
