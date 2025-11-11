@@ -119,6 +119,10 @@ def generate_quiz_feedback(
                         "Bold key skills, topics, or action verbs using **double asterisks**. "
                         "Acknowledge strengths briefly, then emphasize what to improve and close with a motivating action step. "
                         "Do not use bullet points or numbered lists."
+                        "Example"
+                        "Example: Focus on the concept of 'The French Revolution' in history. since you got the question wrong."
+                        "Example: Focus on the concept of 'Artificial Intelligence Ethics' in science. since you got the question wrong."
+                        "Example: Focus on the concept of 'The French Revolution' in history. since you got the question wrong."
                     ),
                 },
                 {
