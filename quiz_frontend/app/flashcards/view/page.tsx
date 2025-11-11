@@ -15,13 +15,13 @@ import { RotateCw, ChevronLeft, ChevronRight } from 'lucide-react';
 function safeDecodeURIComponent(str: string): string {
   try {
     return decodeURIComponent(str);
-  } catch {
+  } catch (e) {
     // If decodeURIComponent fails, try a more lenient approach
     try {
       // Replace + with spaces (URL encoding for spaces)
       const withSpaces = str.replace(/\+/g, ' ');
       return decodeURIComponent(withSpaces);
-    } catch {
+    } catch (e2) {
       // If that also fails, try to fix common encoding issues
       try {
         // Try to fix malformed percent encodings
@@ -33,7 +33,7 @@ function safeDecodeURIComponent(str: string): string {
           }
         });
         return fixed;
-      } catch {
+      } catch (e3) {
         // Last resort: return as-is (might already be decoded)
         console.warn('Could not decode URI component, using as-is');
         return str;
@@ -148,7 +148,7 @@ function ViewFlashcardsContent() {
           </div>
 
           <div className="flex items-center justify-center mb-6">
-            <div className="relative w-full max-w-4xl h-[340px] sm:h-[380px] [perspective:1200px]">
+            <div className="relative w-full max-w-[1600px] h-[340px] sm:h-[380px] [perspective:1200px]">
               <div
                 role="button"
                 tabIndex={0}
