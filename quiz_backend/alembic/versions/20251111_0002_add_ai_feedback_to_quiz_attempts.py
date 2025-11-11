@@ -11,7 +11,7 @@ import sqlalchemy as sa
 
 # revision identifiers, used by Alembic.
 revision = "20251111_0002_add_ai_feedback_to_quiz_attempts"
-down_revision = "20251108_0001_add_share_code_to_quizzes"
+down_revision = "20251108_0001"
 branch_labels = None
 depends_on = None
 
