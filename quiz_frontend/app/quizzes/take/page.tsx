@@ -14,6 +14,7 @@ import { attemptApi } from '@/lib/api/attempts';
 import { QuizData, QuizQuestion } from '@/lib/types';
 import { CheckCircle, XCircle, Clock } from 'lucide-react';
 import { format } from 'date-fns';
+import { formatFeedbackToHtml } from '@/lib/utils/formatFeedback';
 
 function TakeQuizContent() {
   const searchParams = useSearchParams();
@@ -185,7 +186,10 @@ function TakeQuizContent() {
                 <div className="mb-8">
                   <div className="rounded-lg border border-indigo-200 bg-indigo-50 p-6 text-left shadow-sm">
                     <h2 className="text-lg font-semibold text-indigo-900 mb-2">Personalized Feedback</h2>
-                    <p className="text-sm text-indigo-900 leading-relaxed">{results.feedback}</p>
+                    <div
+                      className="text-sm text-indigo-900 leading-relaxed"
+                      dangerouslySetInnerHTML={{ __html: formatFeedbackToHtml(results.feedback) }}
+                    />
                   </div>
                 </div>
               )}

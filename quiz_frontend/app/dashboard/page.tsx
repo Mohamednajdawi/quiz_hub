@@ -10,6 +10,7 @@ import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { Alert } from '@/components/ui/Alert';
 import { Button } from '@/components/ui/Button';
 import { attemptApi } from '@/lib/api/attempts';
+import { formatFeedbackToHtml } from '@/lib/utils/formatFeedback';
 import { format } from 'date-fns';
 import { BarChart3, TrendingUp, Clock, Award } from 'lucide-react';
 
@@ -274,7 +275,10 @@ function DashboardPageContent() {
                       </td>
                       <td className="px-6 py-4 text-xs text-gray-700 whitespace-normal max-w-xs">
                         {attempt.ai_feedback ? (
-                          <span className="leading-relaxed">{attempt.ai_feedback}</span>
+                          <div
+                            className="leading-relaxed"
+                            dangerouslySetInnerHTML={{ __html: formatFeedbackToHtml(attempt.ai_feedback) }}
+                          />
                         ) : (
                           <span className="italic text-gray-400">Feedback not available</span>
                         )}

@@ -11,6 +11,7 @@ import { Alert } from '@/components/ui/Alert';
 import { quizApi } from '@/lib/api/quiz';
 import { BarChart3, Users, Clock, TrendingUp } from 'lucide-react';
 import { format } from 'date-fns';
+import { formatFeedbackToHtml } from '@/lib/utils/formatFeedback';
 
 function QuizResultsContent() {
   const params = useParams();
@@ -145,7 +146,7 @@ function QuizResultsContent() {
                               {attempt.percentage_score.toFixed(1)}%
                             </span>
                           </div>
-                          <div className="flex items-center gap-4 text-sm text-gray-600">
+                          <div className="flex flex-wrap items-center gap-4 text-sm text-gray-600">
                             <span>
                               {attempt.score} / {attempt.total_questions} correct
                             </span>
@@ -157,11 +158,12 @@ function QuizResultsContent() {
                               {format(new Date(attempt.timestamp), 'MMM d, yyyy h:mm a')}
                             </span>
                           </div>
-                      {attempt.ai_feedback && (
-                        <div className="mt-3 text-sm text-gray-700 leading-relaxed bg-indigo-50 border border-indigo-100 rounded-md p-3">
-                          {attempt.ai_feedback}
-                        </div>
-                      )}
+                          {attempt.ai_feedback && (
+                            <div
+                              className="mt-3 text-sm text-indigo-900 leading-relaxed bg-indigo-50 border border-indigo-100 rounded-md p-3"
+                              dangerouslySetInnerHTML={{ __html: formatFeedbackToHtml(attempt.ai_feedback) }}
+                            />
+                          )}
                         </div>
                       </div>
                     </div>
