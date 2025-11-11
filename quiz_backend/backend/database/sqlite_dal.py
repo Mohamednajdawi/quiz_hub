@@ -133,6 +133,7 @@ class QuizAttempt(Base):
     user_answers = Column(JSON, nullable=False)  # List of user's answer indices
     correct_answers = Column(JSON, nullable=False)  # List of correct answer indices
     question_performance = Column(JSON, nullable=True)  # Detailed per-question performance
+    ai_feedback = Column(Text, nullable=True)  # AI-generated feedback summary
     
     # Additional metadata
     difficulty_level = Column(String, nullable=True)  # easy, medium, hard

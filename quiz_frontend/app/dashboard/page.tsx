@@ -233,6 +233,9 @@ function DashboardPageContent() {
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
                       Date
                     </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
+                      AI Feedback
+                    </th>
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
@@ -268,6 +271,13 @@ function DashboardPageContent() {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
                         {format(new Date(attempt.timestamp), 'MMM d, yyyy')}
+                      </td>
+                      <td className="px-6 py-4 text-xs text-gray-700 whitespace-normal max-w-xs">
+                        {attempt.ai_feedback ? (
+                          <span className="leading-relaxed">{attempt.ai_feedback}</span>
+                        ) : (
+                          <span className="italic text-gray-400">Feedback not available</span>
+                        )}
                       </td>
                     </tr>
                   ))}

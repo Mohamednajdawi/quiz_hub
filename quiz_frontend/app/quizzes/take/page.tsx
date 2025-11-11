@@ -31,6 +31,7 @@ function TakeQuizContent() {
     percentage: number;
     timeTaken: number;
     correctAnswers: number[];
+    feedback?: string;
   } | null>(null);
 
   useEffect(() => {
@@ -57,6 +58,11 @@ function TakeQuizContent() {
 
   const recordAttemptMutation = useMutation({
     mutationFn: attemptApi.recordAttempt,
+    onSuccess: (data) => {
+      if (data.ai_feedback) {
+        setResults((prev) => (prev ? { ...prev, feedback: data.ai_feedback } : prev));
+      }
+    },
   });
 
   const handleAnswerSelect = (answerIndex: number) => {
@@ -111,14 +117,16 @@ function TakeQuizContent() {
       percentage,
       timeTaken,
       correctAnswers,
+      feedback: undefined,
     };
 
     setResults(resultsData);
     setShowResults(true);
 
     // Record attempt
+    const topicId = quizData.quiz_id ?? 999;
     recordAttemptMutation.mutate({
-      topic_id: 999, // URL/PDF generated quiz
+      topic_id: topicId,
       user_id: user?.id, // Use authenticated user ID if available
       score,
       total_questions: quizData.questions.length,
@@ -126,7 +134,7 @@ function TakeQuizContent() {
       user_answers: selectedAnswers,
       correct_answers: correctAnswers,
       difficulty_level: 'medium',
-      source_type: 'url',
+      source_type: topicId === 999 ? 'url' : 'stored',
       source_info: quizData.topic,
     });
   };
@@ -166,7 +174,23 @@ function TakeQuizContent() {
                 </div>
               </div>
 
-              <div className="space-y-4 mb-8">
+              {recordAttemptMutation.isPending && !results.feedback && (
+                <div className="mb-8 flex items-center justify-center gap-2 text-sm text-gray-600">
+                  <LoadingSpinner size="sm" />
+                  <span>Generating personalized feedback...</span>
+                </div>
+              )}
+
+              {results.feedback && (
+                <div className="mb-8">
+                  <div className="rounded-lg border border-indigo-200 bg-indigo-50 p-6 text-left shadow-sm">
+                    <h2 className="text-lg font-semibold text-indigo-900 mb-2">Personalized Feedback</h2>
+                    <p className="text-sm text-indigo-900 leading-relaxed">{results.feedback}</p>
+                  </div>
+                </div>
+              )}
+
+              <div className="space-y-4 mb-8 text-left">
                 {quizData.questions.map((q, index) => {
                   // Convert right_option to integer (handles both string and number)
                   // Also handles letter options (a, b, c, d) by converting to index
@@ -195,7 +219,7 @@ function TakeQuizContent() {
                   return (
                     <div
                       key={index}
-                      className={`p-4 rounded-lg border-2 ${
+                      className={`p-4 rounded-lg border-2 transition-shadow ${
                         isCorrect ? 'border-green-200 bg-green-50' : 'border-red-200 bg-red-50'
                       }`}
                     >

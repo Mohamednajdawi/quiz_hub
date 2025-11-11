@@ -81,6 +81,7 @@ class QuizAttemptResponse(BaseModel):
     source_type: Optional[str]
     source_info: Optional[str]
     question_performance: Optional[List[Dict[str, Any]]]
+    ai_feedback: Optional[str]
 
 
 class QuizAttemptSummaryResponse(BaseModel):
@@ -96,6 +97,7 @@ class QuizAttemptSummaryResponse(BaseModel):
     time_taken_seconds: int
     difficulty_level: Optional[str]
     source_type: Optional[str]
+    ai_feedback: Optional[str]
 
 
 class UserQuizHistoryResponse(BaseModel):

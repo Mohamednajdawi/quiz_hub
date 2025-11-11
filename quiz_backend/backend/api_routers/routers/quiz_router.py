@@ -19,6 +19,7 @@ from backend.utils.utils import generate_quiz, generate_quiz_from_pdf
 from backend.api_routers.routers.auth_router import get_current_user_dependency
 from backend.database.sqlite_dal import User as UserModel
 from backend.utils.credits import consume_generation_token
+from backend.utils.feedback import generate_quiz_feedback
 
 router = APIRouter()
 
@@ -557,6 +558,52 @@ async def submit_shared_quiz(
     db.add(quiz_attempt)
     db.commit()
     db.refresh(quiz_attempt)
+
+    # Generate AI feedback for the participant
+    ai_feedback = None
+    try:
+        question_details = []
+        for idx, question in enumerate(questions):
+            user_idx = user_answers[idx] if idx < len(user_answers) else None
+            correct_idx = correct_answers[idx] if idx < len(correct_answers) else None
+
+            user_text = (
+                question.options[user_idx]
+                if user_idx is not None and 0 <= user_idx < len(question.options)
+                else "Not answered"
+            )
+            correct_text = (
+                question.options[correct_idx]
+                if correct_idx is not None and 0 <= correct_idx < len(question.options)
+                else "Unknown"
+            )
+
+            question_details.append(
+                {
+                    "number": idx + 1,
+                    "question": question.question,
+                    "user_answer": user_text,
+                    "correct_answer": correct_text,
+                    "is_correct": user_idx == correct_idx and user_idx is not None,
+                }
+            )
+
+        ai_feedback = generate_quiz_feedback(
+            topic_name=quiz.topic,
+            score=score,
+            total_questions=total_questions,
+            percentage=percentage_score,
+            time_taken_seconds=submission.time_taken_seconds,
+            question_details=question_details,
+        )
+    except Exception as feedback_error:  # pylint: disable=broad-except
+        logging.error("[QUIZ FEEDBACK] Shared quiz feedback generation failed: %s", feedback_error)
+
+    if ai_feedback:
+        quiz_attempt.ai_feedback = ai_feedback
+        db.add(quiz_attempt)
+        db.commit()
+        db.refresh(quiz_attempt)
     
     return JSONResponse(
         content={
@@ -565,7 +612,8 @@ async def submit_shared_quiz(
             "score": score,
             "total_questions": total_questions,
             "percentage_score": round(percentage_score, 2),
-            "timestamp": quiz_attempt.timestamp.isoformat()
+            "timestamp": quiz_attempt.timestamp.isoformat(),
+            "ai_feedback": quiz_attempt.ai_feedback,
         },
         status_code=201
     )
@@ -783,6 +831,7 @@ async def get_shared_quiz_results(
                     "total_questions": attempt.total_questions,
                     "percentage_score": round(attempt.percentage_score, 2),
                     "time_taken_seconds": attempt.time_taken_seconds,
+                    "ai_feedback": attempt.ai_feedback,
                 }
                 for attempt in attempts
             ]

@@ -358,6 +358,7 @@ function ContentItem({
                               onClick={() => handleViewQuiz(quiz.id)}
                               className="flex-shrink-0 p-1.5 text-indigo-600 hover:bg-indigo-200 rounded transition-colors"
                               title="Edit quiz"
+                              aria-label="Edit quiz"
                             >
                               <Edit2 className="w-4 h-4" />
                             </button>

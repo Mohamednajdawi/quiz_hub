@@ -2,20 +2,108 @@ import logging
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
-from typing import List, Optional
+from typing import Any, Dict, List, Optional
 import datetime
 
-from backend.api_routers.schemas import (
-    QuizAttemptRequest, 
-    QuizAttemptResultRequest,
-    QuizAttemptResponse,
-    QuizAttemptSummaryResponse,
-    UserQuizHistoryResponse
-)
+from backend.api_routers.schemas import QuizAttemptRequest, QuizAttemptResultRequest
 from backend.database.db import get_db
-from backend.database.sqlite_dal import QuizAttempt, QuizTopic, User
+from backend.database.sqlite_dal import QuizAttempt, QuizQuestion, QuizTopic, User
+from backend.utils.feedback import generate_quiz_feedback
 
 router = APIRouter()
+
+
+def _normalize_answer_index(raw_value, options_length: int) -> Optional[int]:
+    if raw_value is None:
+        return None
+
+    if isinstance(raw_value, str):
+        stripped = raw_value.strip().lower()
+        if not stripped:
+            return None
+        if stripped.isdigit():
+            idx = int(stripped)
+        elif len(stripped) == 1 and "a" <= stripped <= "z":
+            idx = ord(stripped) - 97
+        else:
+            try:
+                idx = int(float(stripped))
+            except ValueError:
+                return None
+    else:
+        idx = int(raw_value)
+
+    if options_length <= 0:
+        return idx
+
+    return idx if 0 <= idx < options_length else None
+
+
+def _format_option_text(options: Optional[list], index: Optional[int]) -> Optional[str]:
+    if index is None:
+        return None
+    if options and 0 <= index < len(options):
+        return options[index]
+    # Fall back to generic label
+    return f"Option {index + 1}"
+
+
+def _collect_question_details_for_feedback(
+    *,
+    topic_id: int,
+    user_answers: List[int],
+    correct_answers: List[int],
+    db: Session,
+) -> List[Dict[str, Any]]:
+    questions = (
+        db.query(QuizQuestion)
+        .filter(QuizQuestion.topic_id == topic_id)
+        .order_by(QuizQuestion.id.asc())
+        .all()
+    )
+
+    if not questions:
+        # If we have no stored questions (e.g., ad-hoc quizzes), still build a minimal structure
+        details = []
+        for idx, (user_raw, correct_raw) in enumerate(zip(user_answers, correct_answers), start=1):
+            user_idx = _normalize_answer_index(user_raw, 0)
+            correct_idx = _normalize_answer_index(correct_raw, 0)
+            details.append(
+                {
+                    "number": idx,
+                    "question": f"Question {idx}",
+                    "user_answer": f"Option {user_idx + 1}" if user_idx is not None else "Not answered",
+                    "correct_answer": f"Option {correct_idx + 1}" if correct_idx is not None else "Unknown",
+                    "is_correct": user_idx is not None and user_idx == correct_idx,
+                }
+            )
+        return details
+
+    details: List[Dict[str, Any]] = []
+    max_len = min(len(questions), max(len(user_answers), len(correct_answers)))
+
+    for idx in range(max_len):
+        question = questions[idx]
+        user_raw = user_answers[idx] if idx < len(user_answers) else None
+        correct_raw = correct_answers[idx] if idx < len(correct_answers) else None
+
+        user_idx = _normalize_answer_index(user_raw, len(question.options or []))
+        correct_idx = _normalize_answer_index(correct_raw, len(question.options or []))
+
+        user_text = _format_option_text(question.options, user_idx)
+        correct_text = _format_option_text(question.options, correct_idx)
+
+        details.append(
+            {
+                "number": idx + 1,
+                "question": question.question,
+                "user_answer": user_text if user_text else "Not answered",
+                "correct_answer": correct_text if correct_text else "Unknown",
+                "is_correct": user_idx is not None and user_idx == correct_idx,
+            }
+        )
+
+    return details
 
 
 @router.post("/record-quiz-attempt", tags=["Attempts"])
@@ -40,6 +128,8 @@ async def record_quiz_attempt(request: QuizAttemptRequest, db: Session = Depends
 @router.post("/record-quiz-result", tags=["Attempts"])
 async def record_quiz_result(request: QuizAttemptResultRequest, db: Session = Depends(get_db)) -> JSONResponse:
     """Record detailed quiz attempt with results"""
+    topic: Optional[QuizTopic] = None
+
     # Handle URL/PDF quizzes (topic_id 999)
     if request.topic_id == 999:
         # Create or get the special topic for URL/PDF quizzes
@@ -101,14 +191,44 @@ async def record_quiz_result(request: QuizAttemptResultRequest, db: Session = De
     db.add(quiz_attempt)
     db.commit()
     db.refresh(quiz_attempt)
-    
+
+    # Determine topic name for feedback context
+    topic_name = topic.topic if topic else request.source_info or "URL/PDF Quiz"
+
+    # Generate AI feedback if possible
+    ai_feedback: Optional[str] = None
+    try:
+        question_details = _collect_question_details_for_feedback(
+            topic_id=request.topic_id,
+            user_answers=request.user_answers,
+            correct_answers=request.correct_answers,
+            db=db,
+        )
+        ai_feedback = generate_quiz_feedback(
+            topic_name=topic_name,
+            score=request.score,
+            total_questions=request.total_questions,
+            percentage=quiz_attempt.percentage_score,
+            time_taken_seconds=request.time_taken_seconds,
+            question_details=question_details,
+        )
+    except Exception as feedback_error:  # pylint: disable=broad-except
+        logging.error("[QUIZ FEEDBACK] Failed to prepare feedback context: %s", feedback_error)
+
+    if ai_feedback:
+        quiz_attempt.ai_feedback = ai_feedback
+        db.add(quiz_attempt)
+        db.commit()
+        db.refresh(quiz_attempt)
+
     return JSONResponse(
         content={
             "message": "Quiz result recorded successfully",
             "attempt_id": quiz_attempt.id,
             "timestamp": quiz_attempt.timestamp.isoformat(),
             "score": quiz_attempt.score,
-            "percentage": quiz_attempt.percentage_score
+            "percentage": quiz_attempt.percentage_score,
+            "ai_feedback": quiz_attempt.ai_feedback,
         },
         status_code=201
     )
@@ -160,7 +280,8 @@ async def get_detailed_quiz_attempts(topic_id: int, db: Session = Depends(get_db
                     "time_taken_seconds": attempt.time_taken_seconds,
                     "difficulty_level": attempt.difficulty_level,
                     "source_type": attempt.source_type,
-                    "source_info": attempt.source_info
+                    "source_info": attempt.source_info,
+                    "ai_feedback": attempt.ai_feedback,
                 }
                 for attempt in attempts
             ]
@@ -230,7 +351,8 @@ async def get_user_quiz_history(user_id: str, db: Session = Depends(get_db)) -> 
             "percentage_score": attempt.percentage_score,
             "time_taken_seconds": attempt.time_taken_seconds,
             "difficulty_level": attempt.difficulty_level,
-            "source_type": attempt.source_type
+            "source_type": attempt.source_type,
+            "ai_feedback": attempt.ai_feedback,
         })
     logging.warning(f"[QUIZ HISTORY] Returning {len(attempts_with_topics)} attempts for user_id: {user_id}")
     return JSONResponse(
@@ -273,7 +395,8 @@ async def get_quiz_attempt_details(attempt_id: int, db: Session = Depends(get_db
             "difficulty_level": attempt.difficulty_level,
             "source_type": attempt.source_type,
             "source_info": attempt.source_info,
-            "question_performance": attempt.question_performance
+            "question_performance": attempt.question_performance,
+            "ai_feedback": attempt.ai_feedback,
         }
     )
 
@@ -437,7 +560,8 @@ async def get_user_analytics(user_id: str, db: Session = Depends(get_db)) -> JSO
             "percentage_score": attempt.percentage_score,
             "time_taken_seconds": attempt.time_taken_seconds,
             "difficulty_level": attempt.difficulty_level,
-            "source_type": attempt.source_type
+            "source_type": attempt.source_type,
+            "ai_feedback": attempt.ai_feedback,
         })
     
     # Calculate category accuracy

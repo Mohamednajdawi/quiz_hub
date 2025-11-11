@@ -8,6 +8,7 @@ export const attemptApi = {
     timestamp: string;
     score: number;
     percentage: number;
+    ai_feedback?: string;
   }> => {
     const response = await apiClient.post('/record-quiz-result', request);
     return response.data;
@@ -48,6 +49,7 @@ export const attemptApi = {
       is_correct: boolean;
       time_spent: number;
     }>;
+    ai_feedback?: string;
   }> => {
     const response = await apiClient.get(`/quiz-attempt/${attemptId}`);
     return response.data;

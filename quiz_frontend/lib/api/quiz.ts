@@ -97,6 +97,7 @@ export const quizApi = {
       total_questions: number;
       percentage_score: number;
       time_taken_seconds: number;
+      ai_feedback?: string;
     }>;
   }> => {
     const response = await apiClient.get(`/quiz/${topicId}/shared-results`);

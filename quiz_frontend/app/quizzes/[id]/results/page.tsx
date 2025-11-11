@@ -157,6 +157,11 @@ function QuizResultsContent() {
                               {format(new Date(attempt.timestamp), 'MMM d, yyyy h:mm a')}
                             </span>
                           </div>
+                      {attempt.ai_feedback && (
+                        <div className="mt-3 text-sm text-gray-700 leading-relaxed bg-indigo-50 border border-indigo-100 rounded-md p-3">
+                          {attempt.ai_feedback}
+                        </div>
+                      )}
                         </div>
                       </div>
                     </div>

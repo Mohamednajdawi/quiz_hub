@@ -100,6 +100,7 @@ export interface QuizAttempt {
   topic_name?: string;
   category?: string;
   subcategory?: string;
+  ai_feedback?: string;
 }
 
 export interface UserQuizHistory {
