@@ -147,32 +147,41 @@ function ViewFlashcardsContent() {
             </div>
           </div>
 
-          <div className="min-h-[400px] flex items-center justify-center mb-6">
-            <div
-              className="w-full cursor-pointer"
-              onClick={() => setIsFlipped(!isFlipped)}
-            >
-              {!isFlipped ? (
-                <div className="bg-indigo-50 border-2 border-indigo-200 rounded-lg p-8 min-h-[300px] flex items-center justify-center transition-all hover:shadow-lg">
-                  <div className="text-center">
-                    <div className="text-sm text-indigo-600 font-medium mb-2">Front</div>
-                    <div className="text-xl font-semibold text-gray-900">
-                      {currentCard.front}
-                    </div>
-                    <div className="text-xs text-gray-700 mt-4">Click to flip</div>
+          <div className="flex items-center justify-center mb-6">
+            <div className="relative w-full max-w-2xl h-[340px] sm:h-[380px] [perspective:1200px]">
+              <div
+                role="button"
+                tabIndex={0}
+                onClick={() => setIsFlipped(!isFlipped)}
+                onKeyDown={(event) => {
+                  if (event.key === 'Enter' || event.key === ' ') {
+                    event.preventDefault();
+                    setIsFlipped(!isFlipped);
+                  }
+                }}
+                className="relative w-full h-full cursor-pointer transition-transform duration-500 [transform-style:preserve-3d] focus:outline-none focus:ring-4 focus:ring-indigo-200 rounded-xl"
+                style={{ transform: isFlipped ? 'rotateY(180deg)' : 'rotateY(0deg)' }}
+              >
+                <div className="absolute inset-0 bg-indigo-50 border-2 border-indigo-200 rounded-xl p-8 flex flex-col items-center justify-center text-center shadow-sm [backface-visibility:hidden]">
+                  <div className="text-sm text-indigo-600 font-medium mb-2 uppercase tracking-wide">
+                    Front
                   </div>
-                </div>
-              ) : (
-                <div className="bg-green-50 border-2 border-green-200 rounded-lg p-8 min-h-[300px] flex items-center justify-center transition-all hover:shadow-lg">
-                  <div className="text-center">
-                    <div className="text-sm text-green-600 font-medium mb-2">Back</div>
-                    <div className="text-xl font-semibold text-gray-900">
-                      {currentCard.back}
-                    </div>
-                    <div className="text-xs text-gray-700 mt-4">Click to flip</div>
+                  <div className="text-xl font-semibold text-gray-900 leading-relaxed max-h-[220px] overflow-y-auto">
+                    {currentCard.front}
                   </div>
+                  <div className="text-xs text-gray-600 mt-6">Click or press space to flip</div>
                 </div>
-              )}
+
+                <div className="absolute inset-0 bg-green-50 border-2 border-green-200 rounded-xl p-8 flex flex-col items-center justify-center text-center shadow-sm [backface-visibility:hidden] [transform:rotateY(180deg)]">
+                  <div className="text-sm text-green-600 font-medium mb-2 uppercase tracking-wide">
+                    Back
+                  </div>
+                  <div className="text-xl font-semibold text-gray-900 leading-relaxed max-h-[220px] overflow-y-auto">
+                    {currentCard.back}
+                  </div>
+                  <div className="text-xs text-gray-600 mt-6">Click or press space to flip back</div>
+                </div>
+              </div>
             </div>
           </div>
 
