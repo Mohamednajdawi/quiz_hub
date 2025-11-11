@@ -93,6 +93,8 @@ def _collect_question_details_for_feedback(
         user_text = _format_option_text(question.options, user_idx)
         correct_text = _format_option_text(question.options, correct_idx)
 
+        concept_name = ""
+
         details.append(
             {
                 "number": idx + 1,
@@ -100,6 +102,7 @@ def _collect_question_details_for_feedback(
                 "user_answer": user_text if user_text else "Not answered",
                 "correct_answer": correct_text if correct_text else "Unknown",
                 "is_correct": user_idx is not None and user_idx == correct_idx,
+                "concept": concept_name,
             }
         )
 

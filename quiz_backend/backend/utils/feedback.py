@@ -62,6 +62,7 @@ def generate_quiz_feedback(
             "user_answer": detail.get("user_answer") or "Not answered",
             "correct_answer": detail.get("correct_answer") or "Unknown",
             "is_correct": bool(detail.get("is_correct")),
+            "concept": detail.get("concept") or detail.get("topic") or "",
         }
         if entry["is_correct"]:
             correct.append(entry)
@@ -78,8 +79,9 @@ def generate_quiz_feedback(
         details_text_lines = []
         for entry in context_entries:
             status_icon = "✅" if entry["is_correct"] else "❌"
+            concept_prefix = f"[Concept: {entry['concept']}] " if entry["concept"] else ""
             details_text_lines.append(
-                f"{status_icon} Q{entry['number']}: {entry['question']} | "
+                f"{status_icon} Q{entry['number']}: {concept_prefix}{entry['question']} | "
                 f"User: {entry['user_answer']} | Correct: {entry['correct_answer']}"
             )
         question_context = "\n".join(details_text_lines)
@@ -87,9 +89,12 @@ def generate_quiz_feedback(
         question_context = "No question-level details were available."
 
     # Identify focus topics (up to 2 most recent incorrect answers)
-    focus_topics = [
-        entry["question"] for entry in incorrect[:2]
-    ]
+    focus_topics = []
+    for entry in incorrect[:2]:
+        if entry["concept"]:
+            focus_topics.append(entry["concept"])
+        else:
+            focus_topics.append(entry["question"])
     focus_text = "; ".join(focus_topics) if focus_topics else "No particular gaps detected"
 
     time_taken_text = _format_time(time_taken_seconds)
