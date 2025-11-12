@@ -1,13 +1,20 @@
 import os
 import stripe
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Optional
 from datetime import datetime
 from sqlalchemy.orm import Session
+import logging
 
-from backend.database.sqlite_dal import User, Subscription, PaymentMethod, Transaction
+from backend.database.sqlite_dal import User, Subscription, Transaction
+
+logger = logging.getLogger(__name__)
 
 # Initialize Stripe with API key
-stripe.api_key = os.getenv("STRIPE_SECRET_KEY")
+stripe_secret_key = os.getenv("STRIPE_SECRET_KEY")
+if not stripe_secret_key:
+    logger.warning("STRIPE_SECRET_KEY is not set. Stripe functionality will not work.")
+else:
+    stripe.api_key = stripe_secret_key
 
 # Available subscription plans
 SUBSCRIPTION_PLANS = {
@@ -54,12 +61,33 @@ SUBSCRIPTION_PLANS = {
 }
 
 
+def validate_stripe_configuration() -> Dict[str, bool]:
+    """Validate Stripe configuration and return status of required variables"""
+    validation_status = {
+        "stripe_secret_key": bool(stripe_secret_key),
+        "stripe_webhook_secret": bool(os.getenv("STRIPE_WEBHOOK_SECRET")),
+        "basic_price_id": bool(SUBSCRIPTION_PLANS["basic"]["stripe_price_id"]),
+        "premium_price_id": bool(SUBSCRIPTION_PLANS["premium"]["stripe_price_id"]),
+        "enterprise_price_id": bool(SUBSCRIPTION_PLANS["enterprise"]["stripe_price_id"]),
+    }
+    
+    all_valid = all(validation_status.values())
+    
+    if not all_valid:
+        missing = [key for key, value in validation_status.items() if not value]
+        logger.warning("Stripe configuration incomplete. Missing: %s", ', '.join(missing))
+    
+    return validation_status
+
+
 class StripeService:
     """Service class for handling Stripe payment operations"""
     
     @staticmethod
     def create_customer(email: str, firebase_uid: Optional[str] = None) -> str:
         """Create a Stripe customer"""
+        if not stripe_secret_key:
+            raise Exception("STRIPE_SECRET_KEY is not configured")
         try:
             customer_data = {
                 "email": email,
@@ -83,6 +111,8 @@ class StripeService:
         metadata: Optional[Dict] = None
     ) -> Dict:
         """Create a payment intent for one-time payments"""
+        if not stripe_secret_key:
+            raise Exception("STRIPE_SECRET_KEY is not configured")
         try:
             payment_intent_data = {
                 "amount": amount,
@@ -115,6 +145,10 @@ class StripeService:
         metadata: Optional[Dict] = None
     ) -> Dict:
         """Create a subscription"""
+        if not stripe_secret_key:
+            raise Exception("STRIPE_SECRET_KEY is not configured")
+        if not price_id:
+            raise Exception("Price ID is required to create a subscription")
         try:
             # Attach payment method to customer
             stripe.PaymentMethod.attach(payment_method_id, customer=customer_id)
@@ -219,13 +253,18 @@ class StripeService:
     @staticmethod
     def get_available_plans() -> List[Dict]:
         """Get available subscription plans"""
-        return [
-            {
+        plans = []
+        for plan_id, plan_data in SUBSCRIPTION_PLANS.items():
+            plan_dict = {
                 "id": plan_id,
                 **plan_data
             }
-            for plan_id, plan_data in SUBSCRIPTION_PLANS.items()
-        ]
+            # Filter out plans without price IDs (not configured)
+            if plan_dict.get("stripe_price_id"):
+                plans.append(plan_dict)
+            else:
+                logger.warning("Plan %s is missing stripe_price_id and will be excluded", plan_id)
+        return plans
     
     @staticmethod
     def construct_webhook_event(payload: bytes, sig_header: str, webhook_secret: str) -> stripe.Event:
@@ -358,7 +397,7 @@ class StripeService:
         return True
     
     @staticmethod
-    def _handle_invoice_payment_succeeded(invoice: stripe.Invoice, db: Session) -> bool:
+    def _handle_invoice_payment_succeeded(_invoice: stripe.Invoice, _db: Session) -> bool:
         """Handle successful invoice payment"""
         # This is typically handled by payment_intent.succeeded
         return True
@@ -381,7 +420,7 @@ class StripeService:
 
     @staticmethod
     def create_payment_method(
-        type: str = "card",
+        payment_type: str = "card",
         card: Optional[Dict] = None,
         billing_details: Optional[Dict] = None,
         metadata: Optional[Dict] = None
@@ -389,7 +428,7 @@ class StripeService:
         """Create a payment method"""
         try:
             payment_method_data = {
-                "type": type,
+                "type": payment_type,
             }
             
             if card:
@@ -426,6 +465,10 @@ class StripeService:
         metadata: Optional[Dict] = None
     ) -> Dict:
         """Create a Stripe Checkout Session for subscription"""
+        if not stripe_secret_key:
+            raise Exception("STRIPE_SECRET_KEY is not configured")
+        if not price_id:
+            raise Exception("Price ID is required to create a checkout session")
         try:
             session_data = {
                 "customer": customer_id,

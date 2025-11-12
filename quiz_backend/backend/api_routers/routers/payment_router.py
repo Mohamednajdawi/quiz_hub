@@ -505,5 +505,15 @@ def create_checkout_session(
 # Utility endpoints
 @router.get("/health")
 def payment_health_check():
-    """Health check for payment service"""
-    return {"status": "healthy", "service": "payments"} 
+    """Health check for payment service with Stripe configuration validation"""
+    from backend.services.stripe_service import validate_stripe_configuration
+    
+    config_status = validate_stripe_configuration()
+    all_configured = all(config_status.values())
+    
+    return {
+        "status": "healthy" if all_configured else "degraded",
+        "service": "payments",
+        "stripe_configured": all_configured,
+        "configuration": config_status
+    } 
