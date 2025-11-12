@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy.orm import Session
 from typing import List, Optional
+from pydantic import BaseModel
 import os
 
 from backend.database.db import get_db
@@ -11,6 +12,7 @@ from backend.api_routers.schemas import (
     CreatePaymentIntentRequest, PaymentIntentResponse, SubscriptionPlan
 )
 from backend.services.stripe_service import StripeService
+from backend.api_routers.routers.auth_router import get_current_user_dependency
 import stripe
 
 router = APIRouter(prefix="/payments", tags=["payments"])
@@ -408,6 +410,95 @@ async def handle_webhook(request: Request, db: Session = Depends(get_db)):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=str(e)
+        )
+
+
+# Checkout Sessions
+class CreateCheckoutSessionRequest(BaseModel):
+    plan_id: str  # "pro", "basic", "premium", "enterprise"
+    success_url: str
+    cancel_url: str
+
+
+@router.post("/checkout-session")
+def create_checkout_session(
+    checkout_data: CreateCheckoutSessionRequest,
+    current_user: User = Depends(get_current_user_dependency),
+    db: Session = Depends(get_db)
+):
+    """Create a Stripe Checkout Session for subscription"""
+    try:
+        # Map plan IDs from config to Stripe plan IDs
+        # Config uses: "pro", "starter", "teams"
+        # Stripe uses: "basic", "premium", "enterprise"
+        plan_mapping = {
+            "pro": "premium",  # Map "pro" to "premium" plan
+            "basic": "basic",
+            "premium": "premium",
+            "enterprise": "enterprise",
+        }
+        
+        stripe_plan_id = plan_mapping.get(checkout_data.plan_id.lower())
+        if not stripe_plan_id:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Invalid plan ID: {checkout_data.plan_id}"
+            )
+        
+        # Get plan details
+        plans = StripeService.get_available_plans()
+        plan = next((p for p in plans if p["id"] == stripe_plan_id), None)
+        if not plan:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Plan {stripe_plan_id} not configured. Please set STRIPE_{stripe_plan_id.upper()}_PRICE_ID environment variable."
+            )
+        
+        if not plan.get("stripe_price_id"):
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"Stripe price ID not configured for {stripe_plan_id} plan"
+            )
+        
+        # Ensure user has a Stripe customer ID
+        if not current_user.stripe_customer_id:
+            try:
+                stripe_customer_id = StripeService.create_customer(
+                    email=current_user.email,
+                    firebase_uid=current_user.firebase_uid
+                )
+                current_user.stripe_customer_id = stripe_customer_id
+                db.commit()
+                db.refresh(current_user)
+            except Exception as e:
+                raise HTTPException(
+                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                    detail=f"Failed to create Stripe customer: {str(e)}"
+                )
+        
+        # Create checkout session
+        result = StripeService.create_checkout_session(
+            customer_id=current_user.stripe_customer_id,
+            price_id=plan["stripe_price_id"],
+            success_url=checkout_data.success_url,
+            cancel_url=checkout_data.cancel_url,
+            metadata={
+                "user_id": current_user.id,
+                "plan_type": stripe_plan_id,
+                "original_plan_id": checkout_data.plan_id
+            }
+        )
+        
+        return {
+            "session_id": result["session_id"],
+            "url": result["url"]
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to create checkout session: {str(e)}"
         )
 
 

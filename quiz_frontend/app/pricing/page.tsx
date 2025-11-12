@@ -1,13 +1,15 @@
 'use client';
 
 import { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation } from '@tanstack/react-query';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { Layout } from '@/components/Layout';
 import { Card, CardHeader } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Alert } from '@/components/ui/Alert';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
-import Link from 'next/link';
+import { useAuth } from '@/contexts/AuthContext';
+import { paymentApi } from '@/lib/api/payment';
 import { configApi, PricingConfig, PricingTier } from '@/lib/api/config';
 
 const FALLBACK_HERO = {
@@ -17,7 +19,7 @@ const FALLBACK_HERO = {
 
 type BillingPeriod = 'monthly' | 'yearly';
 
-function TierCard({ tier, billingPeriod }: { tier: PricingTier; billingPeriod: BillingPeriod }) {
+function TierCard({ tier, billingPeriod, onUpgrade, isLoading }: { tier: PricingTier; billingPeriod: BillingPeriod; onUpgrade: (planId: string) => void; isLoading?: boolean }) {
   const ctaVariant = tier.cta?.variant ?? (tier.highlighted ? 'primary' : 'outline');
   
   // Determine which price to show
@@ -27,6 +29,21 @@ function TierCard({ tier, billingPeriod }: { tier: PricingTier; billingPeriod: B
   
   // Check if this is the free tier (usually has "Free" or "0" price)
   const isFreeTier = tier.price === 'Free' || tier.price === '€0' || tier.price?.toLowerCase().includes('free') || displayPrice === 'Free' || displayPrice === '€0';
+  
+  // Check if CTA is for registration (starter tier) or external link
+  const isRegistrationLink = tier.cta?.href === '/register';
+  const isExternalLink = tier.cta?.href?.startsWith('http') || tier.cta?.href?.startsWith('mailto:');
+
+  const handleClick = () => {
+    if (isRegistrationLink || isExternalLink) {
+      // Let the Link handle it
+      return;
+    }
+    // For paid tiers, trigger checkout
+    if (tier.id && !isFreeTier) {
+      onUpgrade(tier.id);
+    }
+  };
 
   return (
     <Card
@@ -70,11 +87,25 @@ function TierCard({ tier, billingPeriod }: { tier: PricingTier; billingPeriod: B
 
       {tier.cta && (
         <div className="mt-auto px-6 pb-6 pt-8">
-          <Link href={tier.cta.href} className="block">
-            <Button variant={ctaVariant} className="w-full">
-              {tier.cta.label}
+          {isRegistrationLink || isExternalLink ? (
+            <Link href={tier.cta.href} className="block">
+              <Button variant={ctaVariant} className="w-full">
+                {tier.cta.label}
+              </Button>
+            </Link>
+          ) : (
+            <Button 
+              variant={ctaVariant} 
+              className="w-full"
+              onClick={(e) => {
+                e.preventDefault();
+                handleClick();
+              }}
+              disabled={isLoading}
+            >
+              {isLoading ? 'Loading...' : tier.cta.label}
             </Button>
-          </Link>
+          )}
           {/* Cancel anytime message for paid tiers */}
           {!isFreeTier && (
             <p className="text-xs text-center text-gray-500 mt-2">
@@ -88,6 +119,9 @@ function TierCard({ tier, billingPeriod }: { tier: PricingTier; billingPeriod: B
 }
 
 export default function PricingPage() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const { isAuthenticated } = useAuth();
   const [billingPeriod, setBillingPeriod] = useState<BillingPeriod>('monthly');
   const { data, isLoading, error } = useQuery<PricingConfig>({
     queryKey: ['pricing-config'],
@@ -96,42 +130,102 @@ export default function PricingPage() {
 
   const hero = data?.hero ?? FALLBACK_HERO;
   const tiers = data?.tiers ?? [];
+  const isManageMode = searchParams?.get('manage') === 'true';
+
+  // Create checkout session mutation
+  const checkoutMutation = useMutation({
+    mutationFn: (planId: string) => {
+      const baseUrl = typeof window !== 'undefined' ? window.location.origin : '';
+      return paymentApi.createCheckoutSession({
+        plan_id: planId,
+        success_url: `${baseUrl}/pricing?success=true`,
+        cancel_url: `${baseUrl}/pricing?canceled=true`,
+      });
+    },
+    onSuccess: (data) => {
+      // Redirect to Stripe Checkout
+      if (data.url) {
+        window.location.href = data.url;
+      }
+    },
+    onError: (error) => {
+      console.error('Failed to create checkout session:', error);
+    },
+  });
+
+  const handleUpgrade = (planId: string) => {
+    if (!isAuthenticated) {
+      // Redirect to login, then back to pricing
+      router.push(`/login?redirect=${encodeURIComponent('/pricing')}`);
+      return;
+    }
+    
+    checkoutMutation.mutate(planId);
+  };
 
   return (
     <Layout>
       <div className="px-4 sm:px-6 lg:px-8">
         <div className="max-w-5xl mx-auto">
+          {/* Success/Cancel Messages */}
+          {searchParams?.get('success') === 'true' && (
+            <Alert type="success" className="mb-6">
+              Payment successful! Your subscription is now active. Refresh the page to see your Pro status.
+            </Alert>
+          )}
+          {searchParams?.get('canceled') === 'true' && (
+            <Alert type="error" className="mb-6">
+              Payment was canceled. You can try again anytime.
+            </Alert>
+          )}
+          {checkoutMutation.isError && (
+            <Alert type="error" className="mb-6">
+              {checkoutMutation.error instanceof Error 
+                ? checkoutMutation.error.message 
+                : 'Failed to start checkout. Please try again.'}
+            </Alert>
+          )}
+
           <div className="text-center mb-12">
-            <h1 className="text-4xl sm:text-5xl font-bold text-gray-900 mb-4">{hero.title}</h1>
-            {hero.subtitle && (
+            <h1 className="text-4xl sm:text-5xl font-bold text-gray-900 mb-4">
+              {isManageMode ? 'Manage Subscription' : hero.title}
+            </h1>
+            {!isManageMode && hero.subtitle && (
               <p className="text-lg text-gray-700 max-w-2xl mx-auto mb-8">{hero.subtitle}</p>
             )}
+            {isManageMode && (
+              <p className="text-lg text-gray-700 max-w-2xl mx-auto mb-8">
+                Update your subscription plan or manage your billing information.
+              </p>
+            )}
             
-            {/* Billing Period Tabs */}
-            <div className="flex justify-center mb-8">
-              <div className="inline-flex rounded-lg border border-gray-200 bg-white p-1">
-                <button
-                  onClick={() => setBillingPeriod('monthly')}
-                  className={`px-6 py-2 rounded-md text-sm font-medium transition-colors ${
-                    billingPeriod === 'monthly'
-                      ? 'bg-indigo-600 text-white'
-                      : 'text-gray-700 hover:text-gray-900'
-                  }`}
-                >
-                  Monthly
-                </button>
-                <button
-                  onClick={() => setBillingPeriod('yearly')}
-                  className={`px-6 py-2 rounded-md text-sm font-medium transition-colors ${
-                    billingPeriod === 'yearly'
-                      ? 'bg-indigo-600 text-white'
-                      : 'text-gray-700 hover:text-gray-900'
-                  }`}
-                >
-                  Yearly
-                </button>
+            {/* Billing Period Tabs - Only show if not in manage mode */}
+            {!isManageMode && (
+              <div className="flex justify-center mb-8">
+                <div className="inline-flex rounded-lg border border-gray-200 bg-white p-1">
+                  <button
+                    onClick={() => setBillingPeriod('monthly')}
+                    className={`px-6 py-2 rounded-md text-sm font-medium transition-colors ${
+                      billingPeriod === 'monthly'
+                        ? 'bg-indigo-600 text-white'
+                        : 'text-gray-700 hover:text-gray-900'
+                    }`}
+                  >
+                    Monthly
+                  </button>
+                  <button
+                    onClick={() => setBillingPeriod('yearly')}
+                    className={`px-6 py-2 rounded-md text-sm font-medium transition-colors ${
+                      billingPeriod === 'yearly'
+                        ? 'bg-indigo-600 text-white'
+                        : 'text-gray-700 hover:text-gray-900'
+                    }`}
+                  >
+                    Yearly
+                  </button>
+                </div>
               </div>
-            </div>
+            )}
           </div>
 
           {error && (
@@ -147,7 +241,13 @@ export default function PricingPage() {
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
               {tiers.map((tier) => (
-                <TierCard key={tier.id ?? tier.name} tier={tier} billingPeriod={billingPeriod} />
+                <TierCard 
+                  key={tier.id ?? tier.name} 
+                  tier={tier} 
+                  billingPeriod={billingPeriod}
+                  onUpgrade={handleUpgrade}
+                  isLoading={checkoutMutation.isPending}
+                />
               ))}
             </div>
           )}

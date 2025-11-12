@@ -415,4 +415,41 @@ class StripeService:
                 "billing_details": payment_method.billing_details
             }
         except stripe.error.StripeError as e:
-            raise Exception(f"Failed to create payment method: {str(e)}") 
+            raise Exception(f"Failed to create payment method: {str(e)}")
+    
+    @staticmethod
+    def create_checkout_session(
+        customer_id: str,
+        price_id: str,
+        success_url: str,
+        cancel_url: str,
+        metadata: Optional[Dict] = None
+    ) -> Dict:
+        """Create a Stripe Checkout Session for subscription"""
+        try:
+            session_data = {
+                "customer": customer_id,
+                "payment_method_types": ["card"],
+                "line_items": [
+                    {
+                        "price": price_id,
+                        "quantity": 1,
+                    }
+                ],
+                "mode": "subscription",
+                "success_url": success_url,
+                "cancel_url": cancel_url,
+                "allow_promotion_codes": True,
+            }
+            
+            if metadata:
+                session_data["metadata"] = metadata
+            
+            session = stripe.checkout.Session.create(**session_data)
+            
+            return {
+                "session_id": session.id,
+                "url": session.url
+            }
+        except stripe.error.StripeError as e:
+            raise Exception(f"Failed to create checkout session: {str(e)}") 
