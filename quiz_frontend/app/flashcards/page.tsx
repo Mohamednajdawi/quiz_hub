@@ -25,8 +25,9 @@ function FlashcardsPageContent() {
 
   const { isAuthenticated, user } = useAuth();
   
-  // Check if user has reached their free token limit
-  const hasReachedLimit = user && typeof user.free_tokens === 'number' && user.free_tokens === 0;
+  // Check if user has reached their free token limit (only for free users)
+  const isPro = user?.account_type === 'pro' || user?.subscription?.status === 'active';
+  const hasReachedLimit = !isPro && user && typeof user.free_tokens === 'number' && user.free_tokens === 0;
 
   const generateMutation = useMutation({
     mutationFn: async () => {
