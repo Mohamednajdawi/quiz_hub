@@ -287,6 +287,8 @@ class StripeService:
                 return StripeService._handle_payment_intent_succeeded(event.data.object, db)
             elif event.type == "payment_intent.payment_failed":
                 return StripeService._handle_payment_intent_failed(event.data.object, db)
+            elif event.type == "checkout.session.completed":
+                return StripeService._handle_checkout_session_completed(event.data.object, db)
             elif event.type == "customer.subscription.created":
                 return StripeService._handle_subscription_created(event.data.object, db)
             elif event.type == "customer.subscription.updated":
@@ -344,25 +346,133 @@ class StripeService:
         return True
     
     @staticmethod
+    def _handle_checkout_session_completed(session: stripe.checkout.Session, db: Session) -> bool:
+        """Handle checkout session completion - this is triggered when using Stripe Checkout"""
+        try:
+            # Only handle subscription mode checkout sessions
+            if session.mode != "subscription":
+                return True
+            
+            # Get customer ID from session
+            customer_id = session.customer
+            if not customer_id:
+                logger.warning("Checkout session completed but no customer ID found")
+                return False
+            
+            # Find user by customer ID
+            user = db.query(User).filter(User.stripe_customer_id == customer_id).first()
+            if not user:
+                logger.warning(f"User not found for customer ID: {customer_id}")
+                return False
+            
+            # Get subscription ID from session
+            subscription_id = session.subscription
+            if not subscription_id:
+                logger.warning("Checkout session completed but no subscription ID found")
+                return False
+            
+            # Retrieve subscription from Stripe to get full details
+            try:
+                subscription = stripe.Subscription.retrieve(subscription_id)
+            except stripe.error.StripeError as e:
+                logger.error(f"Failed to retrieve subscription from Stripe: {str(e)}")
+                return False
+            
+            # Get plan type from metadata or price ID
+            plan_type = "unknown"
+            if session.metadata and "plan_type" in session.metadata:
+                plan_type = session.metadata["plan_type"]
+            elif subscription.items.data:
+                # Map price ID to plan type
+                price_id = subscription.items.data[0].price.id
+                for plan_id, plan_data in SUBSCRIPTION_PLANS.items():
+                    if plan_data.get("stripe_price_id") == price_id:
+                        plan_type = plan_id
+                        break
+            
+            # Check if subscription already exists
+            existing_subscription = db.query(Subscription).filter(
+                Subscription.stripe_subscription_id == subscription_id
+            ).first()
+            
+            if existing_subscription:
+                # Update existing subscription
+                existing_subscription.status = subscription.status
+                existing_subscription.plan_type = plan_type
+                existing_subscription.current_period_start = datetime.fromtimestamp(subscription.current_period_start)
+                existing_subscription.current_period_end = datetime.fromtimestamp(subscription.current_period_end)
+                existing_subscription.cancel_at_period_end = subscription.cancel_at_period_end
+                existing_subscription.updated_at = datetime.now()
+                db.commit()
+                logger.info(f"Updated existing subscription {subscription_id} for user {user.id}")
+            else:
+                # Create new subscription record
+                db_subscription = Subscription(
+                    user_id=user.id,
+                    stripe_subscription_id=subscription_id,
+                    plan_type=plan_type,
+                    status=subscription.status,
+                    current_period_start=datetime.fromtimestamp(subscription.current_period_start),
+                    current_period_end=datetime.fromtimestamp(subscription.current_period_end),
+                    cancel_at_period_end=subscription.cancel_at_period_end
+                )
+                db.add(db_subscription)
+                db.commit()
+                logger.info(f"Created subscription {subscription_id} for user {user.id} with plan {plan_type}")
+            
+            return True
+        except Exception as e:
+            logger.error(f"Error handling checkout session completed: {str(e)}")
+            return False
+    
+    @staticmethod
     def _handle_subscription_created(subscription: stripe.Subscription, db: Session) -> bool:
         """Handle subscription creation"""
         user = db.query(User).filter(User.stripe_customer_id == subscription.customer).first()
         if not user:
+            logger.warning(f"User not found for customer ID: {subscription.customer}")
             return False
         
-        # Create subscription record
-        db_subscription = Subscription(
-            user_id=user.id,
-            stripe_subscription_id=subscription.id,
-            plan_type=subscription.items.data[0].price.id if subscription.items.data else "unknown",
-            status=subscription.status,
-            current_period_start=datetime.fromtimestamp(subscription.current_period_start),
-            current_period_end=datetime.fromtimestamp(subscription.current_period_end),
-            cancel_at_period_end=subscription.cancel_at_period_end
-        )
+        # Get plan type from price ID
+        plan_type = "unknown"
+        if subscription.items.data:
+            price_id = subscription.items.data[0].price.id
+            # Map price ID to plan type
+            for plan_id, plan_data in SUBSCRIPTION_PLANS.items():
+                if plan_data.get("stripe_price_id") == price_id:
+                    plan_type = plan_id
+                    break
         
-        db.add(db_subscription)
-        db.commit()
+        # Check if subscription already exists
+        existing_subscription = db.query(Subscription).filter(
+            Subscription.stripe_subscription_id == subscription.id
+        ).first()
+        
+        if existing_subscription:
+            # Update existing subscription
+            existing_subscription.status = subscription.status
+            existing_subscription.plan_type = plan_type
+            existing_subscription.current_period_start = datetime.fromtimestamp(subscription.current_period_start)
+            existing_subscription.current_period_end = datetime.fromtimestamp(subscription.current_period_end)
+            existing_subscription.cancel_at_period_end = subscription.cancel_at_period_end
+            existing_subscription.updated_at = datetime.now()
+            db.commit()
+            logger.info(f"Updated existing subscription {subscription.id} for user {user.id}")
+        else:
+            # Create subscription record
+            db_subscription = Subscription(
+                user_id=user.id,
+                stripe_subscription_id=subscription.id,
+                plan_type=plan_type,
+                status=subscription.status,
+                current_period_start=datetime.fromtimestamp(subscription.current_period_start),
+                current_period_end=datetime.fromtimestamp(subscription.current_period_end),
+                cancel_at_period_end=subscription.cancel_at_period_end
+            )
+            db.add(db_subscription)
+            db.commit()
+            logger.info(f"Created subscription {subscription.id} for user {user.id} with plan {plan_type}")
+        
         return True
     
     @staticmethod

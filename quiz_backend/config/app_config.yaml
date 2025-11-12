@@ -33,7 +33,7 @@ pricing:
       highlighted: false
     - id: pro
       name: "Pro"
-      price: "€9"
+      price: "€19.99"
       price_suffix: " / month"
       price_annual: "€90"
       price_suffix_annual: " / year"

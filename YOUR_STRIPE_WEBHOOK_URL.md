@@ -22,8 +22,9 @@ https://quizhub-production-1ddf.up.railway.app/payments/webhooks
 
 ### Step 2: Select Events
 
-Select these 7 events:
+Select these 8 events:
 
+- ✅ `checkout.session.completed` ⭐ **REQUIRED for Checkout**
 - ✅ `payment_intent.succeeded`
 - ✅ `payment_intent.payment_failed`
 - ✅ `customer.subscription.created`

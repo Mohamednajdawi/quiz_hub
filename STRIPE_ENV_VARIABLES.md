@@ -64,6 +64,7 @@ STRIPE_PUBLISHABLE_KEY=pk_test_... or pk_live_...
 3. Enter your webhook URL: `https://your-backend-domain.com/payments/webhooks`
    - **Your URL:** `https://quizhub-production-1ddf.up.railway.app/payments/webhooks`
 4. Select these events:
+   - `checkout.session.completed` ⭐ **REQUIRED for Checkout**
    - `payment_intent.succeeded`
    - `payment_intent.payment_failed`
    - `customer.subscription.created`
