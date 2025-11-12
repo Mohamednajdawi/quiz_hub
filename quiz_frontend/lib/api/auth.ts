@@ -22,6 +22,13 @@ export interface AuthResponse {
   user: User;
 }
 
+export interface SubscriptionInfo {
+  plan_type: string;
+  status: string;
+  current_period_end?: string | null;
+  cancel_at_period_end: boolean;
+}
+
 export interface User {
   id: string;
   email: string;
@@ -31,6 +38,8 @@ export interface User {
   birth_date?: string | null;
   gender?: GenderOption | null;
   free_tokens?: number | null;
+  account_type?: string | null;
+  subscription?: SubscriptionInfo | null;
 }
 
 export type UpdateProfileRequest = Partial<Pick<User, 'first_name' | 'last_name' | 'birth_date' | 'gender'>>;

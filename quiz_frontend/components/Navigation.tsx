@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { BookOpen, FileText, GraduationCap, Home, BarChart3, LogOut, User, ChevronDown, CreditCard, Sparkles, Shield, MoreVertical } from 'lucide-react';
+import { BookOpen, FileText, GraduationCap, Home, BarChart3, LogOut, User, ChevronDown, CreditCard, Sparkles, Shield, MoreVertical, Crown, Settings } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 
 const studyTools = [
@@ -39,6 +39,8 @@ export function Navigation() {
     : '';
 
   const remainingGenerations = typeof user?.free_tokens === 'number' ? user.free_tokens : null;
+  const isPro = user?.account_type === 'pro' || user?.subscription?.status === 'active';
+  const subscription = user?.subscription;
 
   // Close dropdowns when clicking outside
   useEffect(() => {
@@ -75,7 +77,7 @@ export function Navigation() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           {/* Logo */}
-          <div className="flex-shrink-0 flex items-center">
+              <div className="flex-shrink-0 flex items-center">
             <Link href="/" className="flex items-center group">
               <span className="text-2xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
                 Quiz Hub
@@ -109,12 +111,12 @@ export function Navigation() {
             {/* Admin Link - Only show if authenticated AND is admin */}
             {isAuthenticated && isAdmin && adminNavigation.map((item) => {
               const isActive = pathname === item.href || pathname.startsWith(item.href);
-              return (
-                <Link
-                  key={item.name}
-                  href={item.href}
+                  return (
+                    <Link
+                      key={item.name}
+                      href={item.href}
                   className={`group relative flex items-center px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
-                    isActive
+                        isActive
                       ? 'bg-red-50 text-red-700'
                       : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'
                   }`}
@@ -124,70 +126,86 @@ export function Navigation() {
                   {isActive && (
                     <span className="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-1 h-1 bg-red-600 rounded-full" />
                   )}
-                </Link>
-              );
-            })}
-            
-            {/* Study Tools Dropdown */}
-            <div className="relative" ref={dropdownRef}>
-              <button
-                onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                    </Link>
+                  );
+                })}
+                
+                {/* Study Tools Dropdown */}
+                <div className="relative" ref={dropdownRef}>
+                  <button
+                    onClick={() => setIsDropdownOpen(!isDropdownOpen)}
                 className={`group flex items-center px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
-                  isStudyToolActive
+                      isStudyToolActive
                     ? 'bg-indigo-50 text-indigo-700'
                     : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'
-                }`}
-              >
+                    }`}
+                  >
                 <GraduationCap className={`w-4 h-4 mr-2 transition-colors ${isStudyToolActive ? 'text-indigo-600' : 'text-gray-500 group-hover:text-gray-700'}`} />
                 <span>Study Tools</span>
                 <ChevronDown className={`w-4 h-4 ml-2 transition-all duration-200 ${isDropdownOpen ? 'rotate-180' : ''} ${isStudyToolActive ? 'text-indigo-600' : 'text-gray-500'}`} />
-              </button>
-              
-              {isDropdownOpen && (
+                  </button>
+                  
+                  {isDropdownOpen && (
                 <div className="absolute left-0 mt-2 w-56 rounded-xl shadow-lg bg-white ring-1 ring-black ring-opacity-5 z-50 overflow-hidden">
                   <div className="py-1.5">
-                    {studyTools.map((tool) => {
-                      const isActive = pathname === tool.href || pathname.startsWith(tool.href + '/');
-                      return (
-                        <Link
-                          key={tool.name}
-                          href={tool.href}
-                          onClick={() => setIsDropdownOpen(false)}
+                        {studyTools.map((tool) => {
+                          const isActive = pathname === tool.href || pathname.startsWith(tool.href + '/');
+                          return (
+                            <Link
+                              key={tool.name}
+                              href={tool.href}
+                              onClick={() => setIsDropdownOpen(false)}
                           className={`flex items-center px-4 py-2.5 text-sm transition-colors ${
-                            isActive
-                              ? 'bg-indigo-50 text-indigo-700 font-medium'
+                                isActive
+                                  ? 'bg-indigo-50 text-indigo-700 font-medium'
                               : 'text-gray-700 hover:bg-gray-50'
-                          }`}
-                        >
+                              }`}
+                            >
                           <tool.icon className={`w-4 h-4 mr-3 ${isActive ? 'text-indigo-600' : 'text-gray-400'}`} />
-                          {tool.name}
-                        </Link>
-                      );
-                    })}
-                  </div>
+                              {tool.name}
+                            </Link>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
                 </div>
-              )}
-            </div>
-          </div>
+              </div>
 
           {/* Right Side - User Actions */}
           <div className="flex items-center gap-3">
-            {isAuthenticated ? (
-              <>
+              {isAuthenticated ? (
+                <>
                 {/* User Info - Desktop Only */}
                 <div className="hidden lg:flex items-center gap-3 px-3 py-1.5 rounded-lg bg-gray-50">
                   {/* Avatar */}
-                  <div className="flex-shrink-0 w-8 h-8 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white text-xs font-semibold">
-                    {getUserInitials()}
+                  <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-semibold ${
+                    isPro 
+                      ? 'bg-gradient-to-br from-yellow-400 to-orange-500' 
+                      : 'bg-gradient-to-br from-indigo-500 to-purple-600'
+                  }`}>
+                    {isPro ? <Crown className="w-4 h-4" /> : getUserInitials()}
                   </div>
                   <div className="flex flex-col min-w-0">
-                    <span className="text-sm font-medium text-gray-900 truncate max-w-[120px]">
-                      {displayName}
-                    </span>
-                    {remainingGenerations !== null && (
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-medium text-gray-900 truncate max-w-[120px]">
+                        {displayName}
+                      </span>
+                      {isPro && (
+                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-gradient-to-r from-yellow-400 to-orange-500 text-white">
+                          Pro
+                        </span>
+                      )}
+                    </div>
+                    {!isPro && remainingGenerations !== null && (
                       <div className="flex items-center gap-1 text-xs text-indigo-600">
                         <Sparkles className="h-3 w-3" />
                         <span>{remainingGenerations} left</span>
+                      </div>
+                    )}
+                    {isPro && subscription?.plan_type && (
+                      <div className="text-xs text-gray-500 capitalize">
+                        {subscription.plan_type} Plan
                       </div>
                     )}
                   </div>
@@ -204,24 +222,57 @@ export function Navigation() {
                   </button>
                   
                   {isUserMenuOpen && (
-                    <div className="absolute right-0 mt-2 w-56 rounded-xl shadow-lg bg-white ring-1 ring-black ring-opacity-5 z-50 overflow-hidden">
+                    <div className="absolute right-0 mt-2 w-64 rounded-xl shadow-lg bg-white ring-1 ring-black ring-opacity-5 z-50 overflow-hidden">
                       <div className="py-1.5">
                         {/* User Info in Dropdown */}
                         <div className="px-4 py-3 border-b border-gray-100">
                           <div className="flex items-center gap-3">
-                            <div className="flex-shrink-0 w-10 h-10 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white text-sm font-semibold">
-                              {getUserInitials()}
+                            <div className={`flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center text-white text-sm font-semibold ${
+                              isPro 
+                                ? 'bg-gradient-to-br from-yellow-400 to-orange-500' 
+                                : 'bg-gradient-to-br from-indigo-500 to-purple-600'
+                            }`}>
+                              {isPro ? <Crown className="w-5 h-5" /> : getUserInitials()}
                             </div>
                             <div className="flex flex-col min-w-0 flex-1">
-                              <span className="text-sm font-medium text-gray-900 truncate">
-                                {displayName}
-                              </span>
+                              <div className="flex items-center gap-2">
+                                <span className="text-sm font-medium text-gray-900 truncate">
+                                  {displayName}
+                                </span>
+                                {isPro && (
+                                  <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-semibold bg-gradient-to-r from-yellow-400 to-orange-500 text-white">
+                                    Pro
+                                  </span>
+                                )}
+                              </div>
                               <span className="text-xs text-gray-500 truncate">
                                 {user?.email}
                               </span>
                             </div>
                           </div>
-                          {remainingGenerations !== null && (
+                          
+                          {/* Subscription Info */}
+                          {isPro && subscription && (
+                            <div className="mt-3 px-2 py-1.5 rounded-md bg-gradient-to-r from-yellow-50 to-orange-50 border border-yellow-200">
+                              <div className="flex items-center justify-between">
+                                <span className="text-xs font-medium text-gray-900 capitalize">
+                                  {subscription.plan_type} Plan
+                                </span>
+                                {subscription.cancel_at_period_end && (
+                                  <span className="text-xs text-orange-600 font-medium">
+                                    Cancels soon
+                                  </span>
+                                )}
+                              </div>
+                              {subscription.current_period_end && (
+                                <div className="text-xs text-gray-600 mt-1">
+                                  Renews {new Date(subscription.current_period_end).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                                </div>
+                              )}
+                            </div>
+                          )}
+                          
+                          {!isPro && remainingGenerations !== null && (
                             <div className="mt-2 flex items-center gap-1.5 px-2 py-1 rounded-md bg-indigo-50">
                               <Sparkles className="h-3.5 w-3.5 text-indigo-600" />
                               <span className="text-xs font-medium text-indigo-700">
@@ -239,6 +290,29 @@ export function Navigation() {
                           <User className="w-4 h-4 mr-3 text-gray-400" />
                           Profile Settings
                         </Link>
+                        
+                        {isPro ? (
+                          <Link
+                            href="/pricing?manage=true"
+                            onClick={() => setIsUserMenuOpen(false)}
+                            className="flex items-center px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                          >
+                            <Settings className="w-4 h-4 mr-3 text-gray-400" />
+                            Manage Subscription
+                          </Link>
+                        ) : (
+                          <Link
+                            href="/pricing"
+                            onClick={() => setIsUserMenuOpen(false)}
+                            className="flex items-center px-4 py-2.5 text-sm text-indigo-600 hover:bg-indigo-50 transition-colors font-medium"
+                          >
+                            <Crown className="w-4 h-4 mr-3" />
+                            Upgrade to Pro
+                          </Link>
+                        )}
+                        
+                        <div className="border-t border-gray-100 my-1" />
+                        
                         <button
                           onClick={() => {
                             setIsUserMenuOpen(false);
@@ -253,23 +327,23 @@ export function Navigation() {
                     </div>
                   )}
                 </div>
-              </>
-            ) : (
-              <div className="flex items-center gap-2">
-                <Link
-                  href="/login"
+                </>
+              ) : (
+                <div className="flex items-center gap-2">
+                  <Link
+                    href="/login"
                   className="px-4 py-2 text-sm font-medium text-gray-700 hover:text-gray-900 transition-colors"
-                >
-                  Login
-                </Link>
-                <Link
-                  href="/register"
+                  >
+                    Login
+                  </Link>
+                  <Link
+                    href="/register"
                   className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors"
-                >
-                  Sign Up
-                </Link>
-              </div>
-            )}
+                  >
+                    Sign Up
+                  </Link>
+                </div>
+              )}
           </div>
         </div>
       </div>
@@ -360,21 +434,50 @@ export function Navigation() {
               {/* User Info */}
               <div className="px-3 py-3 bg-gray-50 rounded-lg">
                 <div className="flex items-center gap-3">
-                  <div className="flex-shrink-0 w-10 h-10 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white text-sm font-semibold">
-                    {getUserInitials()}
+                  <div className={`flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center text-white text-sm font-semibold ${
+                    isPro 
+                      ? 'bg-gradient-to-br from-yellow-400 to-orange-500' 
+                      : 'bg-gradient-to-br from-indigo-500 to-purple-600'
+                  }`}>
+                    {isPro ? <Crown className="w-5 h-5" /> : getUserInitials()}
                   </div>
                   <div className="flex flex-col min-w-0 flex-1">
-                    <span className="text-sm font-medium text-gray-900 truncate">
-                      {displayName}
-                    </span>
-                    {remainingGenerations !== null && (
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-medium text-gray-900 truncate">
+                        {displayName}
+                      </span>
+                      {isPro && (
+                        <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-semibold bg-gradient-to-r from-yellow-400 to-orange-500 text-white">
+                          Pro
+                        </span>
+                      )}
+                    </div>
+                    {!isPro && remainingGenerations !== null && (
                       <div className="flex items-center gap-1 mt-1 text-xs text-indigo-600">
                         <Sparkles className="h-3 w-3" />
                         <span>{remainingGenerations} free generation{remainingGenerations === 1 ? '' : 's'} left</span>
                       </div>
                     )}
+                    {isPro && subscription?.plan_type && (
+                      <div className="text-xs text-gray-500 mt-1 capitalize">
+                        {subscription.plan_type} Plan
+                      </div>
+                    )}
                   </div>
                 </div>
+                {isPro && subscription && (
+                  <div className="mt-2 px-2 py-1.5 rounded-md bg-gradient-to-r from-yellow-50 to-orange-50 border border-yellow-200">
+                    {subscription.cancel_at_period_end ? (
+                      <div className="text-xs text-orange-600">
+                        Subscription cancels on {subscription.current_period_end ? new Date(subscription.current_period_end).toLocaleDateString() : 'period end'}
+                      </div>
+                    ) : subscription.current_period_end && (
+                      <div className="text-xs text-gray-600">
+                        Renews {new Date(subscription.current_period_end).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
               
               <Link
@@ -388,6 +491,25 @@ export function Navigation() {
                 <User className="w-5 h-5 mr-3 text-gray-400" />
                 Profile
               </Link>
+              
+              {isPro ? (
+                <Link
+                  href="/pricing?manage=true"
+                  className="flex items-center px-3 py-2.5 rounded-lg text-base font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+                >
+                  <Settings className="w-5 h-5 mr-3 text-gray-400" />
+                  Manage Subscription
+                </Link>
+              ) : (
+                <Link
+                  href="/pricing"
+                  className="flex items-center px-3 py-2.5 rounded-lg text-base font-medium text-indigo-600 hover:bg-indigo-50 transition-colors"
+                >
+                  <Crown className="w-5 h-5 mr-3" />
+                  Upgrade to Pro
+                </Link>
+              )}
+              
               <button
                 onClick={logout}
                 className="flex items-center w-full px-3 py-2.5 rounded-lg text-base font-medium text-red-600 hover:bg-red-50 transition-colors"
