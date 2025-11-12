@@ -84,5 +84,6 @@ python run_migration.py
 PORT=${PORT:-8000}
 
 echo "✅ Starting application server on port $PORT..."
-exec gunicorn backend.api:app -k uvicorn.workers.UvicornWorker --bind 0.0.0.0:$PORT
+# Set timeout to 300 seconds (5 minutes) to handle long-running quiz generation from PDFs
+exec gunicorn backend.api:app -k uvicorn.workers.UvicornWorker --bind 0.0.0.0:$PORT --timeout 300
 
