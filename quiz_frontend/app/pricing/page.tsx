@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, Suspense } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
@@ -119,7 +119,7 @@ function TierCard({ tier, billingPeriod, onUpgrade, isLoading }: { tier: Pricing
   );
 }
 
-export default function PricingPage() {
+function PricingPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { isAuthenticated } = useAuth();
@@ -294,6 +294,24 @@ export default function PricingPage() {
         </div>
       </div>
     </Layout>
+  );
+}
+
+export default function PricingPage() {
+  return (
+    <Suspense fallback={
+      <Layout>
+        <div className="px-4 sm:px-6 lg:px-8">
+          <div className="max-w-5xl mx-auto">
+            <div className="flex justify-center py-12">
+              <LoadingSpinner size="lg" />
+            </div>
+          </div>
+        </div>
+      </Layout>
+    }>
+      <PricingPageContent />
+    </Suspense>
   );
 }
 
