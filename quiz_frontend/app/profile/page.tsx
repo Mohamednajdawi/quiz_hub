@@ -197,10 +197,25 @@ function ProfileContent() {
                         <h3 className="font-semibold text-gray-900">Pro Subscription Active</h3>
                       </div>
                       <div className="space-y-2 text-sm">
-                        <div className="flex items-center gap-2 text-gray-700">
-                          <span className="font-medium">Generations:</span>
-                          <span className="text-indigo-600 font-semibold">200 per month</span>
-                        </div>
+                        {subscription.remaining_generations !== undefined && subscription.monthly_limit !== undefined ? (
+                          <div className="flex items-center gap-2 text-gray-700">
+                            <span className="font-medium">Generations:</span>
+                            <span className="text-indigo-600 font-semibold">
+                              {subscription.remaining_generations} remaining ({subscription.monthly_limit} per month)
+                            </span>
+                          </div>
+                        ) : (
+                          <div className="flex items-center gap-2 text-gray-700">
+                            <span className="font-medium">Generations:</span>
+                            <span className="text-indigo-600 font-semibold">200 per month</span>
+                          </div>
+                        )}
+                        {subscription.plan_type && (
+                          <div className="flex items-center gap-2 text-gray-700">
+                            <span className="font-medium">Plan:</span>
+                            <span className="text-indigo-600 font-semibold capitalize">{subscription.plan_type}</span>
+                          </div>
+                        )}
                         {subscription.current_period_end && (
                           <div className="flex items-center gap-2 text-gray-700">
                             <Calendar className="w-4 h-4 text-gray-500" />

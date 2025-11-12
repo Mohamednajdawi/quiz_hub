@@ -14,6 +14,9 @@ export interface UserSubscriptionResponse {
   current_period_end?: string | null;
   cancel_at_period_end?: boolean;
   stripe_subscription_id?: string;
+  monthly_generations?: number;
+  remaining_generations?: number;
+  monthly_limit?: number;
 }
 
 export const subscriptionApi = {
