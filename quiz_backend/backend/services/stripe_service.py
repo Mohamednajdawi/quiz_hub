@@ -204,14 +204,26 @@ class StripeService:
     def get_subscription(subscription_id: str) -> Dict:
         """Get subscription details"""
         try:
-            subscription = stripe.Subscription.retrieve(subscription_id)
+            subscription = stripe.Subscription.retrieve(subscription_id, expand=['items.data.price'])
+            # Safely access items
+            plan_id = None
+            try:
+                if hasattr(subscription, 'items') and subscription.items:
+                    items_data = subscription.items.data if hasattr(subscription.items, 'data') else subscription.items
+                    if items_data and len(items_data) > 0:
+                        first_item = items_data[0]
+                        if hasattr(first_item, 'price') and hasattr(first_item.price, 'id'):
+                            plan_id = first_item.price.id
+            except Exception as e:
+                logger.warning(f"Error accessing subscription items in get_subscription: {str(e)}")
+            
             return {
                 "id": subscription.id,
                 "status": subscription.status,
                 "current_period_start": datetime.fromtimestamp(subscription.current_period_start),
                 "current_period_end": datetime.fromtimestamp(subscription.current_period_end),
                 "cancel_at_period_end": subscription.cancel_at_period_end,
-                "plan": subscription.items.data[0].price.id if subscription.items.data else None
+                "plan": plan_id
             }
         except stripe.error.StripeError as e:
             raise Exception(f"Failed to get subscription: {str(e)}")
@@ -461,15 +473,35 @@ class StripeService:
             logger.warning(f"User not found for customer ID: {subscription.customer}")
             return False
         
+        # Retrieve subscription from Stripe with items expanded to get full details
+        try:
+            subscription = stripe.Subscription.retrieve(subscription.id, expand=['items.data.price'])
+        except stripe.error.StripeError as e:
+            logger.error(f"Failed to retrieve subscription from Stripe: {str(e)}")
+            # Continue with the subscription object from webhook, but items might not be accessible
+        
         # Get plan type from price ID
         plan_type = "unknown"
-        if subscription.items and subscription.items.data and len(subscription.items.data) > 0:
-            price_id = subscription.items.data[0].price.id
-            # Map price ID to plan type
-            for plan_id, plan_data in SUBSCRIPTION_PLANS.items():
-                if plan_data.get("stripe_price_id") == price_id:
-                    plan_type = plan_id
-                    break
+        try:
+            # Check if items is accessible and has data
+            if hasattr(subscription, 'items') and subscription.items:
+                # items might be a ListObject with data attribute, or already a list
+                items_data = subscription.items.data if hasattr(subscription.items, 'data') else subscription.items
+                if items_data and len(items_data) > 0:
+                    # Get price from first item
+                    first_item = items_data[0]
+                    price_id = first_item.price.id if hasattr(first_item, 'price') and hasattr(first_item.price, 'id') else None
+                    if price_id:
+                        logger.info(f"Mapping price ID {price_id} to plan type")
+                        # Map price ID to plan type
+                        for plan_id, plan_data in SUBSCRIPTION_PLANS.items():
+                            if plan_data.get("stripe_price_id") == price_id:
+                                plan_type = plan_id
+                                logger.info(f"Mapped to plan type: {plan_type}")
+                                break
+        except Exception as e:
+            logger.warning(f"Error accessing subscription items: {str(e)}")
+            # Continue with plan_type as "unknown"
         
         # Safely get timestamp values
         try:
