@@ -283,6 +283,8 @@ class StripeService:
     def handle_webhook_event(event: stripe.Event, db: Session) -> bool:
         """Handle webhook events and update database accordingly"""
         try:
+            logger.info(f"Processing webhook event: {event.type}")
+            
             if event.type == "payment_intent.succeeded":
                 return StripeService._handle_payment_intent_succeeded(event.data.object, db)
             elif event.type == "payment_intent.payment_failed":
@@ -299,9 +301,11 @@ class StripeService:
                 return StripeService._handle_invoice_payment_succeeded(event.data.object, db)
             elif event.type == "invoice.payment_failed":
                 return StripeService._handle_invoice_payment_failed(event.data.object, db)
-            
-            return True  # Unhandled event type
+            else:
+                logger.info(f"Unhandled webhook event type: {event.type}")
+                return True  # Unhandled event type
         except Exception as e:
+            logger.error(f"Failed to handle webhook event {event.type}: {str(e)}", exc_info=True)
             raise Exception(f"Failed to handle webhook event: {str(e)}")
     
     @staticmethod
@@ -349,8 +353,11 @@ class StripeService:
     def _handle_checkout_session_completed(session: stripe.checkout.Session, db: Session) -> bool:
         """Handle checkout session completion - this is triggered when using Stripe Checkout"""
         try:
+            logger.info(f"Processing checkout.session.completed for session: {session.id}")
+            
             # Only handle subscription mode checkout sessions
             if session.mode != "subscription":
+                logger.info(f"Skipping non-subscription checkout session: {session.mode}")
                 return True
             
             # Get customer ID from session
@@ -365,15 +372,19 @@ class StripeService:
                 logger.warning(f"User not found for customer ID: {customer_id}")
                 return False
             
+            logger.info(f"Found user {user.id} for customer {customer_id}")
+            
             # Get subscription ID from session
             subscription_id = session.subscription
             if not subscription_id:
                 logger.warning("Checkout session completed but no subscription ID found")
                 return False
             
+            logger.info(f"Retrieving subscription {subscription_id} from Stripe")
+            
             # Retrieve subscription from Stripe to get full details
             try:
-                subscription = stripe.Subscription.retrieve(subscription_id)
+                subscription = stripe.Subscription.retrieve(subscription_id, expand=['items.data.price'])
             except stripe.error.StripeError as e:
                 logger.error(f"Failed to retrieve subscription from Stripe: {str(e)}")
                 return False
@@ -382,13 +393,26 @@ class StripeService:
             plan_type = "unknown"
             if session.metadata and "plan_type" in session.metadata:
                 plan_type = session.metadata["plan_type"]
-            elif subscription.items.data:
+                logger.info(f"Using plan_type from metadata: {plan_type}")
+            elif subscription.items and subscription.items.data and len(subscription.items.data) > 0:
                 # Map price ID to plan type
                 price_id = subscription.items.data[0].price.id
+                logger.info(f"Mapping price ID {price_id} to plan type")
                 for plan_id, plan_data in SUBSCRIPTION_PLANS.items():
                     if plan_data.get("stripe_price_id") == price_id:
                         plan_type = plan_id
+                        logger.info(f"Mapped to plan type: {plan_type}")
                         break
+            
+            # Safely get timestamp values
+            try:
+                current_period_start = datetime.fromtimestamp(subscription.current_period_start) if subscription.current_period_start else datetime.now()
+                current_period_end = datetime.fromtimestamp(subscription.current_period_end) if subscription.current_period_end else datetime.now()
+            except (TypeError, AttributeError) as e:
+                logger.error(f"Error converting timestamps: {str(e)}, subscription: {subscription}")
+                # Fallback to current time
+                current_period_start = datetime.now()
+                current_period_end = datetime.now()
             
             # Check if subscription already exists
             existing_subscription = db.query(Subscription).filter(
@@ -397,37 +421,41 @@ class StripeService:
             
             if existing_subscription:
                 # Update existing subscription
+                logger.info(f"Updating existing subscription {subscription_id}")
                 existing_subscription.status = subscription.status
                 existing_subscription.plan_type = plan_type
-                existing_subscription.current_period_start = datetime.fromtimestamp(subscription.current_period_start)
-                existing_subscription.current_period_end = datetime.fromtimestamp(subscription.current_period_end)
-                existing_subscription.cancel_at_period_end = subscription.cancel_at_period_end
+                existing_subscription.current_period_start = current_period_start
+                existing_subscription.current_period_end = current_period_end
+                existing_subscription.cancel_at_period_end = getattr(subscription, 'cancel_at_period_end', False)
                 existing_subscription.updated_at = datetime.now()
                 db.commit()
-                logger.info(f"Updated existing subscription {subscription_id} for user {user.id}")
+                logger.info(f"Updated subscription {subscription_id} for user {user.id} - status: {subscription.status}, plan: {plan_type}")
             else:
                 # Create new subscription record
+                logger.info(f"Creating new subscription {subscription_id}")
                 db_subscription = Subscription(
                     user_id=user.id,
                     stripe_subscription_id=subscription_id,
                     plan_type=plan_type,
                     status=subscription.status,
-                    current_period_start=datetime.fromtimestamp(subscription.current_period_start),
-                    current_period_end=datetime.fromtimestamp(subscription.current_period_end),
-                    cancel_at_period_end=subscription.cancel_at_period_end
+                    current_period_start=current_period_start,
+                    current_period_end=current_period_end,
+                    cancel_at_period_end=getattr(subscription, 'cancel_at_period_end', False)
                 )
                 db.add(db_subscription)
                 db.commit()
-                logger.info(f"Created subscription {subscription_id} for user {user.id} with plan {plan_type}")
+                logger.info(f"Created subscription {subscription_id} for user {user.id} with plan {plan_type} - status: {subscription.status}")
             
             return True
         except Exception as e:
-            logger.error(f"Error handling checkout session completed: {str(e)}")
+            logger.error(f"Error handling checkout session completed: {str(e)}", exc_info=True)
             return False
     
     @staticmethod
     def _handle_subscription_created(subscription: stripe.Subscription, db: Session) -> bool:
         """Handle subscription creation"""
+        logger.info(f"Processing customer.subscription.created for subscription: {subscription.id}")
+        
         user = db.query(User).filter(User.stripe_customer_id == subscription.customer).first()
         if not user:
             logger.warning(f"User not found for customer ID: {subscription.customer}")
@@ -435,13 +463,22 @@ class StripeService:
         
         # Get plan type from price ID
         plan_type = "unknown"
-        if subscription.items.data:
+        if subscription.items and subscription.items.data and len(subscription.items.data) > 0:
             price_id = subscription.items.data[0].price.id
             # Map price ID to plan type
             for plan_id, plan_data in SUBSCRIPTION_PLANS.items():
                 if plan_data.get("stripe_price_id") == price_id:
                     plan_type = plan_id
                     break
+        
+        # Safely get timestamp values
+        try:
+            current_period_start = datetime.fromtimestamp(subscription.current_period_start) if subscription.current_period_start else datetime.now()
+            current_period_end = datetime.fromtimestamp(subscription.current_period_end) if subscription.current_period_end else datetime.now()
+        except (TypeError, AttributeError) as e:
+            logger.error(f"Error converting timestamps: {str(e)}")
+            current_period_start = datetime.now()
+            current_period_end = datetime.now()
         
         # Check if subscription already exists
         existing_subscription = db.query(Subscription).filter(
@@ -452,12 +489,12 @@ class StripeService:
             # Update existing subscription
             existing_subscription.status = subscription.status
             existing_subscription.plan_type = plan_type
-            existing_subscription.current_period_start = datetime.fromtimestamp(subscription.current_period_start)
-            existing_subscription.current_period_end = datetime.fromtimestamp(subscription.current_period_end)
-            existing_subscription.cancel_at_period_end = subscription.cancel_at_period_end
+            existing_subscription.current_period_start = current_period_start
+            existing_subscription.current_period_end = current_period_end
+            existing_subscription.cancel_at_period_end = getattr(subscription, 'cancel_at_period_end', False)
             existing_subscription.updated_at = datetime.now()
             db.commit()
-            logger.info(f"Updated existing subscription {subscription.id} for user {user.id}")
+            logger.info(f"Updated existing subscription {subscription.id} for user {user.id} - status: {subscription.status}, plan: {plan_type}")
         else:
             # Create subscription record
             db_subscription = Subscription(
@@ -465,13 +502,13 @@ class StripeService:
                 stripe_subscription_id=subscription.id,
                 plan_type=plan_type,
                 status=subscription.status,
-                current_period_start=datetime.fromtimestamp(subscription.current_period_start),
-                current_period_end=datetime.fromtimestamp(subscription.current_period_end),
-                cancel_at_period_end=subscription.cancel_at_period_end
+                current_period_start=current_period_start,
+                current_period_end=current_period_end,
+                cancel_at_period_end=getattr(subscription, 'cancel_at_period_end', False)
             )
             db.add(db_subscription)
             db.commit()
-            logger.info(f"Created subscription {subscription.id} for user {user.id} with plan {plan_type}")
+            logger.info(f"Created subscription {subscription.id} for user {user.id} with plan {plan_type} - status: {subscription.status}")
         
         return True
     
@@ -483,12 +520,22 @@ class StripeService:
         ).first()
         
         if db_subscription:
+            # Safely get timestamp values
+            try:
+                current_period_start = datetime.fromtimestamp(subscription.current_period_start) if subscription.current_period_start else db_subscription.current_period_start
+                current_period_end = datetime.fromtimestamp(subscription.current_period_end) if subscription.current_period_end else db_subscription.current_period_end
+            except (TypeError, AttributeError) as e:
+                logger.error(f"Error converting timestamps in subscription update: {str(e)}")
+                current_period_start = db_subscription.current_period_start
+                current_period_end = db_subscription.current_period_end
+            
             db_subscription.status = subscription.status
-            db_subscription.current_period_start = datetime.fromtimestamp(subscription.current_period_start)
-            db_subscription.current_period_end = datetime.fromtimestamp(subscription.current_period_end)
-            db_subscription.cancel_at_period_end = subscription.cancel_at_period_end
+            db_subscription.current_period_start = current_period_start
+            db_subscription.current_period_end = current_period_end
+            db_subscription.cancel_at_period_end = getattr(subscription, 'cancel_at_period_end', False)
             db_subscription.updated_at = datetime.now()
             db.commit()
+            logger.info(f"Updated subscription {subscription.id} - status: {subscription.status}")
         
         return True
     
