@@ -41,6 +41,8 @@ export function Navigation() {
   const remainingGenerations = typeof user?.free_tokens === 'number' ? user.free_tokens : null;
   const isPro = user?.account_type === 'pro' || user?.subscription?.status === 'active';
   const subscription = user?.subscription;
+  // Show manage subscription if user has any subscription (active or canceled but still in period)
+  const hasSubscription = subscription && (subscription.status === 'active' || subscription.has_subscription);
 
   // Close dropdowns when clicking outside
   useEffect(() => {
@@ -291,7 +293,7 @@ export function Navigation() {
                           Profile Settings
                         </Link>
                         
-                        {isPro ? (
+                        {hasSubscription ? (
                           <Link
                             href="/pricing?manage=true"
                             onClick={() => setIsUserMenuOpen(false)}
@@ -492,7 +494,7 @@ export function Navigation() {
                 Profile
               </Link>
               
-              {isPro ? (
+              {hasSubscription ? (
                 <Link
                   href="/pricing?manage=true"
                   className="flex items-center px-3 py-2.5 rounded-lg text-base font-medium text-gray-700 hover:bg-gray-50 transition-colors"

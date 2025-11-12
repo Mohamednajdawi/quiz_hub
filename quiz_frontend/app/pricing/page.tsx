@@ -12,6 +12,8 @@ import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { useAuth } from '@/contexts/AuthContext';
 import { paymentApi } from '@/lib/api/payment';
 import { configApi, PricingConfig, PricingTier } from '@/lib/api/config';
+import { subscriptionApi } from '@/lib/api/subscription';
+import { Calendar, XCircle, Crown } from 'lucide-react';
 
 const FALLBACK_HERO = {
   title: 'Simple, transparent pricing',
@@ -122,7 +124,7 @@ function TierCard({ tier, billingPeriod, onUpgrade, isLoading }: { tier: Pricing
 function PricingPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, user } = useAuth();
   const [billingPeriod, setBillingPeriod] = useState<BillingPeriod>('monthly');
   const { data, isLoading, error } = useQuery<PricingConfig>({
     queryKey: ['pricing-config'],
@@ -132,6 +134,14 @@ function PricingPageContent() {
   const hero = data?.hero ?? FALLBACK_HERO;
   const tiers = data?.tiers ?? [];
   const isManageMode = searchParams?.get('manage') === 'true';
+  
+  // Fetch subscription details when in manage mode
+  const { data: subscription, isLoading: subscriptionLoading } = useQuery({
+    queryKey: ['subscription'],
+    queryFn: subscriptionApi.getCurrentUserSubscription,
+    enabled: isManageMode && isAuthenticated,
+    retry: 1,
+  });
 
   // Create checkout session mutation
   const checkoutMutation = useMutation({
@@ -233,6 +243,82 @@ function PricingPageContent() {
             <Alert type="error" className="mb-6">
               Failed to load pricing. Please try again later.
             </Alert>
+          )}
+
+          {/* Show subscription details in manage mode */}
+          {isManageMode && isAuthenticated && (
+            <Card className="mb-8">
+              <CardHeader title="Current Subscription" />
+              <div className="px-6 pb-6">
+                {subscriptionLoading ? (
+                  <div className="flex justify-center py-4">
+                    <LoadingSpinner />
+                  </div>
+                ) : subscription?.has_subscription ? (
+                  <div className="space-y-4">
+                    <div className="bg-gradient-to-r from-yellow-50 to-orange-50 border border-yellow-200 rounded-lg px-4 py-4">
+                      <div className="flex items-center gap-2 mb-3">
+                        <Crown className="w-5 h-5 text-yellow-600" />
+                        <h3 className="font-semibold text-gray-900">
+                          {subscription.status === 'active' && !subscription.cancel_at_period_end
+                            ? 'Pro Subscription Active'
+                            : 'Subscription Active (Canceling)'}
+                        </h3>
+                      </div>
+                      <div className="space-y-2 text-sm">
+                        {subscription.plan_type && (
+                          <div className="flex items-center gap-2 text-gray-700">
+                            <span className="font-medium">Plan:</span>
+                            <span className="text-indigo-600 font-semibold capitalize">{subscription.plan_type}</span>
+                          </div>
+                        )}
+                        <div className="flex items-center gap-2 text-gray-700">
+                          <span className="font-medium">Status:</span>
+                          <span className={`font-semibold ${
+                            subscription.status === 'active' ? 'text-green-600' : 'text-orange-600'
+                          }`}>
+                            {subscription.status === 'active' ? 'Active' : subscription.status}
+                          </span>
+                        </div>
+                        {subscription.current_period_end && (
+                          <div className="flex items-center gap-2 text-gray-700">
+                            <Calendar className="w-4 h-4 text-gray-500" />
+                            <span className="font-medium">
+                              {subscription.cancel_at_period_end ? 'Access until:' : 'Next payment:'}
+                            </span>
+                            <span>{new Date(subscription.current_period_end).toLocaleDateString('en-US', { 
+                              month: 'long', 
+                              day: 'numeric', 
+                              year: 'numeric' 
+                            })}</span>
+                          </div>
+                        )}
+                        {subscription.cancel_at_period_end && (
+                          <div className="flex items-center gap-2 text-amber-700 bg-amber-50 rounded px-2 py-1 mt-2">
+                            <XCircle className="w-4 h-4" />
+                            <span className="text-xs">Subscription will cancel at period end</span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                    <p className="text-sm text-gray-600">
+                      To manage your subscription, visit your{' '}
+                      <Link href="/profile" className="text-indigo-600 hover:underline">
+                        profile page
+                      </Link>
+                      {' '}or contact support.
+                    </p>
+                  </div>
+                ) : (
+                  <div className="text-center py-4">
+                    <p className="text-gray-600">No active subscription found.</p>
+                    <Link href="/pricing" className="text-indigo-600 hover:underline mt-2 inline-block">
+                      View pricing plans
+                    </Link>
+                  </div>
+                )}
+              </div>
+            </Card>
           )}
 
           {isLoading ? (
