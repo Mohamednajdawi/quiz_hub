@@ -231,12 +231,27 @@ def get_user_subscriptions(user_id: int, db: Session = Depends(get_db)):
 def cancel_subscription(
     subscription_id: str,
     cancel_at_period_end: bool = True,
+    current_user: User = Depends(get_current_user_dependency),
     db: Session = Depends(get_db)
 ):
     """Cancel a subscription"""
     try:
+        # Verify the subscription belongs to the current user
+        user_subscription = db.query(Subscription).filter(
+            Subscription.stripe_subscription_id == subscription_id,
+            Subscription.user_id == current_user.id
+        ).first()
+        
+        if not user_subscription:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Subscription not found or does not belong to you"
+            )
+        
         result = StripeService.cancel_subscription(subscription_id, cancel_at_period_end)
         return result
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,

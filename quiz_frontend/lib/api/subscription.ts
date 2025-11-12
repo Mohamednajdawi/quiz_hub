@@ -21,5 +21,9 @@ export const subscriptionApi = {
     const response = await apiClient.get('/auth/me/subscription');
     return response.data;
   },
+  cancelSubscription: async (subscriptionId: string, cancelAtPeriodEnd: boolean = true): Promise<{ status: string; subscription_id: string; cancel_at_period_end: boolean }> => {
+    const response = await apiClient.post(`/payments/subscriptions/${subscriptionId}/cancel?cancel_at_period_end=${cancelAtPeriodEnd}`);
+    return response.data;
+  },
 };
 

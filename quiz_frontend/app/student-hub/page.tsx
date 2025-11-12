@@ -13,6 +13,7 @@ import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import Link from 'next/link';
 import { Plus, FolderOpen, Trash2, Info, Crown } from 'lucide-react';
 import { studentProjectsApi, type StudentProject } from '@/lib/api/studentProjects';
+import { useAuth } from '@/contexts/AuthContext';
 
 export default function StudentHubPage() {
   return (
@@ -28,6 +29,7 @@ function StudentHubContent() {
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [error, setError] = useState<string | null>(null);
+  const { user } = useAuth();
 
   const { data: projects, isLoading, error: queryError } = useQuery<StudentProject[]>({
     queryKey: ['student-projects'],
@@ -36,7 +38,8 @@ function StudentHubContent() {
   });
 
   const projectCount = projects?.length || 0;
-  const isAtFreeTierLimit = projectCount >= 3;
+  const isPro = user?.account_type === 'pro' || user?.subscription?.status === 'active';
+  const isAtFreeTierLimit = !isPro && projectCount >= 3;
 
   const createMutation = useMutation({
     mutationFn: () => studentProjectsApi.createProject({ name, description }),
