@@ -42,7 +42,8 @@ export function Navigation() {
   const isPro = user?.account_type === 'pro' || user?.subscription?.status === 'active';
   const subscription = user?.subscription;
   // Show manage subscription if user has any subscription (active or canceled but still in period)
-  const hasSubscription = subscription && (subscription.status === 'active' || subscription.has_subscription);
+  // A subscription exists if it's present and has status 'active' (even if cancel_at_period_end is true)
+  const hasSubscription = subscription && subscription.status === 'active';
 
   // Close dropdowns when clicking outside
   useEffect(() => {
