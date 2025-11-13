@@ -1,10 +1,11 @@
+import datetime
 import logging
 import os
-from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form
-from fastapi.responses import JSONResponse, FileResponse
-from sqlalchemy.orm import Session
 from typing import List, Optional
-import datetime
+
+from fastapi import APIRouter, BackgroundTasks, Depends, File, Form, HTTPException, UploadFile
+from fastapi.responses import FileResponse, JSONResponse
+from sqlalchemy.orm import Session
 
 from backend.api_routers.schemas import (
     StudentProjectCreate,
@@ -23,14 +24,19 @@ from backend.database.sqlite_dal import (
     StudentProjectEssayReference,
     User,
     QuizTopic,
+    QuizQuestion,
     FlashcardTopic,
     EssayQATopic,
-    Subscription
+    Subscription,
+    GenerationJob,
 )
 from backend.api_routers.routers.auth_router import get_current_user_dependency
 from backend.utils.credits import consume_generation_token
+from backend.utils.utils import generate_quiz_from_pdf
 from backend.database.sqlite_dal import User as UserModel
 from backend.config.settings import get_app_config, get_pdf_storage_dir
+from backend.database.db import SessionLocal
+from pydantic import BaseModel
 
 router = APIRouter()
 
@@ -55,6 +61,24 @@ def get_max_projects_for_user(user_id: str, db: Session) -> int:
     
     # -1 means unlimited, return a very large number for comparison
     return max_projects if max_projects != -1 else 999999
+
+
+class QuizGenerationJobRequest(BaseModel):
+    num_questions: Optional[int] = None
+    difficulty: Optional[str] = "medium"
+
+
+class GenerationJobStatusResponse(BaseModel):
+    job_id: int
+    status: str
+    job_type: str
+    requested_questions: Optional[int] = None
+    difficulty: Optional[str] = None
+    result: Optional[dict] = None
+    error_message: Optional[str] = None
+    created_at: Optional[str] = None
+    updated_at: Optional[str] = None
+    completed_at: Optional[str] = None
 
 
 @router.post("/student-projects", tags=["Student Projects"])
@@ -541,6 +565,232 @@ async def view_project_content(
     )
 
 
+def _process_quiz_generation_job(job_id: int) -> None:
+    session = SessionLocal()
+    try:
+        job = session.query(GenerationJob).filter(GenerationJob.id == job_id).first()
+        if not job:
+            logging.error("[GEN JOB] Job %s not found", job_id)
+            return
+
+        job.status = "in_progress"
+        job.updated_at = datetime.datetime.now()
+        session.commit()
+
+        user = session.query(User).filter(User.id == job.user_id).first()
+        if not user:
+            job.status = "failed"
+            job.error_message = "User not found"
+            job.completed_at = datetime.datetime.now()
+            job.updated_at = datetime.datetime.now()
+            session.commit()
+            return
+
+        content = session.query(StudentProjectContent).filter(
+            StudentProjectContent.id == job.content_id,
+            StudentProjectContent.project_id == job.project_id,
+        ).first()
+
+        if not content:
+            job.status = "failed"
+            job.error_message = "Content not found"
+            job.completed_at = datetime.datetime.now()
+            job.updated_at = datetime.datetime.now()
+            session.commit()
+            return
+
+        if content.content_type != "pdf" or not content.content_url:
+            job.status = "failed"
+            job.error_message = "Only PDF content is supported for quiz generation"
+            job.completed_at = datetime.datetime.now()
+            job.updated_at = datetime.datetime.now()
+            session.commit()
+            return
+
+        payload = job.payload or {}
+        requested_questions = payload.get("num_questions")
+        difficulty = payload.get("difficulty") or "medium"
+
+        quiz_data = generate_quiz_from_pdf(
+            content.content_url,
+            requested_questions if requested_questions and requested_questions > 0 else None,
+            difficulty,
+        )
+
+        quiz_topic = QuizTopic(
+            topic=quiz_data["topic"],
+            category=quiz_data["category"],
+            subcategory=quiz_data["subcategory"],
+            difficulty=difficulty,
+            creation_timestamp=datetime.datetime.now(),
+            created_by_user_id=user.id,
+        )
+        session.add(quiz_topic)
+        session.flush()
+
+        for question in quiz_data["questions"]:
+            quiz_question = QuizQuestion(
+                question=question["question"],
+                options=question["options"],
+                right_option=question["right_option"],
+                topic_id=quiz_topic.id,
+            )
+            session.add(quiz_question)
+
+        quiz_reference = StudentProjectQuizReference(
+            project_id=job.project_id,
+            content_id=job.content_id,
+            quiz_topic_id=quiz_topic.id,
+            created_at=datetime.datetime.now(),
+        )
+        session.add(quiz_reference)
+
+        consume_generation_token(session, user)
+
+        job.status = "completed"
+        job.result_topic_id = quiz_topic.id
+        job.completed_at = datetime.datetime.now()
+        job.updated_at = datetime.datetime.now()
+        session.commit()
+
+        logging.info(
+            "[GEN JOB] Quiz generation completed for job %s -> quiz %s",
+            job_id,
+            quiz_topic.id,
+        )
+    except Exception as exc:  # pylint: disable=broad-except
+        logging.exception("[GEN JOB] Quiz generation failed for job %s: %s", job_id, exc)
+        try:
+            job = session.query(GenerationJob).filter(GenerationJob.id == job_id).first()
+            if job:
+                job.status = "failed"
+                job.error_message = str(exc)
+                job.completed_at = datetime.datetime.now()
+                job.updated_at = datetime.datetime.now()
+                session.commit()
+        except Exception:  # pylint: disable=broad-except
+            session.rollback()
+    finally:
+        session.close()
+
+
+@router.post(
+    "/student-projects/{project_id}/content/{content_id}/quiz-generation",
+    tags=["Student Projects"],
+    status_code=202,
+)
+async def start_quiz_generation_job(
+    project_id: int,
+    content_id: int,
+    request: QuizGenerationJobRequest,
+    background_tasks: BackgroundTasks,
+    current_user: UserModel = Depends(get_current_user_dependency),
+    db: Session = Depends(get_db),
+) -> JSONResponse:
+    """Start an asynchronous quiz generation job for a project content."""
+    if request.difficulty not in ["easy", "medium", "hard"]:
+        raise HTTPException(
+            status_code=400,
+            detail="Invalid difficulty level. Choose from: easy, medium, hard",
+        )
+
+    project = db.query(StudentProject).filter(
+        StudentProject.id == project_id,
+        StudentProject.user_id == current_user.id,
+    ).first()
+
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+
+    content = db.query(StudentProjectContent).filter(
+        StudentProjectContent.id == content_id,
+        StudentProjectContent.project_id == project_id,
+    ).first()
+
+    if not content:
+        raise HTTPException(status_code=404, detail="Content not found")
+
+    if content.content_type != "pdf" or not content.content_url:
+        raise HTTPException(
+            status_code=400,
+            detail="Only PDF content can be used for quiz generation",
+        )
+
+    payload = {
+        "num_questions": request.num_questions if request.num_questions and request.num_questions > 0 else None,
+        "difficulty": request.difficulty,
+    }
+
+    job = GenerationJob(
+        user_id=current_user.id,
+        project_id=project_id,
+        content_id=content_id,
+        job_type="quiz",
+        status="pending",
+        payload=payload,
+        created_at=datetime.datetime.now(),
+        updated_at=datetime.datetime.now(),
+    )
+    db.add(job)
+    db.commit()
+    db.refresh(job)
+
+    background_tasks.add_task(_process_quiz_generation_job, job.id)
+
+    return JSONResponse(
+        content={
+            "job_id": job.id,
+            "status": job.status,
+            "job_type": job.job_type,
+            "requested_questions": payload.get("num_questions"),
+            "difficulty": payload.get("difficulty"),
+            "message": "Quiz generation started. You will be notified when it is ready.",
+        },
+        status_code=202,
+    )
+
+
+@router.get(
+    "/generation-jobs/{job_id}",
+    tags=["Student Projects"],
+    response_model=GenerationJobStatusResponse,
+)
+async def get_generation_job_status(
+    job_id: int,
+    current_user: UserModel = Depends(get_current_user_dependency),
+    db: Session = Depends(get_db),
+) -> GenerationJobStatusResponse:
+    """Retrieve the status of a generation job."""
+    job = db.query(GenerationJob).filter(
+        GenerationJob.id == job_id,
+        GenerationJob.user_id == current_user.id,
+    ).first()
+
+    if not job:
+        raise HTTPException(status_code=404, detail="Generation job not found")
+
+    payload = job.payload or {}
+    result: Optional[dict] = None
+
+    if job.status == "completed" and job.result_topic_id:
+        quiz = db.query(QuizTopic).filter(QuizTopic.id == job.result_topic_id).first()
+        if quiz:
+            result = {"quiz_id": quiz.id, "topic": quiz.topic}
+
+    return GenerationJobStatusResponse(
+        job_id=job.id,
+        status=job.status,
+        job_type=job.job_type,
+        requested_questions=payload.get("num_questions"),
+        difficulty=payload.get("difficulty"),
+        result=result,
+        error_message=job.error_message,
+        created_at=job.created_at.isoformat() if job.created_at else None,
+        updated_at=job.updated_at.isoformat() if job.updated_at else None,
+        completed_at=job.completed_at.isoformat() if job.completed_at else None,
+    )
+
+
 @router.delete("/student-projects/{project_id}/content/{content_id}", tags=["Student Projects"])
 async def delete_project_content(
     project_id: int,
@@ -810,7 +1060,6 @@ async def get_project_generated_content(
         quiz_topic = db.query(QuizTopic).filter(QuizTopic.id == ref.quiz_topic_id).first()
         if quiz_topic:
             # Get the number of questions for this quiz
-            from backend.database.sqlite_dal import QuizQuestion
             question_count = db.query(QuizQuestion).filter(QuizQuestion.topic_id == quiz_topic.id).count()
             
             quizzes.append({
@@ -927,7 +1176,6 @@ async def get_content_generated_content(
         quiz_topic = db.query(QuizTopic).filter(QuizTopic.id == ref.quiz_topic_id).first()
         if quiz_topic:
             # Get the number of questions for this quiz
-            from backend.database.sqlite_dal import QuizQuestion
             question_count = db.query(QuizQuestion).filter(QuizQuestion.topic_id == quiz_topic.id).count()
             
             quizzes.append({

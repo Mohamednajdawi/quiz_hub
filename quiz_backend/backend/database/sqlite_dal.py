@@ -299,6 +299,27 @@ class StudentProjectEssayReference(Base):
     essay_topic = relationship("EssayQATopic")
 
 
+class GenerationJob(Base):
+    __tablename__ = "generation_jobs"
+
+    id = Column(Integer, primary_key=True)
+    user_id = Column(String(255), ForeignKey("users.id"), nullable=False)
+    project_id = Column(Integer, ForeignKey("student_projects.id"), nullable=False)
+    content_id = Column(Integer, ForeignKey("student_project_contents.id"), nullable=True)
+    job_type = Column(String(50), nullable=False)
+    status = Column(String(50), nullable=False, default="pending")
+    payload = Column(JSON, nullable=True)
+    result_topic_id = Column(Integer, nullable=True)
+    error_message = Column(Text, nullable=True)
+    created_at = Column(DateTime, default=datetime.datetime.now)
+    updated_at = Column(DateTime, default=datetime.datetime.now, onupdate=datetime.datetime.now)
+    completed_at = Column(DateTime, nullable=True)
+
+    user = relationship("User")
+    project = relationship("StudentProject")
+    content = relationship("StudentProjectContent")
+
+
 class Referral(Base):
     __tablename__ = "referrals"
 

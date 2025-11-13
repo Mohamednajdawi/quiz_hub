@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { ProtectedRoute } from '@/components/ProtectedRoute';
@@ -12,7 +12,7 @@ import { Alert } from '@/components/ui/Alert';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { ArrowLeft, Upload, FileText, Settings, HelpCircle, BookOpen, FileQuestion, PenTool, Sparkles, ChevronDown, ChevronUp, MessageSquare, Trash2, Eye, X, MoreVertical, Edit2 } from 'lucide-react';
 import Link from 'next/link';
-import { studentProjectsApi, type StudentProject, type ProjectContent } from '@/lib/api/studentProjects';
+import { studentProjectsApi, type StudentProject, type ProjectContent, type GenerationJobStatus } from '@/lib/api/studentProjects';
 import { apiClient } from '@/lib/api/client';
 import { format } from 'date-fns';
 import { flashcardApi } from '@/lib/api/flashcards';
@@ -71,7 +71,7 @@ function ContentItem({
 }: {
   content: ProjectContent;
   projectId: number;
-  onGenerateQuiz: () => void;
+  onGenerateQuiz: (content: ProjectContent) => void;
   onGenerateFlashcards: () => void;
   onGenerateEssays: () => void;
   onDeleteContent: () => void;
@@ -251,7 +251,7 @@ function ContentItem({
                 <div className="absolute right-0 mt-1 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-10">
                   <button
                     onClick={() => {
-                      onGenerateQuiz();
+                      onGenerateQuiz(content);
                       setShowGenerateMenu(false);
                     }}
                     disabled={isGeneratingQuiz || isGeneratingFlashcards || isGeneratingEssays}
@@ -670,6 +670,14 @@ function ProjectDetailContent() {
     type: 'quiz' | 'flashcards' | 'essays' | null;
     messageIndex: number;
   }>({ type: null, messageIndex: 0 });
+  const [pendingContentId, setPendingContentId] = useState<number | null>(null);
+  const [activeJobs, setActiveJobs] = useState<Array<{ jobId: number; contentId: number; contentName: string }>>([]);
+  const [readyQuizzes, setReadyQuizzes] = useState<Array<{ jobId: number; quizId: number; topic: string; contentName: string }>>([]);
+  const activeJobsRef = useRef(activeJobs);
+
+  useEffect(() => {
+    activeJobsRef.current = activeJobs;
+  }, [activeJobs]);
 
   const { data: project, isLoading: projectLoading } = useQuery<StudentProject>({
     queryKey: ['student-project', projectId],
@@ -758,39 +766,123 @@ function ProjectDetailContent() {
     return messages[generationStatus.messageIndex] || 'Generating...';
   };
 
-  const generateQuizMutation = useMutation({
-    mutationFn: (contentId: number) => {
-      setGenerationStatus({ type: 'quiz', messageIndex: 0 });
-    const desiredQuestions =
-      questionMode === 'custom' ? numQuestions : undefined;
-    return studentProjectsApi.generateQuizFromContent(
-      projectId,
-      contentId,
-      desiredQuestions,
-      difficulty
-    );
-    },
-    onSuccess: (data) => {
-      setGenerationStatus({ type: null, messageIndex: 0 });
-      setSuccess('Quiz generated successfully!');
-      setError(null);
-      // Invalidate generated content queries for all contents
-      contents?.forEach((c) => {
-        queryClient.invalidateQueries({ queryKey: ['generated-content', projectId, c.id] });
-      });
-      // Navigate to quiz detail page if it has an ID (for editing), otherwise to take page
-      if (data.quiz_id) {
-        router.push(`/quizzes/${data.quiz_id}`);
-      } else {
-        router.push(`/quizzes/take?data=${encodeURIComponent(JSON.stringify(data))}`);
+  const isQuizGenerationActive = (contentId: number) =>
+    (generateQuizMutation.isPending && pendingContentId === contentId) ||
+    activeJobs.some((job) => job.contentId === contentId);
+
+  const getQuizGenerationLabel = (contentId: number) => {
+    if (generateQuizMutation.isPending && pendingContentId === contentId) {
+      return getGenerationMessage();
+    }
+    if (activeJobs.some((job) => job.contentId === contentId)) {
+      return 'Generating in background...';
+    }
+    return 'Quiz';
+  };
+
+  useEffect(() => {
+    if (activeJobs.length === 0) {
+      return;
+    }
+
+    let isMounted = true;
+    const interval = setInterval(async () => {
+      const jobsSnapshot = [...activeJobsRef.current];
+      if (jobsSnapshot.length === 0) {
+        return;
       }
+
+      try {
+        const statuses = await Promise.all(
+          jobsSnapshot.map((job) => studentProjectsApi.getGenerationJob(job.jobId))
+        );
+
+        if (!isMounted) {
+          return;
+        }
+
+        const completed: Array<{ job: typeof jobsSnapshot[number]; status: GenerationJobStatus }> = [];
+        const failed: Array<{ job: typeof jobsSnapshot[number]; status: GenerationJobStatus }> = [];
+
+        statuses.forEach((status, index) => {
+          const jobMeta = jobsSnapshot[index];
+          if (status.status === 'completed' && status.result?.quiz_id) {
+            completed.push({ job: jobMeta, status });
+          } else if (status.status === 'failed') {
+            failed.push({ job: jobMeta, status });
+          }
+        });
+
+        if (completed.length || failed.length) {
+          const jobsToRemove = new Set<number>([
+            ...completed.map((item) => item.job.jobId),
+            ...failed.map((item) => item.job.jobId),
+          ]);
+
+          const nextJobs = activeJobsRef.current.filter((job) => !jobsToRemove.has(job.jobId));
+          activeJobsRef.current = nextJobs;
+          setActiveJobs(nextJobs);
+
+          completed.forEach(({ job, status }) => {
+            setReadyQuizzes((prev) => [
+              ...prev,
+              {
+                jobId: job.jobId,
+                quizId: status.result!.quiz_id,
+                topic: status.result!.topic,
+                contentName: job.contentName,
+              },
+            ]);
+            queryClient.invalidateQueries({ queryKey: ['generated-content', projectId, job.contentId] });
+            queryClient.invalidateQueries({ queryKey: ['student-project', projectId] });
+          });
+
+          if (failed.length) {
+            const message = failed
+              .map(({ job, status }) => `${job.contentName}: ${status.error_message || 'Generation failed'}`)
+              .join(' | ');
+            setError(message);
+          }
+        }
+      } catch (pollError) {
+        if (!isMounted) {
+          return;
+        }
+        console.error('Failed to poll generation jobs', pollError);
+      }
+    }, 4000);
+
+    return () => {
+      isMounted = false;
+      clearInterval(interval);
+    };
+  }, [activeJobs.length, projectId, queryClient]);
+
+  const generateQuizMutation = useMutation({
+    mutationFn: ({ contentId, contentName }: { contentId: number; contentName: string }) => {
+      setGenerationStatus({ type: 'quiz', messageIndex: 0 });
+      setPendingContentId(contentId);
+      const desiredQuestions = questionMode === 'custom' ? numQuestions : undefined;
+      return studentProjectsApi.startQuizGenerationJob(projectId, contentId, {
+        num_questions: desiredQuestions,
+        difficulty,
+      }).then((response) => ({ response, contentId, contentName }));
+    },
+    onSuccess: ({ response, contentId, contentName }) => {
+      setSuccess('Quiz generation started! We will notify you when it is ready.');
+      setError(null);
+      setActiveJobs((prev) => [
+        ...prev,
+        { jobId: response.job_id, contentId, contentName },
+      ]);
     },
     onError: (error: unknown) => {
-      setGenerationStatus({ type: null, messageIndex: 0 });
-      setError(
-        error instanceof Error ? error.message : 'Failed to generate quiz'
-      );
+      setError(error instanceof Error ? error.message : 'Failed to start quiz generation');
       setSuccess(null);
+    },
+    onSettled: () => {
+      setGenerationStatus({ type: null, messageIndex: 0 });
+      setPendingContentId(null);
     },
   });
 
@@ -955,9 +1047,46 @@ function ProjectDetailContent() {
 
           {error && <Alert type="error" className="mb-6">{error}</Alert>}
           {success && <Alert type="success" className="mb-6">{success}</Alert>}
+
+          {readyQuizzes.map((entry) => (
+            <Alert key={entry.jobId} type="success" className="mb-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+              <div>
+                <p className="font-medium text-gray-900">
+                  Quiz ready: <span className="text-indigo-700">{entry.topic}</span>
+                </p>
+                <p className="text-sm text-gray-700">
+                  Generated from <span className="font-medium">{entry.contentName}</span>. Click below to open it.
+                </p>
+              </div>
+              <Button
+                variant="primary"
+                onClick={() => {
+                  setReadyQuizzes((prev) => prev.filter((item) => item.jobId !== entry.jobId));
+                  router.push(`/quizzes/${entry.quizId}`);
+                }}
+              >
+                Open Quiz
+              </Button>
+            </Alert>
+          ))}
+
+          {activeJobs.length > 0 && (
+            <Alert type="info" className="mb-6">
+              <div className="flex flex-col gap-1">
+                <p className="font-medium text-gray-900">
+                  {activeJobs.length === 1
+                    ? 'Generating 1 quiz in the background...'
+                    : `Generating ${activeJobs.length} quizzes in the background...`}
+                </p>
+                <p className="text-sm text-gray-700">
+                  You can keep working while we process these. We’ll notify you as soon as each quiz is ready.
+                </p>
+              </div>
+            </Alert>
+          )}
           
           {/* Generation Status Alert */}
-          {(generateQuizMutation.isPending || generateFlashcardsMutation.isPending || generateEssaysMutation.isPending) && (
+          {(generateQuizMutation.isPending && pendingContentId !== null) || generateFlashcardsMutation.isPending || generateEssaysMutation.isPending ? (
             <Alert type="info" className="mb-6">
               <div className="flex items-center gap-3">
                 <LoadingSpinner size="sm" />
@@ -967,7 +1096,7 @@ function ProjectDetailContent() {
                 </div>
               </div>
             </Alert>
-          )}
+          ) : null}
 
           {/* Settings Modal */}
           <SettingsModal
@@ -1103,7 +1232,12 @@ function ProjectDetailContent() {
                       key={c.id}
                       content={c}
                       projectId={projectId}
-                      onGenerateQuiz={() => generateQuizMutation.mutate(c.id)}
+                      onGenerateQuiz={(selectedContent) =>
+                        generateQuizMutation.mutate({
+                          contentId: selectedContent.id,
+                          contentName: selectedContent.name,
+                        })
+                      }
                       onGenerateFlashcards={() => generateFlashcardsMutation.mutate(c.id)}
                       onGenerateEssays={() => generateEssaysMutation.mutate(c.id)}
                       onDeleteContent={() => {
@@ -1111,11 +1245,11 @@ function ProjectDetailContent() {
                           deleteContentMutation.mutate(c.id);
                         }
                       }}
-                      isGeneratingQuiz={generateQuizMutation.isPending}
+                      isGeneratingQuiz={isQuizGenerationActive(c.id)}
                       isGeneratingFlashcards={generateFlashcardsMutation.isPending}
                       isGeneratingEssays={generateEssaysMutation.isPending}
                       isDeletingContent={deleteContentMutation.isPending}
-                      generationMessage={getGenerationMessage()}
+                      generationMessage={getQuizGenerationLabel(c.id)}
                     />
                   ))}
                 </div>

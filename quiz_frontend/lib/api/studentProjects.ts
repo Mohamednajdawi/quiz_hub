@@ -20,6 +20,22 @@ export interface ProjectContent {
   uploaded_at: string;
 }
 
+export interface GenerationJobStatus {
+  job_id: number;
+  status: 'pending' | 'in_progress' | 'completed' | 'failed';
+  job_type: string;
+  requested_questions?: number | null;
+  difficulty?: 'easy' | 'medium' | 'hard' | null;
+  result?: {
+    quiz_id: number;
+    topic: string;
+  } | null;
+  error_message?: string | null;
+  created_at?: string | null;
+  updated_at?: string | null;
+  completed_at?: string | null;
+}
+
 export const studentProjectsApi = {
   listProjects: async (): Promise<StudentProject[]> => {
     const { data } = await apiClient.get('/student-projects');
@@ -95,6 +111,30 @@ export const studentProjectsApi = {
         // Don't set Content-Type - let axios/browser set it with boundary for multipart/form-data
       },
     });
+    return data;
+  },
+
+  startQuizGenerationJob: async (
+    projectId: number,
+    contentId: number,
+    payload: { num_questions?: number; difficulty: 'easy' | 'medium' | 'hard' }
+  ): Promise<{
+    job_id: number;
+    status: string;
+    job_type: string;
+    requested_questions?: number | null;
+    difficulty?: string | null;
+    message?: string;
+  }> => {
+    const { data } = await apiClient.post(
+      `/student-projects/${projectId}/content/${contentId}/quiz-generation`,
+      payload
+    );
+    return data;
+  },
+
+  getGenerationJob: async (jobId: number): Promise<GenerationJobStatus> => {
+    const { data } = await apiClient.get(`/generation-jobs/${jobId}`);
     return data;
   },
 
