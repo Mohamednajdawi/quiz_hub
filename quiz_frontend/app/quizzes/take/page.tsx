@@ -34,16 +34,32 @@ function TakeQuizContent() {
     correctAnswers: number[];
     feedback?: string;
   } | null>(null);
+  const [parseError, setParseError] = useState<string | null>(null);
 
   useEffect(() => {
     const dataParam = searchParams.get('data');
     if (dataParam) {
       try {
-        const parsed = JSON.parse(decodeURIComponent(dataParam));
+        let parsed: QuizData;
+        try {
+          parsed = JSON.parse(dataParam);
+        } catch {
+          parsed = JSON.parse(decodeURIComponent(dataParam));
+        }
+        if (!parsed?.questions || !Array.isArray(parsed.questions) || parsed.questions.length === 0) {
+          throw new Error('Quiz data is missing questions.');
+        }
         setQuizData(parsed);
         setSelectedAnswers(new Array(parsed.questions.length).fill(-1));
-      } catch (error) {
+        setParseError(null);
+      } catch (error: unknown) {
         console.error('Error parsing quiz data:', error);
+        setParseError(
+          error instanceof Error
+            ? `We couldn't load the quiz data: ${error.message}`
+            : 'We could not load the quiz data from the link provided.'
+        );
+        setQuizData(null);
       }
     }
   }, [searchParams]);
@@ -143,8 +159,17 @@ function TakeQuizContent() {
   if (!quizData) {
     return (
       <Layout>
-        <div className="flex items-center justify-center min-h-[400px]">
-          <LoadingSpinner size="lg" />
+        <div className="flex flex-col items-center justify-center min-h-[400px] gap-4">
+          {parseError ? (
+            <>
+              <Alert type="error">{parseError}</Alert>
+              <Button variant="primary" onClick={() => router.back()}>
+                Go Back
+              </Button>
+            </>
+          ) : (
+            <LoadingSpinner size="lg" />
+          )}
         </div>
       </Layout>
     );
