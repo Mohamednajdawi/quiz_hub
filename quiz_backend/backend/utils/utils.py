@@ -2,7 +2,8 @@ from __future__ import annotations
 
 import logging
 import math
-from typing import Any, Dict, List, Optional
+from concurrent.futures import ThreadPoolExecutor, as_completed
+from typing import Any, Dict, List, Optional, Tuple
 
 from jinja2 import Template
 from haystack.components.converters import HTMLToDocument
@@ -206,60 +207,52 @@ def _generate_quiz_from_text(
         else [None] * len(chunks)
     )
 
-    generator = create_generator(temperature=LLM_CONFIG["quiz_temperature"])
-    parser = QuizParser()
+    results: Dict[int, Dict[str, Any]] = {}
+    max_workers = min(len(chunks), 3)
+
+    with ThreadPoolExecutor(max_workers=max_workers) as executor:
+        futures = [
+            executor.submit(
+                _generate_quiz_for_chunk,
+                index,
+                chunk_text,
+                target if (target and not auto_question_mode) else 0,
+                auto_question_mode,
+                difficulty,
+            )
+            for index, (chunk_text, target) in enumerate(zip(chunks, question_targets))
+        ]
+
+        for future in as_completed(futures):
+            index, quiz_segment = future.result()
+            results[index] = quiz_segment
+
+    if not results:
+        raise ValueError("Quiz generation returned no questions for the provided content.")
+
+    ordered_segments = [results[idx] for idx in sorted(results.keys())]
+
+    combined_topic = next((seg.get("topic") for seg in ordered_segments if seg.get("topic")), "Generated Quiz")
+    combined_category = next((seg.get("category") for seg in ordered_segments if seg.get("category")), "General Knowledge")
+    combined_subcategory = next((seg.get("subcategory") for seg in ordered_segments if seg.get("subcategory")), "General")
 
     combined_questions: List[Dict[str, Any]] = []
-    combined_topic: Optional[str] = None
-    combined_category: Optional[str] = None
-    combined_subcategory: Optional[str] = None
-
-    for index, (chunk_text, target) in enumerate(zip(chunks, question_targets)):
-        logger.debug("Generating quiz for chunk %s/%s (length=%s characters)", index + 1, len(chunks), len(chunk_text))
-
-        prompt_inputs = {
-            "documents": chunk_text,
-            "num_questions": target if (target and not auto_question_mode) else 0,
-            "auto_question_mode": auto_question_mode,
-            "difficulty": difficulty,
-        }
-        prompt = _QUIZ_PROMPT_TEMPLATE.render(**prompt_inputs)
-        replies = generator.run(prompt=prompt)["replies"]
-        quiz_segment = parser.run(replies=replies)["quiz"]
-
-        if combined_topic is None:
-            combined_topic = quiz_segment.get("topic")
-            combined_category = quiz_segment.get("category")
-            combined_subcategory = quiz_segment.get("subcategory")
-
-        questions = quiz_segment.get("questions", [])
-        if not isinstance(questions, list):
-            questions = []
-
-        combined_questions.extend(questions)
-
-        if not auto_question_mode and len(combined_questions) >= (num_questions or 0):
-            break
+    for segment in ordered_segments:
+        questions = segment.get("questions", [])
+        if isinstance(questions, list):
+            combined_questions.extend(questions)
 
     if not combined_questions:
         raise ValueError("Quiz generation returned no questions for the provided content.")
 
-    if not combined_topic:
-        combined_topic = "Generated Quiz"
-    if not combined_category:
-        combined_category = "General Knowledge"
-    if not combined_subcategory:
-        combined_subcategory = "General"
-
-    final_questions = (
-        combined_questions[:num_questions] if (not auto_question_mode and num_questions) else combined_questions
-    )
+    if not auto_question_mode and num_questions:
+        combined_questions = combined_questions[:num_questions]
 
     return {
         "topic": combined_topic,
         "category": combined_category,
         "subcategory": combined_subcategory,
-        "questions": final_questions,
+        "questions": combined_questions,
     }
 
 
@@ -319,3 +312,29 @@ def _distribute_question_targets(chunk_count: int, total_questions: Optional[int
         targets.append(0)
 
     return targets
+
+
+def _generate_quiz_for_chunk(
+    index: int,
+    chunk_text: str,
+    chunk_target: int,
+    auto_question_mode: bool,
+    difficulty: str,
+) -> Tuple[int, Dict[str, Any]]:
+    logger.debug("Submitting quiz generation for chunk %s (length=%s characters)", index + 1, len(chunk_text))
+
+    prompt_inputs = {
+        "documents": chunk_text,
+        "num_questions": chunk_target if (chunk_target and not auto_question_mode) else 0,
+        "auto_question_mode": auto_question_mode,
+        "difficulty": difficulty,
+    }
+    prompt = _QUIZ_PROMPT_TEMPLATE.render(**prompt_inputs)
+
+    generator = create_generator(temperature=LLM_CONFIG["quiz_temperature"])
+    parser = QuizParser()
+
+    replies = generator.run(prompt=prompt)["replies"]
+    quiz_segment = parser.run(replies=replies)["quiz"]
+
+    return index, quiz_segment
