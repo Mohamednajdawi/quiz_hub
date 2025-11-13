@@ -1,7 +1,7 @@
 """Add generation_jobs table
 
 Revision ID: 20251113_0005
-Revises: 20251107_0004_add_referral_system
+Revises: 20251111_0002_add_ai_feedback_to_quiz_attempts
 Create Date: 2025-11-13 12:00:00.000000
 """
 
@@ -13,7 +13,7 @@ import sqlalchemy as sa
 
 # revision identifiers, used by Alembic.
 revision: str = "20251113_0005"
-down_revision: Union[str, None] = "20251107_0004_add_referral_system"
+down_revision: Union[str, None] = "20251111_0002_add_ai_feedback_to_quiz_attempts"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
