@@ -79,6 +79,8 @@ async def get_admin_stats(
         free_users = sum(1 for u in users_data if u["account_type"] == "free")
         pro_users = sum(1 for u in users_data if u["account_type"] == "pro")
         total_quizzes = sum(u["quiz_count"] for u in users_data)
+        total_flashcards = sum(u.get("flashcard_count", 0) for u in users_data)
+        total_essays = sum(u.get("essay_count", 0) for u in users_data)
         active_users = sum(1 for u in users_data if u["is_active"])
         
         return JSONResponse(
@@ -88,6 +90,8 @@ async def get_admin_stats(
                 "pro_users": pro_users,
                 "active_users": active_users,
                 "total_quizzes": total_quizzes,
+                "total_flashcards": total_flashcards,
+                "total_essays": total_essays,
             },
             headers={"Content-Type": "application/json; charset=utf-8"}
         )

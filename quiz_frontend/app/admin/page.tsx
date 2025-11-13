@@ -8,7 +8,7 @@ import { Card, CardHeader } from '@/components/ui/Card';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { Alert } from '@/components/ui/Alert';
 import { adminApi, AdminUser, AdminStats } from '@/lib/api/admin';
-import { Users, UserCheck, UserX, GraduationCap, Search } from 'lucide-react';
+import { Users, UserCheck, UserX, GraduationCap, Search, Layers, FileText } from 'lucide-react';
 import { format } from 'date-fns';
 
 function AdminDashboardContent() {
@@ -81,7 +81,7 @@ function AdminDashboardContent() {
 
         {/* Stats Overview */}
         {stats && (
-          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-5 mb-8">
+          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-7 mb-8">
             <Card>
               <div className="flex items-center">
                 <div className="flex-shrink-0 bg-indigo-100 rounded-md p-3">
@@ -151,6 +151,34 @@ function AdminDashboardContent() {
                 </div>
               </div>
             </Card>
+
+            <Card>
+              <div className="flex items-center">
+                <div className="flex-shrink-0 bg-orange-100 rounded-md p-3">
+                  <Layers className="h-6 w-6 text-orange-600" />
+                </div>
+                <div className="ml-4">
+                  <p className="text-sm font-medium text-gray-700">Flashcard Topics</p>
+                  <p className="text-2xl font-semibold text-gray-900">
+                    {stats.total_flashcards}
+                  </p>
+                </div>
+              </div>
+            </Card>
+
+            <Card>
+              <div className="flex items-center">
+                <div className="flex-shrink-0 bg-rose-100 rounded-md p-3">
+                  <FileText className="h-6 w-6 text-rose-600" />
+                </div>
+                <div className="ml-4">
+                  <p className="text-sm font-medium text-gray-700">Essay Topics</p>
+                  <p className="text-2xl font-semibold text-gray-900">
+                    {stats.total_essays}
+                  </p>
+                </div>
+              </div>
+            </Card>
           </div>
         )}
 
@@ -188,7 +216,13 @@ function AdminDashboardContent() {
                     Account Type
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
-                    Quizzes Generated
+                    Quizzes
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
+                    Flashcards
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
+                    Essays
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
                     Status
@@ -201,7 +235,7 @@ function AdminDashboardContent() {
               <tbody className="bg-white divide-y divide-gray-200">
                 {filteredUsers.length === 0 ? (
                   <tr>
-                    <td colSpan={6} className="px-6 py-8 text-center text-sm text-gray-500">
+                    <td colSpan={8} className="px-6 py-8 text-center text-sm text-gray-500">
                       {searchQuery ? 'No users found matching your search.' : 'No users found.'}
                     </td>
                   </tr>
@@ -258,6 +292,12 @@ function UserRow({ user }: { user: AdminUser }) {
       </td>
       <td className="px-6 py-4 whitespace-nowrap">
         <div className="text-sm text-gray-900">{user.quiz_count}</div>
+      </td>
+      <td className="px-6 py-4 whitespace-nowrap">
+        <div className="text-sm text-gray-900">{user.flashcard_count}</div>
+      </td>
+      <td className="px-6 py-4 whitespace-nowrap">
+        <div className="text-sm text-gray-900">{user.essay_count}</div>
       </td>
       <td className="px-6 py-4 whitespace-nowrap">
         <span

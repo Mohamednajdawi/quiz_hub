@@ -8,6 +8,8 @@ export interface AdminUser {
   full_name?: string | null;
   account_type: 'free' | 'pro';
   quiz_count: number;
+  flashcard_count: number;
+  essay_count: number;
   is_active: boolean;
   created_at?: string | null;
   free_tokens?: number | null;
@@ -24,6 +26,8 @@ export interface AdminStats {
   pro_users: number;
   active_users: number;
   total_quizzes: number;
+  total_flashcards: number;
+  total_essays: number;
 }
 
 export interface AdminCheckResponse {
