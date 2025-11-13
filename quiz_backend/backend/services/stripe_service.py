@@ -1,11 +1,13 @@
-import os
-import stripe
-from typing import Dict, List, Optional
-from datetime import datetime
-from sqlalchemy.orm import Session
 import logging
+import os
+from datetime import datetime
+from typing import Dict, List, Optional
 
-from backend.database.sqlite_dal import User, Subscription, Transaction
+import stripe
+from sqlalchemy.orm import Session
+
+from backend.config import get_subscription_plan_by_price_id, get_subscription_plans_config
+from backend.database.sqlite_dal import Subscription, Transaction, User
 
 logger = logging.getLogger(__name__)
 
@@ -16,60 +18,16 @@ if not stripe_secret_key:
 else:
     stripe.api_key = stripe_secret_key
 
-# Available subscription plans
-SUBSCRIPTION_PLANS = {
-    "basic": {
-        "name": "Basic Plan",
-        "price": 999,  # $9.99
-        "currency": "usd",
-        "interval": "month",
-        "features": [
-            "Up to 50 quizzes per month",
-            "Basic analytics",
-            "Email support"
-        ],
-        "stripe_price_id": os.getenv("STRIPE_BASIC_PRICE_ID")
-    },
-    "premium": {
-        "name": "Premium Plan",
-        "price": 1999,  # $19.99
-        "currency": "usd",
-        "interval": "month",
-        "features": [
-            "Unlimited quizzes",
-            "Advanced analytics",
-            "Priority support",
-            "Custom quiz templates",
-            "Export functionality"
-        ],
-        "stripe_price_id": os.getenv("STRIPE_PREMIUM_PRICE_ID")
-    },
-    "enterprise": {
-        "name": "Enterprise Plan",
-        "price": 4999,  # $49.99
-        "currency": "usd",
-        "interval": "month",
-        "features": [
-            "Everything in Premium",
-            "Team management",
-            "API access",
-            "Custom integrations",
-            "Dedicated support"
-        ],
-        "stripe_price_id": os.getenv("STRIPE_ENTERPRISE_PRICE_ID")
-    }
-}
-
-
 def validate_stripe_configuration() -> Dict[str, bool]:
     """Validate Stripe configuration and return status of required variables"""
+    plans = get_subscription_plans_config()
     validation_status = {
         "stripe_secret_key": bool(stripe_secret_key),
         "stripe_webhook_secret": bool(os.getenv("STRIPE_WEBHOOK_SECRET")),
-        "basic_price_id": bool(SUBSCRIPTION_PLANS["basic"]["stripe_price_id"]),
-        "premium_price_id": bool(SUBSCRIPTION_PLANS["premium"]["stripe_price_id"]),
-        "enterprise_price_id": bool(SUBSCRIPTION_PLANS["enterprise"]["stripe_price_id"]),
     }
+
+    for plan_id, plan_data in plans.items():
+        validation_status[f"{plan_id}_price_id"] = bool(plan_data.get("stripe_price_id"))
     
     all_valid = all(validation_status.values())
     
@@ -266,7 +224,7 @@ class StripeService:
     def get_available_plans() -> List[Dict]:
         """Get available subscription plans"""
         plans = []
-        for plan_id, plan_data in SUBSCRIPTION_PLANS.items():
+        for plan_id, plan_data in get_subscription_plans_config().items():
             plan_dict = {
                 "id": plan_id,
                 **plan_data
@@ -410,11 +368,10 @@ class StripeService:
                 # Map price ID to plan type
                 price_id = subscription.items.data[0].price.id
                 logger.info(f"Mapping price ID {price_id} to plan type")
-                for plan_id, plan_data in SUBSCRIPTION_PLANS.items():
-                    if plan_data.get("stripe_price_id") == price_id:
-                        plan_type = plan_id
-                        logger.info(f"Mapped to plan type: {plan_type}")
-                        break
+                plan_match = get_subscription_plan_by_price_id(price_id)
+                if plan_match:
+                    plan_type = plan_match[0]
+                    logger.info(f"Mapped to plan type: {plan_type}")
             
             # Safely get timestamp values
             try:
@@ -494,11 +451,10 @@ class StripeService:
                     if price_id:
                         logger.info(f"Mapping price ID {price_id} to plan type")
                         # Map price ID to plan type
-                        for plan_id, plan_data in SUBSCRIPTION_PLANS.items():
-                            if plan_data.get("stripe_price_id") == price_id:
-                                plan_type = plan_id
-                                logger.info(f"Mapped to plan type: {plan_type}")
-                                break
+                        plan_match = get_subscription_plan_by_price_id(price_id)
+                        if plan_match:
+                            plan_type = plan_match[0]
+                            logger.info(f"Mapped to plan type: {plan_type}")
         except Exception as e:
             logger.warning(f"Error accessing subscription items: {str(e)}")
             # Continue with plan_type as "unknown"

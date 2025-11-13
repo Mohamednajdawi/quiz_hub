@@ -3,6 +3,8 @@ import datetime
 from sqlalchemy import JSON, Column, Date, DateTime, ForeignKey, Integer, String, Boolean, Float, Text
 from sqlalchemy.orm import declarative_base, relationship
 
+from backend.config import get_free_generation_quota
+
 Base = declarative_base()
 
 
@@ -19,7 +21,7 @@ class User(Base):
     firebase_uid = Column(String(255), unique=True, nullable=True)
     stripe_customer_id = Column(String(255), unique=True, nullable=True)
     is_active = Column(Boolean, default=True)
-    free_tokens = Column(Integer, default=10)
+    free_tokens = Column(Integer, default=get_free_generation_quota)
     referral_code = Column(String(20), unique=True, nullable=True)
     referred_by_code = Column(String(20), nullable=True)
     created_at = Column(DateTime, default=datetime.datetime.now)

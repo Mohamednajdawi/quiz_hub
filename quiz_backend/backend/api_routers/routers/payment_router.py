@@ -1,11 +1,12 @@
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy.orm import Session
-from typing import List, Optional
+from typing import List
 from pydantic import BaseModel
 import os
 
 from backend.database.db import get_db
 from backend.database.sqlite_dal import User, Subscription, PaymentMethod, Transaction
+from backend.config import get_subscription_plans_config, resolve_subscription_plan_id
 from backend.api_routers.schemas import (
     UserCreate, UserResponse, SubscriptionCreate, SubscriptionResponse,
     PaymentMethodCreate, PaymentMethodResponse, TransactionResponse,
@@ -443,36 +444,27 @@ def create_checkout_session(
 ):
     """Create a Stripe Checkout Session for subscription"""
     try:
-        # Map plan IDs from config to Stripe plan IDs
-        # Config uses: "pro", "starter", "teams"
-        # Stripe uses: "basic", "premium", "enterprise"
-        plan_mapping = {
-            "pro": "premium",  # Map "pro" to "premium" plan
-            "basic": "basic",
-            "premium": "premium",
-            "enterprise": "enterprise",
-        }
-        
-        stripe_plan_id = plan_mapping.get(checkout_data.plan_id.lower())
-        if not stripe_plan_id:
+        # Resolve the canonical plan identifier from config
+        canonical_plan_id = resolve_subscription_plan_id(checkout_data.plan_id)
+        if not canonical_plan_id:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail=f"Invalid plan ID: {checkout_data.plan_id}"
             )
         
-        # Get plan details
-        plans = StripeService.get_available_plans()
-        plan = next((p for p in plans if p["id"] == stripe_plan_id), None)
+        plans_config = get_subscription_plans_config()
+        plan = plans_config.get(canonical_plan_id)
         if not plan:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Plan {stripe_plan_id} not configured. Please set STRIPE_{stripe_plan_id.upper()}_PRICE_ID environment variable."
+                detail=f"Plan {canonical_plan_id} not configured. Please review subscription settings."
             )
         
-        if not plan.get("stripe_price_id"):
+        stripe_price_id = plan.get("stripe_price_id")
+        if not stripe_price_id:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=f"Stripe price ID not configured for {stripe_plan_id} plan"
+                detail=f"Stripe price ID not configured for {canonical_plan_id} plan"
             )
         
         # Ensure user has a Stripe customer ID
@@ -494,12 +486,12 @@ def create_checkout_session(
         # Create checkout session
         result = StripeService.create_checkout_session(
             customer_id=current_user.stripe_customer_id,
-            price_id=plan["stripe_price_id"],
+            price_id=stripe_price_id,
             success_url=checkout_data.success_url,
             cancel_url=checkout_data.cancel_url,
             metadata={
                 "user_id": current_user.id,
-                "plan_type": stripe_plan_id,
+                "plan_type": canonical_plan_id,
                 "original_plan_id": checkout_data.plan_id
             }
         )

@@ -71,3 +71,47 @@ pricing:
         href: "mailto:sales@quizhub.com?subject=Quiz%20Hub%20Teams"
         variant: "outline"
       highlighted: false
+
+subscriptions:
+  plans:
+    basic:
+      name: "Basic Plan"
+      price_cents: 999 # $9.99
+      currency: "usd"
+      interval: "month"
+      features:
+        - "Up to 50 quizzes per month"
+        - "Basic analytics"
+        - "Email support"
+      stripe_price_id_env: "STRIPE_BASIC_PRICE_ID"
+    premium:
+      name: "Premium Plan"
+      price_cents: 1999 # $19.99
+      currency: "usd"
+      interval: "month"
+      features:
+        - "Unlimited quizzes"
+        - "Advanced analytics"
+        - "Priority support"
+        - "Custom quiz templates"
+        - "Export functionality"
+      stripe_price_id_env: "STRIPE_PREMIUM_PRICE_ID"
+    enterprise:
+      name: "Enterprise Plan"
+      price_cents: 4999 # $49.99
+      currency: "usd"
+      interval: "month"
+      features:
+        - "Everything in Premium"
+        - "Team management"
+        - "API access"
+        - "Custom integrations"
+        - "Dedicated support"
+      stripe_price_id_env: "STRIPE_ENTERPRISE_PRICE_ID"
+  aliases:
+    basic: "basic"
+    starter: "basic"
+    premium: "premium"
+    pro: "premium"
+    enterprise: "enterprise"
+    teams: "enterprise"
