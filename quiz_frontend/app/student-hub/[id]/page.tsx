@@ -780,6 +780,15 @@ function ProjectDetailContent() {
     return 'Quiz';
   };
 
+  // Request notification permission on mount
+  useEffect(() => {
+    if ('Notification' in window && Notification.permission === 'default') {
+      Notification.requestPermission().catch(() => {
+        // Silently fail if user denies
+      });
+    }
+  }, []);
+
   useEffect(() => {
     if (activeJobs.length === 0) {
       return;
@@ -824,15 +833,26 @@ function ProjectDetailContent() {
           setActiveJobs(nextJobs);
 
           completed.forEach(({ job, status }) => {
-            setReadyQuizzes((prev) => [
-              ...prev,
-              {
-                jobId: job.jobId,
-                quizId: status.result!.quiz_id,
-                topic: status.result!.topic,
-                contentName: job.contentName,
-              },
-            ]);
+            const quizInfo = {
+              jobId: job.jobId,
+              quizId: status.result!.quiz_id,
+              topic: status.result!.topic,
+              contentName: job.contentName,
+            };
+            setReadyQuizzes((prev) => [...prev, quizInfo]);
+            
+            // Show browser notification if permission granted
+            if ('Notification' in window && Notification.permission === 'granted') {
+              new Notification('Quiz Ready!', {
+                body: `"${quizInfo.topic}" has been generated from ${job.contentName}. Click to open it.`,
+                icon: '/favicon.ico',
+                tag: `quiz-${quizInfo.quizId}`,
+              });
+            } else if ('Notification' in window && Notification.permission === 'default') {
+              // Request permission for future notifications
+              Notification.requestPermission();
+            }
+            
             queryClient.invalidateQueries({ queryKey: ['generated-content', projectId, job.contentId] });
             queryClient.invalidateQueries({ queryKey: ['student-project', projectId] });
           });

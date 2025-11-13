@@ -58,8 +58,17 @@ function QuizzesPageContent() {
       if (data.quiz_id) {
         router.push(`/quizzes/${data.quiz_id}`);
       } else {
-        // Navigate to quiz taking page with the generated quiz data
-        router.push(`/quizzes/take?data=${encodeURIComponent(JSON.stringify(data))}`);
+        // For quizzes without ID, check if data is too large for URL
+        const dataString = JSON.stringify(data);
+        const encodedLength = encodeURIComponent(dataString).length;
+        // URL length limit is typically 2048 characters, use 2000 as safe limit
+        if (encodedLength > 2000) {
+          // Data too large, show error
+          alert('Quiz data is too large to pass via URL. Please try generating the quiz again or contact support.');
+          return;
+        }
+        // Navigate to quiz taking page with the generated quiz data (backward compatibility)
+        router.push(`/quizzes/take?data=${encodeURIComponent(dataString)}`);
       }
     },
     onError: (error: unknown) => {

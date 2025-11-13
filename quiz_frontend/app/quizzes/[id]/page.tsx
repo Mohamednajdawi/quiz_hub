@@ -470,9 +470,10 @@ function QuizDetailPageContent() {
             </Button>
             <Button
               variant="primary"
-              onClick={() =>
-                router.push(`/quizzes/take?data=${encodeURIComponent(JSON.stringify(quiz))}`)
-              }
+              onClick={() => {
+                // Use quiz ID instead of passing all data in URL to avoid URL length limits
+                router.push(`/quizzes/take?id=${quizId}`);
+              }}
             >
               Take This Quiz
             </Button>

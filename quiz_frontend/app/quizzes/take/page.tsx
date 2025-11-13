@@ -11,10 +11,11 @@ import { Button } from '@/components/ui/Button';
 import { Alert } from '@/components/ui/Alert';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { attemptApi } from '@/lib/api/attempts';
+import { quizApi } from '@/lib/api/quiz';
 import { QuizData, QuizQuestion } from '@/lib/types';
 import { CheckCircle, XCircle, Clock } from 'lucide-react';
-import { format } from 'date-fns';
 import { formatFeedbackToHtml } from '@/lib/utils/formatFeedback';
+import { useQuery } from '@tanstack/react-query';
 
 function TakeQuizContent() {
   const searchParams = useSearchParams();
@@ -24,7 +25,6 @@ function TakeQuizContent() {
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [selectedAnswers, setSelectedAnswers] = useState<number[]>([]);
   const [startTime] = useState(Date.now());
-  const [timeElapsed, setTimeElapsed] = useState(0);
   const [showResults, setShowResults] = useState(false);
   const [results, setResults] = useState<{
     score: number;
@@ -36,7 +36,32 @@ function TakeQuizContent() {
   } | null>(null);
   const [parseError, setParseError] = useState<string | null>(null);
 
+  // Get quiz ID from URL if provided
+  const quizIdParam = searchParams.get('id');
+  const quizId = quizIdParam ? parseInt(quizIdParam, 10) : null;
+
+  // Fetch quiz by ID if ID is provided
+  const { data: fetchedQuiz, isLoading: isLoadingQuiz, error: fetchError } = useQuery<QuizData>({
+    queryKey: ['quiz', quizId],
+    queryFn: () => quizApi.getQuiz(quizId!),
+    enabled: !!quizId && !isNaN(quizId),
+  });
+
   useEffect(() => {
+    // If we have a fetched quiz from ID, use it
+    if (fetchedQuiz) {
+      if (!fetchedQuiz?.questions || !Array.isArray(fetchedQuiz.questions) || fetchedQuiz.questions.length === 0) {
+        setParseError('Quiz data is missing questions.');
+        setQuizData(null);
+        return;
+      }
+      setQuizData(fetchedQuiz);
+      setSelectedAnswers(new Array(fetchedQuiz.questions.length).fill(-1));
+      setParseError(null);
+      return;
+    }
+
+    // Otherwise, try to parse from URL data parameter (for backward compatibility)
     const dataParam = searchParams.get('data');
     if (dataParam) {
       try {
@@ -61,17 +86,26 @@ function TakeQuizContent() {
         );
         setQuizData(null);
       }
+    } else if (!quizId) {
+      // No ID and no data param
+      setParseError('No quiz data provided. Please provide a quiz ID or data.');
+      setQuizData(null);
     }
-  }, [searchParams]);
+  }, [searchParams, fetchedQuiz, quizId]);
 
+  // Handle fetch error
   useEffect(() => {
-    if (!showResults) {
-      const interval = setInterval(() => {
-        setTimeElapsed(Math.floor((Date.now() - startTime) / 1000));
-      }, 1000);
-      return () => clearInterval(interval);
+    if (fetchError) {
+      setParseError(
+        fetchError instanceof Error
+          ? `Failed to load quiz: ${fetchError.message}`
+          : 'Failed to load quiz from server.'
+      );
+      setQuizData(null);
     }
-  }, [showResults, startTime]);
+  }, [fetchError]);
+
+  // Timer removed as it's not displayed in the UI
 
   const recordAttemptMutation = useMutation({
     mutationFn: attemptApi.recordAttempt,
@@ -167,6 +201,8 @@ function TakeQuizContent() {
                 Go Back
               </Button>
             </>
+          ) : isLoadingQuiz ? (
+            <LoadingSpinner size="lg" />
           ) : (
             <LoadingSpinner size="lg" />
           )}
