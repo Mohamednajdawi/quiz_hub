@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { siteConfig, formatPhoneNumber, getFullAddress } from '@/lib/config/site';
 
 export function Footer() {
   return (
@@ -49,28 +50,42 @@ export function Footer() {
           {/* Impressum (Austrian Law Requirement) */}
           <div>
             <h3 className="text-sm font-semibold text-gray-900 mb-4">Impressum</h3>
-            <div className="text-sm text-gray-600 space-y-1">
+            <div className="text-sm text-gray-600 space-y-2">
               <p>
-                <strong>Quiz Hub</strong>
+                <strong>{siteConfig.legal.companyName}</strong>
               </p>
               <p>
-                {/* TODO: Replace with actual company information */}
-                [Company Name]<br />
-                [Street Address]<br />
-                [Postal Code] [City]<br />
-                Austria
+                {getFullAddress()}
               </p>
               <p className="mt-2">
                 <strong>Contact:</strong><br />
-                Email: <a href="mailto:contact@quizhub.com" className="hover:text-gray-900">contact@quizhub.com</a>
+                <a 
+                  href={`mailto:${siteConfig.contact.email}`} 
+                  className="hover:text-gray-900 underline"
+                >
+                  {siteConfig.contact.email}
+                </a>
+                <br />
+                <a 
+                  href={`tel:${siteConfig.contact.phone}`} 
+                  className="hover:text-gray-900"
+                >
+                  {formatPhoneNumber(siteConfig.contact.phone)}
+                </a>
               </p>
-              <p className="mt-2">
-                <strong>UID:</strong> [VAT/UID Number]<br />
-                <strong>Company Register:</strong> [Register Number]
-              </p>
+              {siteConfig.legal.vatNumber && (
+                <p className="mt-2">
+                  <strong>UID:</strong> {siteConfig.legal.vatNumber}
+                </p>
+              )}
+              {siteConfig.legal.companyRegister && (
+                <p className="mt-2">
+                  <strong>Company Register:</strong> {siteConfig.legal.companyRegister}
+                </p>
+              )}
               <p className="mt-2">
                 <strong>Responsible for Content:</strong><br />
-                [Name of Responsible Person]
+                {siteConfig.legal.responsiblePerson}
               </p>
             </div>
           </div>
@@ -78,7 +93,7 @@ export function Footer() {
 
         <div className="mt-8 pt-8 border-t border-gray-200">
           <p className="text-xs text-gray-500 text-center">
-            © {new Date().getFullYear()} Quiz Hub. All rights reserved.
+            © {new Date().getFullYear()} {siteConfig.name}. All rights reserved.
           </p>
         </div>
       </div>
