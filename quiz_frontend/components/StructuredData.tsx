@@ -5,6 +5,21 @@ import { siteConfig } from '@/lib/config/site';
  * Provides organization information to search engines
  */
 export function StructuredData() {
+  // Build address object conditionally to avoid readonly type issues
+  const address: Record<string, string> = {
+    "@type": "PostalAddress",
+    addressLocality: siteConfig.contact.address.city,
+    addressCountry: siteConfig.contact.address.country,
+  };
+  
+  if (siteConfig.contact.address.street) {
+    address.streetAddress = siteConfig.contact.address.street;
+  }
+  
+  if (siteConfig.contact.address.postalCode) {
+    address.postalCode = siteConfig.contact.address.postalCode;
+  }
+
   const organizationSchema = {
     "@context": "https://schema.org",
     "@type": "Organization",
@@ -13,17 +28,7 @@ export function StructuredData() {
     description: siteConfig.description,
     email: siteConfig.contact.email,
     telephone: siteConfig.contact.phone,
-    address: {
-      "@type": "PostalAddress",
-      addressLocality: siteConfig.contact.address.city,
-      addressCountry: siteConfig.contact.address.country,
-      ...(siteConfig.contact.address.street && {
-        streetAddress: siteConfig.contact.address.street,
-      }),
-      ...(siteConfig.contact.address.postalCode && {
-        postalCode: siteConfig.contact.address.postalCode,
-      }),
-    },
+    address,
     founder: {
       "@type": "Person",
       name: siteConfig.contact.name,
