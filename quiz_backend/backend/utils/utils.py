@@ -1,29 +1,40 @@
-from typing import Any, Dict, Optional
+from __future__ import annotations
 
+import logging
+import math
+from typing import Any, Dict, List, Optional
+
+from jinja2 import Template
+from haystack.components.converters import HTMLToDocument
+from haystack.components.fetchers import LinkContentFetcher
+
+from backend.components.custom_components import PDFTextExtractor, QuizParser
+from backend.generation.mcq_quiz_template import QUIZ_GENERATION_PROMPT
 from backend.pipelines.content_pipelines import (
-    pdf_quiz_generation_pipeline, 
-    url_quiz_generation_pipeline,
+    LLM_CONFIG,
+    create_generator,
     pdf_flashcard_generation_pipeline,
-    url_flashcard_generation_pipeline,
     pdf_essay_qa_generation_pipeline,
-    url_essay_qa_generation_pipeline
+    url_flashcard_generation_pipeline,
+    url_essay_qa_generation_pipeline,
 )
+
+logger = logging.getLogger(__name__)
+
+_QUIZ_MAX_INPUT_CHARS = 15000
+_QUIZ_CHUNK_OVERLAP_CHARS = 1000
+_QUIZ_PROMPT_TEMPLATE = Template(QUIZ_GENERATION_PROMPT, trim_blocks=True, lstrip_blocks=True)
 
 
 def generate_quiz(
     url: str, num_questions: Optional[int] = None, difficulty: str = "medium"
 ) -> Dict[str, Any]:
-    auto_question_mode = num_questions is None or num_questions <= 0
-    return url_quiz_generation_pipeline.run(
-        {
-            "link_content_fetcher": {"urls": [url]},
-            "prompt_builder": {
-                "num_questions": num_questions if not auto_question_mode else 0,
-                "auto_question_mode": auto_question_mode,
-                "difficulty": difficulty,
-            },
-        }
-    )["quiz_parser"]["quiz"]
+    extracted_text = _extract_text_from_url(url)
+    return _generate_quiz_from_text(
+        extracted_text,
+        num_questions=num_questions,
+        difficulty=difficulty,
+    )
 
 
 def generate_quiz_from_pdf(
@@ -42,17 +53,18 @@ def generate_quiz_from_pdf(
     Returns:
         dict: A dictionary containing the quiz data
     """
-    auto_question_mode = num_questions is None or num_questions <= 0
-    return pdf_quiz_generation_pipeline.run(
-        {
-            "pdf_extractor": {"file_path": pdf_path},
-            "prompt_builder": {
-                "num_questions": num_questions if not auto_question_mode else 0,
-                "auto_question_mode": auto_question_mode,
-                "difficulty": difficulty,
-            },
-        }
-    )["quiz_parser"]["quiz"]
+    extractor = PDFTextExtractor()
+    extraction_result = extractor.run(file_path=pdf_path)
+    extracted_text = extraction_result.get("text", "")
+
+    if not extracted_text.strip():
+        raise ValueError("No extractable text was found in the provided PDF.")
+
+    return _generate_quiz_from_text(
+        extracted_text,
+        num_questions=num_questions,
+        difficulty=difficulty,
+    )
 
 
 def generate_flashcards(url: str, num_cards: int = 10) -> Dict[str, Any]:
@@ -152,3 +164,158 @@ def generate_essay_qa_from_pdf(
             },
         }
     )["essay_qa_parser"]["essay_qa"]
+
+
+def _extract_text_from_url(url: str) -> str:
+    fetcher = LinkContentFetcher()
+    fetch_result = fetcher.run(urls=[url])
+    documents = fetch_result.get("documents", [])
+    if not documents:
+        raise ValueError(f"No content could be fetched from URL: {url}")
+
+    converter = HTMLToDocument()
+    converted = converter.run(sources=documents)
+    html_documents = converted.get("documents", [])
+
+    aggregated_text_parts: List[str] = []
+    for doc in html_documents:
+        content = getattr(doc, "content", None)
+        if content:
+            aggregated_text_parts.append(content)
+
+    aggregated_text = "\n\n".join(aggregated_text_parts).strip()
+    if not aggregated_text:
+        raise ValueError(f"Unable to extract meaningful text content from URL: {url}")
+
+    return aggregated_text
+
+
+def _generate_quiz_from_text(
+    source_text: str,
+    num_questions: Optional[int],
+    difficulty: str,
+) -> Dict[str, Any]:
+    chunks = _chunk_text(source_text, _QUIZ_MAX_INPUT_CHARS, _QUIZ_CHUNK_OVERLAP_CHARS)
+    if not chunks:
+        raise ValueError("Provided content did not contain any usable text segments.")
+
+    auto_question_mode = num_questions is None or num_questions <= 0
+    question_targets = (
+        _distribute_question_targets(len(chunks), num_questions)
+        if not auto_question_mode
+        else [None] * len(chunks)
+    )
+
+    generator = create_generator(temperature=LLM_CONFIG["quiz_temperature"])
+    parser = QuizParser()
+
+    combined_questions: List[Dict[str, Any]] = []
+    combined_topic: Optional[str] = None
+    combined_category: Optional[str] = None
+    combined_subcategory: Optional[str] = None
+
+    for index, (chunk_text, target) in enumerate(zip(chunks, question_targets)):
+        logger.debug("Generating quiz for chunk %s/%s (length=%s characters)", index + 1, len(chunks), len(chunk_text))
+
+        prompt_inputs = {
+            "documents": chunk_text,
+            "num_questions": target if (target and not auto_question_mode) else 0,
+            "auto_question_mode": auto_question_mode,
+            "difficulty": difficulty,
+        }
+        prompt = _QUIZ_PROMPT_TEMPLATE.render(**prompt_inputs)
+        replies = generator.run(prompt=prompt)["replies"]
+        quiz_segment = parser.run(replies=replies)["quiz"]
+
+        if combined_topic is None:
+            combined_topic = quiz_segment.get("topic")
+            combined_category = quiz_segment.get("category")
+            combined_subcategory = quiz_segment.get("subcategory")
+
+        questions = quiz_segment.get("questions", [])
+        if not isinstance(questions, list):
+            questions = []
+
+        combined_questions.extend(questions)
+
+        if not auto_question_mode and len(combined_questions) >= (num_questions or 0):
+            break
+
+    if not combined_questions:
+        raise ValueError("Quiz generation returned no questions for the provided content.")
+
+    if not combined_topic:
+        combined_topic = "Generated Quiz"
+    if not combined_category:
+        combined_category = "General Knowledge"
+    if not combined_subcategory:
+        combined_subcategory = "General"
+
+    final_questions = (
+        combined_questions[:num_questions] if (not auto_question_mode and num_questions) else combined_questions
+    )
+
+    return {
+        "topic": combined_topic,
+        "category": combined_category,
+        "subcategory": combined_subcategory,
+        "questions": final_questions,
+    }
+
+
+def _chunk_text(text: str, max_chars: int, overlap: int) -> List[str]:
+    normalized_text = text.strip()
+    if len(normalized_text) <= max_chars:
+        return [normalized_text]
+
+    chunks: List[str] = []
+    start = 0
+    text_length = len(normalized_text)
+
+    while start < text_length:
+        end = min(start + max_chars, text_length)
+        if end < text_length:
+            split_index = max(
+                normalized_text.rfind("\n\n", start, end),
+                normalized_text.rfind(". ", start, end),
+            )
+            if split_index == -1 or split_index <= start + int(max_chars * 0.4):
+                split_index = end
+            else:
+                split_index += 1  # include the sentence-ending character
+            end = split_index
+
+        chunk = normalized_text[start:end].strip()
+        if chunk:
+            chunks.append(chunk)
+
+        if end >= text_length:
+            break
+
+        next_start = max(end - overlap, start + 1)
+        start = next_start
+
+    return chunks
+
+
+def _distribute_question_targets(chunk_count: int, total_questions: Optional[int]) -> List[int]:
+    if not total_questions or total_questions <= 0 or chunk_count <= 0:
+        return [0] * max(chunk_count, 1)
+
+    remaining = total_questions
+    remaining_chunks = chunk_count
+    targets: List[int] = []
+
+    for _ in range(chunk_count):
+        chunk_target = max(1, math.ceil(remaining / remaining_chunks))
+        targets.append(chunk_target)
+        remaining -= chunk_target
+        remaining_chunks -= 1
+        if remaining <= 0:
+            break
+
+    # If we exited early because remaining <= 0, pad the rest with zeros
+    while len(targets) < chunk_count:
+        targets.append(0)
+
+    return targets
