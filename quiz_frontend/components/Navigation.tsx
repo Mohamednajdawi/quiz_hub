@@ -209,6 +209,7 @@ export function Navigation() {
                     {isPro && subscription?.plan_type && (
                       <div className="text-xs text-gray-500 capitalize">
                         {subscription.plan_type} Plan
+                        {typeof subscription.remaining_generations === 'number' ? ` (${subscription.remaining_generations} left)` : ''}
                       </div>
                     )}
                   </div>
@@ -260,6 +261,7 @@ export function Navigation() {
                               <div className="flex items-center justify-between">
                                 <span className="text-xs font-medium text-gray-900 capitalize">
                                   {subscription.plan_type} Plan
+                                  {typeof subscription.remaining_generations === 'number' ? ` (${subscription.remaining_generations} left)` : ''}
                                 </span>
                                 {subscription.cancel_at_period_end && (
                                   <span className="text-xs text-orange-600 font-medium">
@@ -464,6 +466,7 @@ export function Navigation() {
                     {isPro && subscription?.plan_type && (
                       <div className="text-xs text-gray-500 mt-1 capitalize">
                         {subscription.plan_type} Plan
+                        {typeof subscription.remaining_generations === 'number' ? ` (${subscription.remaining_generations} left)` : ''}
                       </div>
                     )}
                   </div>

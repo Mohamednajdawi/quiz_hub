@@ -11,6 +11,15 @@ import yaml
 
 DEFAULT_CONFIG: Dict[str, Any] = {
     "free_generation_quota": 10,
+    "limits": {
+        "free_tier": {
+            "max_projects": 3,
+        },
+        "pro_tier": {
+            "max_projects": -1,
+            "monthly_generations": 200,
+        },
+    },
     "pricing": {
         "hero": {
             "title": "Simple, transparent pricing",
@@ -82,6 +91,21 @@ def get_app_config() -> Dict[str, Any]:
 
 def get_free_generation_quota() -> int:
     return get_app_config().get("free_generation_quota", DEFAULT_CONFIG["free_generation_quota"])
+
+
+def get_pro_generation_limit() -> int:
+    config = get_app_config()
+    limits = config.get("limits") or {}
+    pro_limits = limits.get("pro_tier") or {}
+    limit_value = pro_limits.get("monthly_generations")
+
+    try:
+        if limit_value is None:
+            raise ValueError("missing pro tier monthly_generations")
+        return int(limit_value)
+    except (TypeError, ValueError):
+        default_limits = DEFAULT_CONFIG.get("limits", {}).get("pro_tier", {})
+        return int(default_limits.get("monthly_generations", 200))
 
 
 def get_pdf_storage_dir() -> str:

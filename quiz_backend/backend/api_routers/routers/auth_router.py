@@ -20,6 +20,7 @@ from backend.utils.auth import (
 )
 from backend.utils.admin import get_user_account_type
 from backend.utils.credits import count_monthly_generations
+from backend.config import get_pro_generation_limit
 
 router = APIRouter()
 
@@ -54,6 +55,9 @@ class SubscriptionInfo(BaseModel):
     status: str
     current_period_end: Optional[str] = None
     cancel_at_period_end: bool = False
+    monthly_generations: Optional[int] = None
+    remaining_generations: Optional[int] = None
+    monthly_limit: Optional[int] = None
 
 
 class UserResponse(BaseModel):
@@ -232,13 +236,22 @@ async def get_current_user_subscription(
         if display_plan_type == "premium":
             display_plan_type = "pro"
         elif display_plan_type == "unknown":
-            # Try to determine from Stripe if possible, otherwise show "Pro" as default for active subscriptions
+            # Default to "pro" for active subscriptions with unknown plan type
             display_plan_type = "pro"
-        
-        # Calculate remaining generations for pro users (200 per month)
+
+        pro_monthly_limit = get_pro_generation_limit()
         monthly_generations = count_monthly_generations(db, user, active_subscription)
-        pro_monthly_limit = 200
         remaining_generations = max(0, pro_monthly_limit - monthly_generations)
+
+        subscription_info = SubscriptionInfo(
+            plan_type=display_plan_type,
+            status=active_subscription.status,
+            current_period_end=active_subscription.current_period_end.isoformat() if active_subscription.current_period_end else None,
+            cancel_at_period_end=active_subscription.cancel_at_period_end,
+            monthly_generations=monthly_generations,
+            remaining_generations=remaining_generations,
+            monthly_limit=pro_monthly_limit,
+        )
         
         return JSONResponse(
             content={
@@ -374,12 +387,19 @@ def _serialize_user(user: User, db: Session) -> UserResponse:
         elif display_plan_type == "unknown":
             # Default to "pro" for active subscriptions with unknown plan type
             display_plan_type = "pro"
-        
+
+        pro_monthly_limit = get_pro_generation_limit()
+        monthly_generations = count_monthly_generations(db, user, active_subscription)
+        remaining_generations = max(0, pro_monthly_limit - monthly_generations)
+
         subscription_info = SubscriptionInfo(
             plan_type=display_plan_type,
             status=active_subscription.status,
             current_period_end=active_subscription.current_period_end.isoformat() if active_subscription.current_period_end else None,
             cancel_at_period_end=active_subscription.cancel_at_period_end,
+            monthly_generations=monthly_generations,
+            remaining_generations=remaining_generations,
+            monthly_limit=pro_monthly_limit,
         )
     
     return UserResponse(

@@ -5,6 +5,9 @@ export interface SubscriptionInfo {
   status: string;
   current_period_end?: string | null;
   cancel_at_period_end: boolean;
+  monthly_generations?: number | null;
+  remaining_generations?: number | null;
+  monthly_limit?: number | null;
 }
 
 export interface UserSubscriptionResponse {

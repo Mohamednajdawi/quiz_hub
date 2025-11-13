@@ -207,13 +207,18 @@ function ProfileContent() {
                         ) : (
                           <div className="flex items-center gap-2 text-gray-700">
                             <span className="font-medium">Generations:</span>
-                            <span className="text-indigo-600 font-semibold">200 per month</span>
+                            <span className="text-indigo-600 font-semibold">
+                              {subscription.monthly_limit ?? '—'} per month
+                            </span>
                           </div>
                         )}
                         {subscription.plan_type && (
                           <div className="flex items-center gap-2 text-gray-700">
                             <span className="font-medium">Plan:</span>
-                            <span className="text-indigo-600 font-semibold capitalize">{subscription.plan_type}</span>
+                            <span className="text-indigo-600 font-semibold capitalize">
+                              {subscription.plan_type}
+                              {typeof subscription.remaining_generations === 'number' ? ` (${subscription.remaining_generations} left)` : ''}
+                            </span>
                           </div>
                         )}
                         {subscription.current_period_end && (

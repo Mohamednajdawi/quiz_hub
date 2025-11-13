@@ -7,6 +7,7 @@ limits:
     max_projects: 3
   pro_tier:
     max_projects: -1 # Unlimited
+    monthly_generations: 200
 
 pricing:
   currency: "EUR"
