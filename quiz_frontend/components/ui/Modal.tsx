@@ -5,7 +5,7 @@ import { Button } from './Button';
 
 interface ModalProps {
   isOpen: boolean;
-  onClose: () => void | undefined;
+  onClose: () => void;
   title: string;
   children: React.ReactNode;
   footer?: React.ReactNode;
@@ -15,7 +15,7 @@ interface ModalProps {
 export function Modal({ isOpen, onClose, title, children, footer, closeOnBackdropClick = true }: ModalProps) {
   if (!isOpen) return null;
 
-  const handleBackdropClick = closeOnBackdropClick && onClose ? onClose : undefined;
+  const handleBackdropClick = closeOnBackdropClick ? onClose : undefined;
 
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto">
