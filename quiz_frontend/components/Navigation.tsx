@@ -370,7 +370,8 @@ export function Navigation() {
       </div>
 
       {/* Mobile menu */}
-      <div className="md:hidden border-t border-gray-200">
+      {isMobileMenuOpen && (
+        <div className="md:hidden border-t border-gray-200 bg-white">
         <div className="px-2 pt-2 pb-3 space-y-1">
           {navigation.map((item) => {
             const isActive = pathname === item.href || (item.href !== '/' && pathname.startsWith(item.href));
@@ -378,6 +379,7 @@ export function Navigation() {
               <Link
                 key={item.name}
                 href={item.href}
+                onClick={() => setIsMobileMenuOpen(false)}
                 className={`flex items-center px-3 py-2.5 rounded-lg text-base font-medium transition-colors ${
                   isActive
                     ? 'bg-indigo-50 text-indigo-700'
@@ -397,6 +399,7 @@ export function Navigation() {
               <Link
                 key={item.name}
                 href={item.href}
+                onClick={() => setIsMobileMenuOpen(false)}
                 className={`flex items-center px-3 py-2.5 rounded-lg text-base font-medium transition-colors ${
                   isActive
                     ? 'bg-red-50 text-red-700'
@@ -558,6 +561,7 @@ export function Navigation() {
           )}
         </div>
       </div>
+      )}
     </nav>
   );
 }
