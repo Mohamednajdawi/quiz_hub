@@ -9,10 +9,13 @@ interface ModalProps {
   title: string;
   children: React.ReactNode;
   footer?: React.ReactNode;
+  closeOnBackdropClick?: boolean;
 }
 
-export function Modal({ isOpen, onClose, title, children, footer }: ModalProps) {
+export function Modal({ isOpen, onClose, title, children, footer, closeOnBackdropClick = true }: ModalProps) {
   if (!isOpen) return null;
+
+  const handleBackdropClick = closeOnBackdropClick ? onClose : undefined;
 
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto">
@@ -20,7 +23,7 @@ export function Modal({ isOpen, onClose, title, children, footer }: ModalProps) 
         {/* Backdrop */}
         <div
           className="fixed inset-0 bg-black bg-opacity-50 transition-opacity"
-          onClick={onClose}
+          onClick={handleBackdropClick}
         />
 
         {/* Modal */}

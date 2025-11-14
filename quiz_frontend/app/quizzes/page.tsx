@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { ProtectedRoute } from '@/components/ProtectedRoute';
 import { Layout } from '@/components/Layout';
@@ -14,7 +14,7 @@ import { LimitReachedModal } from '@/components/LimitReachedModal';
 import { quizApi } from '@/lib/api/quiz';
 import type { URLRequest } from '@/lib/types';
 import { useRouter } from 'next/navigation';
-import { Upload, Link as LinkIcon, Key } from 'lucide-react';
+import { Upload, Link as LinkIcon, Key, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 
 function QuizzesPageContent() {
@@ -26,6 +26,8 @@ function QuizzesPageContent() {
   const [numQuestions, setNumQuestions] = useState(8);
   const [difficulty, setDifficulty] = useState<'easy' | 'medium' | 'hard'>('medium');
   const [showLimitModal, setShowLimitModal] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const quizzesPerPage = 5;
 
   const { isAuthenticated, user } = useAuth();
   
@@ -111,6 +113,18 @@ function QuizzesPageContent() {
     enabled: true, // Always fetch
     retry: 1,
   });
+
+  // Reset to page 1 when topics data changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [topics]);
+
+  // Calculate pagination
+  const totalQuizzes = topics?.topics?.length || 0;
+  const totalPages = Math.ceil(totalQuizzes / quizzesPerPage);
+  const startIndex = (currentPage - 1) * quizzesPerPage;
+  const endIndex = startIndex + quizzesPerPage;
+  const currentQuizzes = topics?.topics?.slice(startIndex, endIndex) || [];
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
@@ -318,21 +332,56 @@ function QuizzesPageContent() {
             )}
             
             {!topicsLoading && !topicsError && topics && topics.topics.length > 0 && (
-              <div className="space-y-2">
-                {topics.topics.slice(0, 10).map((topic) => (
-                  <button
-                    key={topic.id}
-                    onClick={() => router.push(`/quizzes/${topic.id}`)}
-                    className="w-full text-left px-4 py-3 rounded-md border border-gray-200 hover:bg-gray-50 transition-colors"
-                  >
-                    <div className="font-medium text-gray-900">{topic.topic}</div>
-                    <div className="text-sm text-gray-700">
-                      {topic.category} • {topic.subcategory}
-                      {topic.difficulty && ` • ${topic.difficulty.charAt(0).toUpperCase() + topic.difficulty.slice(1)}`}
+              <>
+                <div className="space-y-2">
+                  {currentQuizzes.map((topic) => (
+                    <button
+                      key={topic.id}
+                      onClick={() => router.push(`/quizzes/${topic.id}`)}
+                      className="w-full text-left px-4 py-3 rounded-md border border-gray-200 hover:bg-gray-50 transition-colors"
+                    >
+                      <div className="font-medium text-gray-900">{topic.topic}</div>
+                      <div className="text-sm text-gray-700">
+                        {topic.category} • {topic.subcategory}
+                        {topic.difficulty && ` • ${topic.difficulty.charAt(0).toUpperCase() + topic.difficulty.slice(1)}`}
+                      </div>
+                    </button>
+                  ))}
+                </div>
+
+                {/* Pagination Controls */}
+                {totalPages > 1 && (
+                  <div className="mt-6 flex items-center justify-between border-t border-gray-200 pt-4">
+                    <div className="flex items-center gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                        disabled={currentPage === 1}
+                      >
+                        <ChevronLeft className="w-4 h-4 mr-1" />
+                        Previous
+                      </Button>
+                      <span className="text-sm text-gray-700">
+                        Page {currentPage} of {totalPages}
+                      </span>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                        disabled={currentPage === totalPages}
+                      >
+                        Next
+                        <ChevronRight className="w-4 h-4 ml-1" />
+                      </Button>
                     </div>
-                  </button>
-                ))}
-              </div>
+                    <div className="text-sm text-gray-600">
+                      Showing {startIndex + 1}-
+                      {Math.min(endIndex, totalQuizzes)} of {totalQuizzes} quizzes
+                    </div>
+                  </div>
+                )}
+              </>
             )}
             
             {!topicsLoading && !topicsError && topics && topics.topics.length === 0 && (

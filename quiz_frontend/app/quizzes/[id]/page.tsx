@@ -12,7 +12,7 @@ import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { Alert } from '@/components/ui/Alert';
 import { quizApi } from '@/lib/api/quiz';
 import { QuizQuestion } from '@/lib/types';
-import { Share2, Copy, Check, BarChart3, Edit2, Save, X, Plus, Trash2 } from 'lucide-react';
+import { Share2, Copy, Check, BarChart3, Edit2, Save, X, Plus, Trash2, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 
 function QuizDetailPageContent() {
@@ -25,6 +25,8 @@ function QuizDetailPageContent() {
   const [copied, setCopied] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
   const [editingQuestions, setEditingQuestions] = useState<QuizQuestion[]>([]);
+  const [currentQuestionPage, setCurrentQuestionPage] = useState(1);
+  const questionsPerPage = 5;
 
   const { data: quiz, isLoading, error } = useQuery({
     queryKey: ['quiz', quizId],
@@ -38,6 +40,11 @@ function QuizDetailPageContent() {
       setEditingQuestions([...quiz.questions]);
     }
   }, [quiz, isEditMode]);
+
+  // Reset question page when quiz changes
+  useEffect(() => {
+    setCurrentQuestionPage(1);
+  }, [quiz]);
 
   // Check if user owns this quiz - quizzes with IDs can be edited
   const canEdit = quiz && user && quiz.questions.length > 0 && quiz.questions.some(q => q.id !== undefined);
@@ -268,135 +275,7 @@ function QuizDetailPageContent() {
             </div>
           </div>
 
-          {!isEditMode ? (
-            // View Mode
-            <div className="space-y-6 mb-6">
-              {canEdit && (
-                <div className="rounded-md border border-indigo-200 bg-indigo-50 p-4 text-sm text-indigo-900">
-                  Answers are hidden in view mode. Switch to <span className="font-semibold">Edit Quiz</span> to reveal and modify correct choices.
-                </div>
-              )}
-              {quiz.questions.map((question, index) => (
-                <div key={question.id || index} className="border-b border-gray-200 pb-6">
-                  <h3 className="text-lg font-semibold text-gray-900 mb-3">
-                    Question {index + 1}: {question.question}
-                  </h3>
-                  <div className="space-y-2">
-                    {question.options.map((option, optIndex) => (
-                      <div
-                        key={optIndex}
-                        className="p-3 rounded-lg bg-gray-50 border border-gray-200"
-                      >
-                        <span className="text-gray-800">{option}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              ))}
-            </div>
-          ) : (
-            // Edit Mode
-            <div className="space-y-6 mb-6">
-              {editingQuestions.map((question, index) => (
-                <Card key={question.id || `new-${index}`} className="p-6">
-                  <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-lg font-semibold text-gray-900">
-                      Question {index + 1}
-                    </h3>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleDeleteQuestion(index)}
-                      className="text-red-600 hover:text-red-700"
-                      disabled={editingQuestions.length <= 1}
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </Button>
-                  </div>
-
-                  <div className="space-y-4">
-                    <Input
-                      label="Question"
-                      value={question.question}
-                      onChange={(e) => handleEditQuestion(index, 'question', e.target.value)}
-                      placeholder="Enter your question"
-                    />
-
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Options
-                      </label>
-                      <div className="space-y-2">
-                        {question.options.map((option, optIndex) => (
-                          <div key={optIndex} className="flex items-center gap-2">
-                            <input
-                              type="radio"
-                              name={`correct-${index}`}
-                              checked={(() => {
-                                const rightOptionStr = String(question.right_option);
-                                const rightOptionNum = parseInt(rightOptionStr);
-                                return !isNaN(rightOptionNum) ? rightOptionNum === optIndex : false;
-                              })()}
-                              onChange={() => handleEditQuestion(index, 'right_option', optIndex)}
-                              className="w-4 h-4 text-indigo-600"
-                            />
-                            <Input
-                              value={option}
-                              onChange={(e) => handleUpdateOption(index, optIndex, e.target.value)}
-                              placeholder={`Option ${optIndex + 1}`}
-                              className="flex-1"
-                            />
-                            {question.options.length > 2 && (
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => handleRemoveOption(index, optIndex)}
-                                className="text-red-600"
-                              >
-                                <X className="w-4 h-4" />
-                              </Button>
-                            )}
-                          </div>
-                        ))}
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleAddOption(index)}
-                          className="mt-2"
-                        >
-                          <Plus className="w-4 h-4 mr-2" />
-                          Add Option
-                        </Button>
-                      </div>
-                    </div>
-
-                    <Button
-                      variant="primary"
-                      size="sm"
-                      onClick={() => handleSaveQuestion(index)}
-                      isLoading={updateQuestionMutation.isPending || addQuestionMutation.isPending}
-                    >
-                      <Save className="w-4 h-4 mr-2" />
-                      Save Question
-                    </Button>
-                  </div>
-                </Card>
-              ))}
-
-              <Card className="p-6 border-dashed border-2 border-gray-300">
-                <Button
-                  variant="outline"
-                  onClick={handleAddQuestion}
-                  className="w-full"
-                >
-                  <Plus className="w-4 h-4 mr-2" />
-                  Add New Question
-                </Button>
-              </Card>
-            </div>
-          )}
-
-          {/* Share Code Section */}
+          {/* Share Code Section - Moved to top */}
           <div className="mb-6 p-4 bg-indigo-50 border border-indigo-200 rounded-lg">
             <div className="flex items-center justify-between">
               <div className="flex-1">
@@ -464,18 +343,244 @@ function QuizDetailPageContent() {
             )}
           </div>
 
+          {/* Take Quiz Button - Moved to top */}
+          <div className="mb-6">
+            <Button
+              variant="primary"
+              size="lg"
+              onClick={() => {
+                router.push(`/quizzes/take?id=${quizId}`);
+              }}
+              className="w-full"
+            >
+              Take This Quiz
+            </Button>
+          </div>
+
+          {!isEditMode ? (
+            // View Mode
+            <div className="space-y-6 mb-6">
+              {(() => {
+                // Calculate pagination for questions
+                const totalQuestions = quiz.questions.length;
+                const totalPages = Math.ceil(totalQuestions / questionsPerPage);
+                const startIndex = (currentQuestionPage - 1) * questionsPerPage;
+                const endIndex = startIndex + questionsPerPage;
+                const currentQuestions = quiz.questions.slice(startIndex, endIndex);
+
+                return (
+                  <>
+                    {currentQuestions.map((question, questionIndex) => {
+                      const actualIndex = startIndex + questionIndex;
+                      return (
+                        <div key={question.id || actualIndex} className="border-b border-gray-200 pb-6">
+                          <h3 className="text-lg font-semibold text-gray-900 mb-3">
+                            Question {actualIndex + 1}: {question.question}
+                          </h3>
+                          <div className="space-y-2">
+                            {question.options.map((option, optIndex) => (
+                              <div
+                                key={optIndex}
+                                className="p-3 rounded-lg bg-gray-50 border border-gray-200"
+                              >
+                                <span className="text-gray-800">{option}</span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      );
+                    })}
+
+                    {/* Question Pagination Controls */}
+                    {totalPages > 1 && (
+                      <div className="mt-6 flex items-center justify-between border-t border-gray-200 pt-4">
+                        <div className="flex items-center gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setCurrentQuestionPage(prev => Math.max(1, prev - 1))}
+                            disabled={currentQuestionPage === 1}
+                          >
+                            <ChevronLeft className="w-4 h-4 mr-1" />
+                            Previous
+                          </Button>
+                          <span className="text-sm text-gray-700">
+                            Page {currentQuestionPage} of {totalPages}
+                          </span>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setCurrentQuestionPage(prev => Math.min(totalPages, prev + 1))}
+                            disabled={currentQuestionPage === totalPages}
+                          >
+                            Next
+                            <ChevronRight className="w-4 h-4 ml-1" />
+                          </Button>
+                        </div>
+                        <div className="text-sm text-gray-600">
+                          Showing {startIndex + 1}-
+                          {Math.min(endIndex, totalQuestions)} of {totalQuestions} questions
+                        </div>
+                      </div>
+                    )}
+                  </>
+                );
+              })()}
+            </div>
+          ) : (
+            // Edit Mode
+            <div className="space-y-6 mb-6">
+              {(() => {
+                // Calculate pagination for editing questions
+                const totalQuestions = editingQuestions.length;
+                const totalPages = Math.ceil(totalQuestions / questionsPerPage);
+                const startIndex = (currentQuestionPage - 1) * questionsPerPage;
+                const endIndex = startIndex + questionsPerPage;
+                const currentQuestions = editingQuestions.slice(startIndex, endIndex);
+
+                return (
+                  <>
+                    {currentQuestions.map((question, questionIndex) => {
+                      const actualIndex = startIndex + questionIndex;
+                      return (
+                        <Card key={question.id || `new-${actualIndex}`} className="p-6">
+                          <div className="flex items-center justify-between mb-4">
+                            <h3 className="text-lg font-semibold text-gray-900">
+                              Question {actualIndex + 1}
+                            </h3>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleDeleteQuestion(actualIndex)}
+                              className="text-red-600 hover:text-red-700"
+                              disabled={editingQuestions.length <= 1}
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          </div>
+
+                          <div className="space-y-4">
+                            <Input
+                              label="Question"
+                              value={question.question}
+                              onChange={(e) => handleEditQuestion(actualIndex, 'question', e.target.value)}
+                              placeholder="Enter your question"
+                            />
+
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-2">
+                                Options
+                              </label>
+                              <div className="space-y-2">
+                                {question.options.map((option, optIndex) => (
+                                  <div key={optIndex} className="flex items-center gap-2">
+                                    <input
+                                      type="radio"
+                                      name={`correct-${actualIndex}`}
+                                      checked={(() => {
+                                        const rightOptionStr = String(question.right_option);
+                                        const rightOptionNum = parseInt(rightOptionStr);
+                                        return !isNaN(rightOptionNum) ? rightOptionNum === optIndex : false;
+                                      })()}
+                                      onChange={() => handleEditQuestion(actualIndex, 'right_option', optIndex)}
+                                      className="w-4 h-4 text-indigo-600"
+                                    />
+                                    <Input
+                                      value={option}
+                                      onChange={(e) => handleUpdateOption(actualIndex, optIndex, e.target.value)}
+                                      placeholder={`Option ${optIndex + 1}`}
+                                      className="flex-1"
+                                    />
+                                    {question.options.length > 2 && (
+                                      <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => handleRemoveOption(actualIndex, optIndex)}
+                                        className="text-red-600"
+                                      >
+                                        <X className="w-4 h-4" />
+                                      </Button>
+                                    )}
+                                  </div>
+                                ))}
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => handleAddOption(actualIndex)}
+                                  className="mt-2"
+                                >
+                                  <Plus className="w-4 h-4 mr-2" />
+                                  Add Option
+                                </Button>
+                              </div>
+                            </div>
+
+                            <Button
+                              variant="primary"
+                              size="sm"
+                              onClick={() => handleSaveQuestion(actualIndex)}
+                              isLoading={updateQuestionMutation.isPending || addQuestionMutation.isPending}
+                            >
+                              <Save className="w-4 h-4 mr-2" />
+                              Save Question
+                            </Button>
+                          </div>
+                        </Card>
+                      );
+                    })}
+
+                    {/* Question Pagination Controls for Edit Mode */}
+                    {totalPages > 1 && (
+                      <div className="mt-6 flex items-center justify-between border-t border-gray-200 pt-4">
+                        <div className="flex items-center gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setCurrentQuestionPage(prev => Math.max(1, prev - 1))}
+                            disabled={currentQuestionPage === 1}
+                          >
+                            <ChevronLeft className="w-4 h-4 mr-1" />
+                            Previous
+                          </Button>
+                          <span className="text-sm text-gray-700">
+                            Page {currentQuestionPage} of {totalPages}
+                          </span>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setCurrentQuestionPage(prev => Math.min(totalPages, prev + 1))}
+                            disabled={currentQuestionPage === totalPages}
+                          >
+                            Next
+                            <ChevronRight className="w-4 h-4 ml-1" />
+                          </Button>
+                        </div>
+                        <div className="text-sm text-gray-600">
+                          Showing {startIndex + 1}-
+                          {Math.min(endIndex, totalQuestions)} of {totalQuestions} questions
+                        </div>
+                      </div>
+                    )}
+                  </>
+                );
+              })()}
+
+              <Card className="p-6 border-dashed border-2 border-gray-300">
+                <Button
+                  variant="outline"
+                  onClick={handleAddQuestion}
+                  className="w-full"
+                >
+                  <Plus className="w-4 h-4 mr-2" />
+                  Add New Question
+                </Button>
+              </Card>
+            </div>
+          )}
+
           <div className="flex gap-4">
             <Button variant="outline" onClick={() => router.push('/quizzes')}>
               Back to Quizzes
-            </Button>
-            <Button
-              variant="primary"
-              onClick={() => {
-                // Use quiz ID instead of passing all data in URL to avoid URL length limits
-                router.push(`/quizzes/take?id=${quizId}`);
-              }}
-            >
-              Take This Quiz
             </Button>
           </div>
         </Card>

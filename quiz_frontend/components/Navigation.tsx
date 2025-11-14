@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { BookOpen, FileText, GraduationCap, Home, BarChart3, LogOut, User, ChevronDown, CreditCard, Sparkles, Shield, MoreVertical, Crown, Settings } from 'lucide-react';
+import { BookOpen, FileText, GraduationCap, Home, BarChart3, LogOut, User, ChevronDown, CreditCard, Sparkles, Shield, MoreVertical, Crown, Settings, Menu, X } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 
 const studyTools = [
@@ -28,6 +28,7 @@ export function Navigation() {
   const { isAuthenticated, user, logout, isAdmin } = useAuth();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const userMenuRef = useRef<HTMLDivElement>(null);
 
@@ -175,8 +176,23 @@ export function Navigation() {
                 </div>
               </div>
 
+          {/* Mobile Menu Button */}
+          <div className="md:hidden">
+            <button
+              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+              className="inline-flex items-center justify-center p-2 rounded-md text-gray-700 hover:text-gray-900 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-indigo-500"
+              aria-label="Toggle menu"
+            >
+              {isMobileMenuOpen ? (
+                <X className="block h-6 w-6" />
+              ) : (
+                <Menu className="block h-6 w-6" />
+              )}
+            </button>
+          </div>
+
           {/* Right Side - User Actions */}
-          <div className="flex items-center gap-3">
+          <div className="hidden md:flex items-center gap-3">
               {isAuthenticated ? (
                 <>
                 {/* User Info - Desktop Only */}

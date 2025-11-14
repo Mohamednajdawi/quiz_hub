@@ -1,13 +1,14 @@
 'use client';
 
 import { useQuery } from '@tanstack/react-query';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { ProtectedRoute } from '@/components/ProtectedRoute';
 import { useAuth } from '@/contexts/AuthContext';
 import { Layout } from '@/components/Layout';
 import { Card, CardHeader } from '@/components/ui/Card';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { Alert } from '@/components/ui/Alert';
+import { WelcomeOnboarding, shouldShowOnboarding } from '@/components/WelcomeOnboarding';
 import { attemptApi } from '@/lib/api/attempts';
 import { formatFeedbackToHtml } from '@/lib/utils/formatFeedback';
 import { format } from 'date-fns';
@@ -17,6 +18,18 @@ function DashboardPageContent() {
   // Get user ID from auth context
   const { user } = useAuth();
   const userId = user?.id || null;
+  const [showOnboarding, setShowOnboarding] = useState(false);
+
+  // Check if onboarding should be shown on mount
+  useEffect(() => {
+    if (user && shouldShowOnboarding()) {
+      // Small delay to ensure page is loaded
+      const timer = setTimeout(() => {
+        setShowOnboarding(true);
+      }, 500);
+      return () => clearTimeout(timer);
+    }
+  }, [user]);
 
   const { data: analytics, isLoading, error } = useQuery({
     queryKey: ['user-analytics', userId],
@@ -60,6 +73,10 @@ function DashboardPageContent() {
 
   return (
     <Layout>
+      <WelcomeOnboarding 
+        isOpen={showOnboarding} 
+        onClose={() => setShowOnboarding(false)} 
+      />
       <div className="px-4 sm:px-6 lg:px-8">
         <h1 className="text-3xl font-bold text-gray-900 mb-8">Dashboard</h1>
 
