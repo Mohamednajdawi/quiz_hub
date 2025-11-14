@@ -72,7 +72,7 @@ export function formatPhoneNumber(phone: string): string {
 
 // Helper function to get full address string
 export function getFullAddress(): string {
-  const { address, contact } = siteConfig;
+  const { address } = siteConfig.contact;
   if (address.street && address.postalCode) {
     return `${address.street}, ${address.postalCode} ${address.city}, ${address.country}`;
   }
