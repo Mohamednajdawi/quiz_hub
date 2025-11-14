@@ -333,21 +333,21 @@ function QuizzesPageContent() {
             
             {!topicsLoading && !topicsError && topics && topics.topics.length > 0 && (
               <>
-                <div className="space-y-2">
+              <div className="space-y-2">
                   {currentQuizzes.map((topic) => (
-                    <button
-                      key={topic.id}
-                      onClick={() => router.push(`/quizzes/${topic.id}`)}
-                      className="w-full text-left px-4 py-3 rounded-md border border-gray-200 hover:bg-gray-50 transition-colors"
-                    >
-                      <div className="font-medium text-gray-900">{topic.topic}</div>
-                      <div className="text-sm text-gray-700">
-                        {topic.category} • {topic.subcategory}
-                        {topic.difficulty && ` • ${topic.difficulty.charAt(0).toUpperCase() + topic.difficulty.slice(1)}`}
-                      </div>
-                    </button>
-                  ))}
-                </div>
+                  <button
+                    key={topic.id}
+                    onClick={() => router.push(`/quizzes/${topic.id}`)}
+                    className="w-full text-left px-4 py-3 rounded-md border border-gray-200 hover:bg-gray-50 transition-colors"
+                  >
+                    <div className="font-medium text-gray-900">{topic.topic}</div>
+                    <div className="text-sm text-gray-700">
+                      {topic.category} • {topic.subcategory}
+                      {topic.difficulty && ` • ${topic.difficulty.charAt(0).toUpperCase() + topic.difficulty.slice(1)}`}
+                    </div>
+                  </button>
+                ))}
+              </div>
 
                 {/* Pagination Controls */}
                 {totalPages > 1 && (

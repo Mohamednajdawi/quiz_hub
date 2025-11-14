@@ -79,9 +79,9 @@ export function Footer() {
                 </p>
               )}
               {siteConfig.legal.companyRegister && (
-                <p className="mt-2">
+              <p className="mt-2">
                   <strong>Company Register:</strong> {siteConfig.legal.companyRegister}
-                </p>
+              </p>
               )}
               <p className="mt-2">
                 <strong>Responsible for Content:</strong><br />
