@@ -379,11 +379,24 @@ async def store_essay_answer(
     timestamp: str,
     db: Session = Depends(get_db)
 ) -> JSONResponse:
-    """Store user's essay answer"""
+    """Store user's essay answer and generate AI feedback and score"""
     try:
-        # Create a new model for storing essay answers
-        from backend.database.sqlite_dal import EssayAnswer
+        from backend.database.sqlite_dal import EssayAnswer, EssayQAQuestion, EssayQATopic
+        from backend.utils.feedback import generate_essay_feedback
         
+        # Get the essay topic and question to provide context for feedback
+        topic = db.query(EssayQATopic).filter(EssayQATopic.id == essay_id).first()
+        if not topic:
+            raise HTTPException(status_code=404, detail="Essay topic not found")
+        
+        question = db.query(EssayQAQuestion).filter(
+            EssayQAQuestion.topic_id == essay_id
+        ).order_by(EssayQAQuestion.id).offset(question_index).first()
+        
+        if not question:
+            raise HTTPException(status_code=404, detail="Question not found")
+        
+        # Create essay answer record
         essay_answer = EssayAnswer(
             essay_topic_id=essay_id,
             user_id=user_id,
@@ -393,17 +406,96 @@ async def store_essay_answer(
         )
         
         db.add(essay_answer)
+        db.flush()  # Get the ID without committing
+        
+        # Generate AI feedback and score
+        ai_feedback: Optional[str] = None
+        score: Optional[float] = None
+        
+        if user_answer.strip():  # Only generate feedback if answer is not empty
+            try:
+                key_info = question.key_info if isinstance(question.key_info, list) else []
+                feedback, score_value = generate_essay_feedback(
+                    question=question.question,
+                    user_answer=user_answer,
+                    correct_answer=question.full_answer,
+                    key_info=key_info,
+                )
+                ai_feedback = feedback
+                score = score_value
+                
+                if ai_feedback:
+                    essay_answer.ai_feedback = ai_feedback
+                if score is not None:
+                    essay_answer.score = score
+            except Exception as feedback_error:  # pylint: disable=broad-except
+                logging.error("[ESSAY FEEDBACK] Failed to generate feedback: %s", feedback_error)
+                # Continue without feedback - answer is still saved
+        
         db.commit()
+        db.refresh(essay_answer)
         
         return JSONResponse(
             content={
                 "message": "Essay answer stored successfully",
                 "answer_id": essay_answer.id,
+                "ai_feedback": essay_answer.ai_feedback,
+                "score": essay_answer.score,
             },
             status_code=201,
             headers={"Content-Type": "application/json; charset=utf-8"}
         )
+    except HTTPException:
+        raise
     except Exception as e:
+        db.rollback()
+        logging.error("[ESSAY ANSWER] Error storing essay answer: %s", e)
         raise HTTPException(
             status_code=500, detail=f"An unexpected error occurred: {str(e)}"
         )
+
+
+@router.get("/essay-answers/{user_id}", tags=["EssayQA"])
+async def get_user_essay_answers(user_id: str, db: Session = Depends(get_db)) -> JSONResponse:
+    """Get all essay answers for a specific user with feedback and scores"""
+    from backend.database.sqlite_dal import EssayAnswer, EssayQATopic, EssayQAQuestion
+    
+    # Get all essay answers for the user
+    answers = db.query(EssayAnswer).filter(
+        EssayAnswer.user_id == user_id
+    ).order_by(EssayAnswer.timestamp.desc()).all()
+    
+    # Get topic and question details for each answer
+    answers_with_details = []
+    for answer in answers:
+        topic = db.query(EssayQATopic).filter(EssayQATopic.id == answer.essay_topic_id).first()
+        if not topic:
+            continue
+        
+        # Get the question for this answer
+        question = db.query(EssayQAQuestion).filter(
+            EssayQAQuestion.topic_id == answer.essay_topic_id
+        ).order_by(EssayQAQuestion.id).offset(answer.question_index).first()
+        
+        answers_with_details.append({
+            "id": answer.id,
+            "essay_topic_id": answer.essay_topic_id,
+            "topic": topic.topic,
+            "category": topic.category,
+            "subcategory": topic.subcategory,
+            "question_index": answer.question_index,
+            "question": question.question if question else "Question not found",
+            "user_answer": answer.user_answer,
+            "timestamp": answer.timestamp.isoformat() if answer.timestamp else None,
+            "ai_feedback": answer.ai_feedback,
+            "score": answer.score,
+        })
+    
+    return JSONResponse(
+        content={
+            "user_id": user_id,
+            "answers": answers_with_details,
+            "total_answers": len(answers_with_details),
+        },
+        headers={"Content-Type": "application/json; charset=utf-8"}
+    )

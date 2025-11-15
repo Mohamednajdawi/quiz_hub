@@ -1,4 +1,4 @@
-"""add ai_feedback to essay_answers (reverted - no-op migration)
+"""add ai_feedback and score to essay_answers
 
 Revision ID: 20251115_0006_add_ai_feedback_to_essay_answers
 Revises: 20251113_0005
@@ -19,12 +19,31 @@ depends_on: Union[str, Sequence[str], None] = None
 
 
 def upgrade() -> None:
-    # This migration was reverted - no changes needed
-    # The database may already have this column, but we're not managing it anymore
-    pass
+    # Add ai_feedback and score columns to essay_answers table
+    bind = op.get_bind()
+    inspector = sa.inspect(bind)
+    
+    if "essay_answers" in inspector.get_table_names():
+        columns = {col["name"] for col in inspector.get_columns("essay_answers")}
+        
+        if "ai_feedback" not in columns:
+            op.add_column("essay_answers", sa.Column("ai_feedback", sa.Text(), nullable=True))
+        
+        if "score" not in columns:
+            op.add_column("essay_answers", sa.Column("score", sa.Float(), nullable=True))
 
 
 def downgrade() -> None:
-    # This migration was reverted - no changes needed
-    pass
+    # Remove ai_feedback and score columns from essay_answers table
+    bind = op.get_bind()
+    inspector = sa.inspect(bind)
+    
+    if "essay_answers" in inspector.get_table_names():
+        columns = {col["name"] for col in inspector.get_columns("essay_answers")}
+        
+        if "score" in columns:
+            op.drop_column("essay_answers", "score")
+        
+        if "ai_feedback" in columns:
+            op.drop_column("essay_answers", "ai_feedback")
 

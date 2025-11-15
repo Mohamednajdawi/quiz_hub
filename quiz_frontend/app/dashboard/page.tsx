@@ -10,6 +10,7 @@ import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { Alert } from '@/components/ui/Alert';
 import { WelcomeOnboarding, shouldShowOnboarding } from '@/components/WelcomeOnboarding';
 import { attemptApi } from '@/lib/api/attempts';
+import { essayApi } from '@/lib/api/essay';
 import { formatFeedbackToHtml } from '@/lib/utils/formatFeedback';
 import { format } from 'date-fns';
 import { BarChart3, TrendingUp, Clock, Award } from 'lucide-react';
@@ -45,6 +46,15 @@ function DashboardPageContent() {
     queryFn: () => {
       if (!userId) throw new Error('User not authenticated');
       return attemptApi.getUserHistory(userId);
+    },
+    enabled: !!userId,
+  });
+
+  const { data: essayAnswers } = useQuery({
+    queryKey: ['essay-answers', userId],
+    queryFn: () => {
+      if (!userId) throw new Error('User not authenticated');
+      return essayApi.getUserAnswers(userId);
     },
     enabled: !!userId,
   });
@@ -228,7 +238,7 @@ function DashboardPageContent() {
           </>
         )}
 
-        {/* Recent History */}
+        {/* Recent Quiz History */}
         {history && history.attempts.length > 0 && (
           <Card>
             <CardHeader title="Recent Quiz History" />
@@ -263,12 +273,44 @@ function DashboardPageContent() {
           </Card>
         )}
 
-        {(!analytics || analytics.total_quizzes === 0) && (
+        {/* Recent Essay Answers */}
+        {essayAnswers && essayAnswers.answers.length > 0 && (
+          <Card>
+            <CardHeader title="Recent Essay Answers" />
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
+                      Topic / Question
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
+                      Score
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
+                      Date
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
+                      AI Feedback
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {essayAnswers.answers.slice(0, 10).map((answer) => (
+                    <EssayAnswerRow key={answer.id} answer={answer} />
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </Card>
+        )}
+
+        {(!analytics || analytics.total_quizzes === 0) && (!essayAnswers || essayAnswers.total_answers === 0) && (
           <Card>
             <div className="text-center py-12">
-              <p className="text-gray-700 mb-4">No quiz data yet.</p>
+              <p className="text-gray-700 mb-4">No activity yet.</p>
               <p className="text-sm text-gray-700">
-                Start taking quizzes to see your performance analytics here.
+                Start taking quizzes or answering essay questions to see your performance analytics here.
               </p>
             </div>
           </Card>
@@ -343,6 +385,94 @@ function HistoryRow({ attempt }: { attempt: HistoryAttempt }) {
       </td>
       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
         {format(new Date(attempt.timestamp), 'MMM d, yyyy')}
+      </td>
+      <td className="px-6 py-4 text-xs text-gray-700 whitespace-normal max-w-xs">
+        {formattedFeedback ? (
+          <div className="leading-relaxed">
+            {expanded ? (
+              <div dangerouslySetInnerHTML={{ __html: formattedFeedback }} />
+            ) : (
+              <span>{preview}</span>
+            )}
+            {normalizedText.length > 160 && (
+              <button
+                type="button"
+                onClick={() => setExpanded((prev) => !prev)}
+                className="mt-2 inline-flex items-center text-xs font-medium text-indigo-600 hover:text-indigo-700"
+              >
+                {expanded ? 'See less' : 'See more'}
+              </button>
+            )}
+          </div>
+        ) : (
+          <span className="italic text-gray-400">Feedback not available</span>
+        )}
+      </td>
+    </tr>
+  );
+}
+
+type EssayAnswerData = {
+  id: number;
+  essay_topic_id: number;
+  topic: string;
+  category: string;
+  subcategory: string;
+  question_index: number;
+  question: string;
+  user_answer: string;
+  timestamp: string;
+  ai_feedback?: string;
+  score?: number;
+};
+
+function EssayAnswerRow({ answer }: { answer: EssayAnswerData }) {
+  const [expanded, setExpanded] = useState(false);
+
+  const formattedFeedback = answer.ai_feedback
+    ? formatFeedbackToHtml(answer.ai_feedback)
+    : '';
+
+  const plainText = formattedFeedback
+    ? formattedFeedback.replace(/<br\s*\/?>/gi, ' ').replace(/<[^>]+>/g, ' ')
+    : '';
+
+  const normalizedText = plainText.replace(/\s+/g, ' ').trim();
+  const preview =
+    normalizedText.length > 160 ? `${normalizedText.slice(0, 160).trim()}…` : normalizedText;
+
+  return (
+    <tr>
+      <td className="px-6 py-4">
+        <div className="text-sm font-medium text-gray-900">{answer.topic}</div>
+        <div className="text-sm text-gray-700">
+          {answer.category} • {answer.subcategory}
+        </div>
+        <div className="text-xs text-gray-500 mt-1">
+          Q{answer.question_index + 1}: {answer.question.length > 60 
+            ? `${answer.question.slice(0, 60)}...` 
+            : answer.question}
+        </div>
+      </td>
+      <td className="px-6 py-4 whitespace-nowrap">
+        {answer.score !== undefined ? (
+          <span
+            className={`text-sm font-medium ${
+              answer.score >= 70
+                ? 'text-green-600'
+                : answer.score >= 50
+                ? 'text-yellow-600'
+                : 'text-red-600'
+            }`}
+          >
+            {answer.score.toFixed(1)}%
+          </span>
+        ) : (
+          <span className="text-sm text-gray-400 italic">Pending</span>
+        )}
+      </td>
+      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
+        {format(new Date(answer.timestamp), 'MMM d, yyyy')}
       </td>
       <td className="px-6 py-4 text-xs text-gray-700 whitespace-normal max-w-xs">
         {formattedFeedback ? (
