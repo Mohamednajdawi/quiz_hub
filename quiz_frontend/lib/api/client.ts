@@ -39,6 +39,14 @@ apiClient.interceptors.request.use(
 // Request interceptor for logging
 apiClient.interceptors.request.use(
   (config) => {
+    if (typeof window !== 'undefined') {
+      console.log('[API Client] Making request:', {
+        method: config.method?.toUpperCase(),
+        url: config.url,
+        baseURL: config.baseURL,
+        hasAuth: !!config.headers.Authorization,
+      });
+    }
     return config;
   },
   (error) => {
@@ -55,13 +63,39 @@ apiClient.interceptors.response.use(
       return Promise.reject(new Error('Request timeout. The server took too long to respond.'));
     } else if (error.response) {
       // Server responded with error status
+      const status = error.response.status;
       const message = error.response.data?.detail || error.response.data?.message || 'An error occurred';
+      
+      // Provide more specific error messages
+      if (status === 401) {
+        return Promise.reject(new Error('Authentication failed. Please log in again.'));
+      } else if (status === 403) {
+        return Promise.reject(new Error('Access denied. You do not have permission to access this resource.'));
+      } else if (status === 404) {
+        return Promise.reject(new Error('Resource not found.'));
+      } else if (status === 500) {
+        return Promise.reject(new Error('Server error. Please try again later.'));
+      }
+      
       return Promise.reject(new Error(message));
     } else if (error.request) {
       // Request was made but no response received
-      return Promise.reject(new Error('Network error. Please check your connection.'));
+      console.error('[API Client] Network error details:', {
+        url: error.config?.url,
+        method: error.config?.method,
+        baseURL: error.config?.baseURL,
+        message: error.message,
+      });
+      
+      // Check if it's a CORS issue
+      if (error.message?.includes('CORS') || error.message?.includes('cross-origin')) {
+        return Promise.reject(new Error('CORS error. Please check your API URL configuration.'));
+      }
+      
+      return Promise.reject(new Error('Network error. Please check your connection and ensure the API server is running.'));
     } else {
       // Something else happened
+      console.error('[API Client] Unknown error:', error);
       return Promise.reject(error);
     }
   }
