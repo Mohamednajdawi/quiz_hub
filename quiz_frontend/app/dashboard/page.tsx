@@ -325,9 +325,12 @@ function DashboardPageContent() {
             ? points.map((point, index) => `${index === 0 ? 'M' : 'L'} ${point.x} ${point.y}`).join(' ')
             : `M ${points[0].x} ${points[0].y} L ${points[0].x + 20} ${points[0].y}`;
           
-          // Generate X-axis time labels (show 5-6 evenly spaced labels)
-          const numLabels = Math.min(6, sortedAttempts.length);
+          // Generate X-axis time labels with smart spacing to avoid overlaps
+          // Minimum spacing between labels (in SVG coordinate pixels)
+          // Account for label width (~50px for "MMM d" format) plus padding
+          const minLabelSpacing = 60; // pixels in SVG coordinate system
           const timeLabels = [];
+          
           if (sortedAttempts.length === 1) {
             // Single data point
             timeLabels.push({
@@ -336,16 +339,66 @@ function DashboardPageContent() {
               index: 0
             });
           } else {
-            for (let i = 0; i < numLabels; i++) {
-              const index = Math.floor((i / (numLabels - 1)) * (sortedAttempts.length - 1));
+            // Start with evenly spaced candidate labels
+            const maxLabels = Math.min(8, sortedAttempts.length);
+            const candidates = [];
+            for (let i = 0; i < maxLabels; i++) {
+              const index = Math.floor((i / (maxLabels - 1)) * (sortedAttempts.length - 1));
               if (sortedAttempts[index]) {
-                timeLabels.push({
+                candidates.push({
                   x: points[index].x,
                   date: new Date(sortedAttempts[index].timestamp),
                   index
                 });
               }
             }
+            
+            // Filter candidates to ensure minimum spacing
+            let lastX = -Infinity;
+            for (const candidate of candidates) {
+              // Check if this label is far enough from the previous one
+              if (candidate.x - lastX >= minLabelSpacing || timeLabels.length === 0) {
+                timeLabels.push(candidate);
+                lastX = candidate.x;
+              }
+            }
+            
+            // Ensure first point is included (if not already and has space)
+            if (timeLabels.length === 0 || timeLabels[0].index !== 0) {
+              const firstPoint = {
+                x: points[0].x,
+                date: new Date(sortedAttempts[0].timestamp),
+                index: 0
+              };
+              // Check if first point is far enough from existing first label
+              if (timeLabels.length === 0 || timeLabels[0].x - firstPoint.x >= minLabelSpacing) {
+                timeLabels.unshift(firstPoint);
+              } else if (timeLabels[0].x - firstPoint.x < minLabelSpacing / 2) {
+                // If first label is very close to start, replace it
+                timeLabels[0] = firstPoint;
+              }
+            }
+            
+            // Ensure last point is included (if not already and has space)
+            const lastIndex = sortedAttempts.length - 1;
+            if (timeLabels.length === 0 || timeLabels[timeLabels.length - 1].index !== lastIndex) {
+              const lastPoint = {
+                x: points[lastIndex].x,
+                date: new Date(sortedAttempts[lastIndex].timestamp),
+                index: lastIndex
+              };
+              const lastLabelX = timeLabels.length > 0 ? timeLabels[timeLabels.length - 1].x : -Infinity;
+              // Check if last point is far enough from existing last label
+              if (timeLabels.length === 0 || lastPoint.x - lastLabelX >= minLabelSpacing) {
+                timeLabels.push(lastPoint);
+              } else if (lastPoint.x - lastLabelX < minLabelSpacing / 2) {
+                // If last label is very close to end, replace it
+                timeLabels[timeLabels.length - 1] = lastPoint;
+              }
+            }
+            
+            // Sort by index to maintain chronological order
+            timeLabels.sort((a, b) => a.index - b.index);
           }
           
           return (
@@ -435,7 +488,7 @@ function DashboardPageContent() {
                             bottom: '5px'
                           }}
                         >
-                          {format(label.date, 'MMM d')}
+                          {format(label.date, 'M/d')}
                         </span>
                       );
                     })}
