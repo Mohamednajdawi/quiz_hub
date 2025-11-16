@@ -9,7 +9,7 @@ from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 import logging
 
-from backend.api_routers.schemas import EssayQARequest, StoreEssayAnswerRequest
+from backend.api_routers.schemas import EssayQARequest, StoreEssayAnswerRequest, StoreEssayAnswersRequest
 from backend.database.db import get_db
 from backend.database.sqlite_dal import EssayQATopic, EssayQAQuestion
 from backend.utils.utils import generate_essay_qa, generate_essay_qa_from_pdf
@@ -458,27 +458,142 @@ async def store_essay_answer(
         )
 
 
+@router.post("/store-essay-answers", tags=["EssayQA"])
+async def store_essay_answers(
+    request: StoreEssayAnswersRequest,
+    db: Session = Depends(get_db)
+) -> JSONResponse:
+    """Store all user's essay answers and generate one combined AI feedback and score"""
+    try:
+        from backend.database.sqlite_dal import EssayAnswer, EssayQAQuestion, EssayQATopic
+        from backend.utils.feedback import generate_combined_essay_feedback
+        
+        # Extract fields from request
+        essay_id = request.essay_id
+        user_id = request.user_id
+        answers = request.answers
+        timestamp = request.timestamp
+        
+        # Get the essay topic
+        topic = db.query(EssayQATopic).filter(EssayQATopic.id == essay_id).first()
+        if not topic:
+            raise HTTPException(status_code=404, detail="Essay topic not found")
+        
+        # Get all questions for this essay
+        all_questions = db.query(EssayQAQuestion).filter(
+            EssayQAQuestion.topic_id == essay_id
+        ).order_by(EssayQAQuestion.id).all()
+        
+        if not all_questions:
+            raise HTTPException(status_code=404, detail="No questions found for this essay")
+        
+        # Store all individual answers
+        stored_answers = []
+        questions_and_answers_for_feedback = []
+        
+        for answer_data in answers:
+            question_index = answer_data.get("question_index")
+            user_answer = answer_data.get("user_answer", "")
+            
+            if question_index is None or question_index < 0 or question_index >= len(all_questions):
+                continue
+            
+            question = all_questions[question_index]
+            
+            # Store individual answer
+            essay_answer = EssayAnswer(
+                essay_topic_id=essay_id,
+                user_id=user_id,
+                question_index=question_index,
+                user_answer=user_answer,
+                timestamp=datetime.datetime.fromisoformat(timestamp.replace('Z', '+00:00')),
+            )
+            db.add(essay_answer)
+            stored_answers.append(essay_answer)
+            
+            # Prepare data for combined feedback
+            key_info = question.key_info if isinstance(question.key_info, list) else []
+            questions_and_answers_for_feedback.append({
+                "question": question.question,
+                "user_answer": user_answer,
+                "correct_answer": question.full_answer,
+                "key_info": key_info,
+            })
+        
+        db.flush()  # Get IDs without committing
+        
+        # Generate combined AI feedback and score
+        ai_feedback: Optional[str] = None
+        score: Optional[float] = None
+        
+        if questions_and_answers_for_feedback and any(qa.get("user_answer", "").strip() for qa in questions_and_answers_for_feedback):
+            try:
+                feedback, score_value = generate_combined_essay_feedback(
+                    questions_and_answers=questions_and_answers_for_feedback,
+                )
+                ai_feedback = feedback
+                score = score_value
+                
+                # Store combined feedback/score in a special record with question_index=-1
+                combined_answer = EssayAnswer(
+                    essay_topic_id=essay_id,
+                    user_id=user_id,
+                    question_index=-1,  # Special index for combined feedback
+                    user_answer="",  # Empty since this is just for feedback storage
+                    timestamp=datetime.datetime.fromisoformat(timestamp.replace('Z', '+00:00')),
+                    ai_feedback=ai_feedback,
+                    score=score,
+                )
+                db.add(combined_answer)
+            except Exception as feedback_error:  # pylint: disable=broad-except
+                logging.error("[ESSAY FEEDBACK] Failed to generate combined feedback: %s", feedback_error)
+                # Continue without feedback - answers are still saved
+        
+        db.commit()
+        
+        return JSONResponse(
+            content={
+                "message": "Essay answers stored successfully",
+                "total_answers": len(stored_answers),
+                "ai_feedback": ai_feedback,
+                "score": score,
+            },
+            status_code=201,
+            headers={"Content-Type": "application/json; charset=utf-8"}
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        db.rollback()
+        logging.error("[ESSAY ANSWERS] Error storing essay answers: %s", e)
+        raise HTTPException(
+            status_code=500, detail=f"An unexpected error occurred: {str(e)}"
+        )
+
+
 @router.get("/essay-answers/{user_id}", tags=["EssayQA"])
 async def get_user_essay_answers(user_id: str, db: Session = Depends(get_db)) -> JSONResponse:
     """Get all essay answers for a specific user with feedback and scores"""
     from backend.database.sqlite_dal import EssayAnswer, EssayQATopic, EssayQAQuestion
     
-    # Get all essay answers for the user
+    # Get all essay answers for the user, excluding individual question answers (only get combined feedback)
+    # We'll group by essay_topic_id and get the combined feedback (question_index=-1)
     answers = db.query(EssayAnswer).filter(
-        EssayAnswer.user_id == user_id
+        EssayAnswer.user_id == user_id,
+        EssayAnswer.question_index == -1  # Only get combined feedback records
     ).order_by(EssayAnswer.timestamp.desc()).all()
     
-    # Get topic and question details for each answer
+    # Get topic details for each answer
     answers_with_details = []
     for answer in answers:
         topic = db.query(EssayQATopic).filter(EssayQATopic.id == answer.essay_topic_id).first()
         if not topic:
             continue
         
-        # Get the question for this answer
-        question = db.query(EssayQAQuestion).filter(
+        # Get all questions for this essay to show question count
+        questions = db.query(EssayQAQuestion).filter(
             EssayQAQuestion.topic_id == answer.essay_topic_id
-        ).order_by(EssayQAQuestion.id).offset(answer.question_index).first()
+        ).all()
         
         answers_with_details.append({
             "id": answer.id,
@@ -486,9 +601,9 @@ async def get_user_essay_answers(user_id: str, db: Session = Depends(get_db)) ->
             "topic": topic.topic,
             "category": topic.category,
             "subcategory": topic.subcategory,
-            "question_index": answer.question_index,
-            "question": question.question if question else "Question not found",
-            "user_answer": answer.user_answer,
+            "question_index": -1,  # Combined feedback
+            "question": f"Complete essay set ({len(questions)} questions)",
+            "user_answer": "",  # Not showing individual answers in list
             "timestamp": answer.timestamp.isoformat() if answer.timestamp else None,
             "ai_feedback": answer.ai_feedback,
             "score": answer.score,

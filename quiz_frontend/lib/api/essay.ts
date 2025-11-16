@@ -65,6 +65,21 @@ export const essayApi = {
     return response.data;
   },
 
+  storeAllAnswers: async (
+    essayId: number,
+    userId: string,
+    answers: Array<{ question_index: number; user_answer: string }>,
+    timestamp: string
+  ): Promise<{ message: string; total_answers: number; ai_feedback?: string; score?: number }> => {
+    const response = await apiClient.post('/store-essay-answers', {
+      essay_id: essayId,
+      user_id: userId,
+      answers,
+      timestamp,
+    });
+    return response.data;
+  },
+
   getUserAnswers: async (userId: string): Promise<{
     user_id: string;
     answers: Array<{

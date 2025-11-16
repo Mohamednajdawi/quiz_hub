@@ -253,4 +253,11 @@ class StoreEssayAnswerRequest(BaseModel):
     user_id: str
     question_index: int
     user_answer: str
+    timestamp: str
+
+
+class StoreEssayAnswersRequest(BaseModel):
+    essay_id: int
+    user_id: str
+    answers: list[dict]  # List of {question_index: int, user_answer: str}
     timestamp: str 

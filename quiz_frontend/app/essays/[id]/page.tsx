@@ -14,7 +14,6 @@ import { useAuth } from '@/contexts/AuthContext';
 import { formatFeedbackToHtml } from '@/lib/utils/formatFeedback';
 
 interface EssayFeedback {
-  questionIndex: number;
   feedback: string;
   score: number;
 }
@@ -26,8 +25,8 @@ function EssayDetailPageContent() {
   const essayId = parseInt(params.id as string);
   const [userAnswers, setUserAnswers] = useState<Record<number, string>>({});
   const [revealedAnswers, setRevealedAnswers] = useState<Record<number, boolean>>({});
-  const [submittedAnswers, setSubmittedAnswers] = useState<Record<number, EssayFeedback>>({});
-  const [submittingIndex, setSubmittingIndex] = useState<number | null>(null);
+  const [combinedFeedback, setCombinedFeedback] = useState<EssayFeedback | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const { data: essay, isLoading, error } = useQuery({
     queryKey: ['essay', essayId],
@@ -35,40 +34,54 @@ function EssayDetailPageContent() {
     enabled: !isNaN(essayId),
   });
 
-  const submitAnswerMutation = useMutation({
-    mutationFn: async ({ questionIndex, answer }: { questionIndex: number; answer: string }) => {
+  const submitAllAnswersMutation = useMutation({
+    mutationFn: async () => {
       if (!user?.id) {
         throw new Error('User not authenticated');
       }
-      const timestamp = new Date().toISOString();
-      return essayApi.storeAnswer(essayId, user.id, questionIndex, answer, timestamp);
-    },
-    onSuccess: (data: { message: string; answer_id: number; ai_feedback?: string; score?: number }, variables: { questionIndex: number; answer: string }) => {
-      if (data.ai_feedback && data.score !== undefined) {
-        setSubmittedAnswers((prev: Record<number, EssayFeedback>) => ({
-          ...prev,
-          [variables.questionIndex]: {
-            questionIndex: variables.questionIndex,
-            feedback: data.ai_feedback!,
-            score: data.score!,
-          },
-        }));
+      if (!essay) {
+        throw new Error('Essay not loaded');
       }
-      setSubmittingIndex(null);
+      
+      // Prepare all answers
+      const answers = essay.questions.map((_: any, index: number) => ({
+        question_index: index,
+        user_answer: userAnswers[index] || '',
+      }));
+      
+      const timestamp = new Date().toISOString();
+      return essayApi.storeAllAnswers(essayId, user.id, answers, timestamp);
+    },
+    onSuccess: (data: { message: string; total_answers: number; ai_feedback?: string; score?: number }) => {
+      if (data.ai_feedback && data.score !== undefined) {
+        setCombinedFeedback({
+          feedback: data.ai_feedback,
+          score: data.score,
+        });
+      }
+      setIsSubmitting(false);
     },
     onError: () => {
-      setSubmittingIndex(null);
+      setIsSubmitting(false);
     },
   });
 
-  const handleSubmitAnswer = (questionIndex: number) => {
-    const answer = userAnswers[questionIndex] || '';
-    if (!answer.trim()) {
-      alert('Please write an answer before submitting.');
+  const handleSubmitAllAnswers = () => {
+    if (!essay) return;
+    
+    // Check if all questions have answers
+    const allAnswered = essay.questions.every((_: any, index: number) => {
+      const answer = userAnswers[index] || '';
+      return answer.trim().length > 0;
+    });
+    
+    if (!allAnswered) {
+      alert('Please answer all questions before submitting.');
       return;
     }
-    setSubmittingIndex(questionIndex);
-    submitAnswerMutation.mutate({ questionIndex, answer });
+    
+    setIsSubmitting(true);
+    submitAllAnswersMutation.mutate();
   };
 
   if (isLoading) {
@@ -140,52 +153,11 @@ function EssayDetailPageContent() {
                       placeholder="Write your answer here..."
                       className="w-full px-4 py-3 border border-gray-300 rounded-md shadow-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 resize-y min-h-[150px]"
                       rows={6}
-                      disabled={!!submittedAnswers[index]}
+                      disabled={!!combinedFeedback}
                     />
                   </div>
 
-                  {submittedAnswers[index] && (
-                    <div className="bg-indigo-50 border-2 border-indigo-200 rounded-lg p-4 mb-4">
-                      <div className="flex items-center justify-between mb-3">
-                        <div className="text-sm text-indigo-600 font-medium">AI Feedback & Score</div>
-                        <span
-                          className={`text-lg font-bold ${
-                            submittedAnswers[index].score >= 70
-                              ? 'text-green-600'
-                              : submittedAnswers[index].score >= 50
-                              ? 'text-yellow-600'
-                              : 'text-red-600'
-                          }`}
-                        >
-                          {submittedAnswers[index].score.toFixed(1)}%
-                        </span>
-                      </div>
-                      <div
-                        className="text-sm text-indigo-900 leading-relaxed"
-                        dangerouslySetInnerHTML={{
-                          __html: formatFeedbackToHtml(submittedAnswers[index].feedback),
-                        }}
-                      />
-                    </div>
-                  )}
-
                   <div className="flex justify-center gap-3 mb-4">
-                    {!submittedAnswers[index] && (
-                      <Button
-                        variant="primary"
-                        onClick={() => handleSubmitAnswer(index)}
-                        disabled={submittingIndex === index || !currentUserAnswer.trim()}
-                      >
-                        {submittingIndex === index ? (
-                          <>
-                            <LoadingSpinner size="sm" className="mr-2" />
-                            Submitting...
-                          </>
-                        ) : (
-                          'Submit Answer for Feedback'
-                        )}
-                      </Button>
-                    )}
                     <Button
                       variant={isAnswerRevealed ? "secondary" : "outline"}
                       onClick={() => toggleRevealAnswer(index)}
@@ -217,6 +189,53 @@ function EssayDetailPageContent() {
               );
             })}
           </div>
+
+          {/* Combined Feedback Section */}
+          {combinedFeedback && (
+            <div className="bg-indigo-50 border-2 border-indigo-200 rounded-lg p-6 mb-6">
+              <div className="flex items-center justify-between mb-4">
+                <div className="text-lg font-semibold text-indigo-900">Overall Feedback & Score</div>
+                <span
+                  className={`text-2xl font-bold ${
+                    combinedFeedback.score >= 70
+                      ? 'text-green-600'
+                      : combinedFeedback.score >= 50
+                      ? 'text-yellow-600'
+                      : 'text-red-600'
+                  }`}
+                >
+                  {combinedFeedback.score.toFixed(1)}%
+                </span>
+              </div>
+              <div
+                className="text-sm text-indigo-900 leading-relaxed"
+                dangerouslySetInnerHTML={{
+                  __html: formatFeedbackToHtml(combinedFeedback.feedback),
+                }}
+              />
+            </div>
+          )}
+
+          {/* Submit All Button */}
+          {!combinedFeedback && (
+            <div className="flex justify-center mb-6">
+              <Button
+                variant="primary"
+                onClick={handleSubmitAllAnswers}
+                disabled={isSubmitting || !essay.questions.every((_: any, index: number) => (userAnswers[index] || '').trim())}
+                className="px-8 py-3 text-lg"
+              >
+                {isSubmitting ? (
+                  <>
+                    <LoadingSpinner size="sm" className="mr-2" />
+                    Submitting All Answers...
+                  </>
+                ) : (
+                  'Submit All Answers for Feedback'
+                )}
+              </Button>
+            </div>
+          )}
 
           <div className="flex gap-4">
             <Button variant="outline" onClick={() => router.push('/essays')}>
