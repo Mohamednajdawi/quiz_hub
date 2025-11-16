@@ -251,10 +251,11 @@ function ContentItem({
                       setShowGenerateMenu(false);
                     }}
                     disabled={isGeneratingQuiz || isGeneratingFlashcards || isGeneratingEssays}
-                    className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2 disabled:opacity-50"
+                    className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     <FileQuestion className="w-4 h-4" />
-                    {isGeneratingQuiz ? generationMessage : 'Quiz'}
+                    <span className="flex-1">{isGeneratingQuiz ? generationMessage : 'Quiz'}</span>
+                    {isGeneratingQuiz && <LoadingSpinner size="sm" />}
                   </button>
                   <button
                     onClick={() => {
@@ -262,10 +263,11 @@ function ContentItem({
                       setShowGenerateMenu(false);
                     }}
                     disabled={isGeneratingQuiz || isGeneratingFlashcards || isGeneratingEssays}
-                    className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2 disabled:opacity-50"
+                    className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     <Sparkles className="w-4 h-4" />
-                    {isGeneratingFlashcards ? generationMessage : 'Flashcards'}
+                    <span className="flex-1">{isGeneratingFlashcards ? generationMessage : 'Flashcards'}</span>
+                    {isGeneratingFlashcards && <LoadingSpinner size="sm" />}
                   </button>
                   <button
                     onClick={() => {
@@ -273,10 +275,11 @@ function ContentItem({
                       setShowGenerateMenu(false);
                     }}
                     disabled={isGeneratingQuiz || isGeneratingFlashcards || isGeneratingEssays}
-                    className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2 disabled:opacity-50"
+                    className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     <PenTool className="w-4 h-4" />
-                    {isGeneratingEssays ? generationMessage : 'Essay Q&A'}
+                    <span className="flex-1">{isGeneratingEssays ? generationMessage : 'Essay Q&A'}</span>
+                    {isGeneratingEssays && <LoadingSpinner size="sm" />}
                   </button>
                 </div>
               )}
@@ -776,6 +779,26 @@ function ProjectDetailContent() {
     return 'Quiz';
   };
 
+  const isEssayGenerationActive = (contentId: number) =>
+    generateEssaysMutation.isPending && pendingContentId === contentId;
+
+  const getEssayGenerationLabel = (contentId: number) => {
+    if (generateEssaysMutation.isPending && pendingContentId === contentId) {
+      return getGenerationMessage();
+    }
+    return 'Essay Q&A';
+  };
+
+  const isFlashcardGenerationActive = (contentId: number) =>
+    generateFlashcardsMutation.isPending && pendingContentId === contentId;
+
+  const getFlashcardGenerationLabel = (contentId: number) => {
+    if (generateFlashcardsMutation.isPending && pendingContentId === contentId) {
+      return getGenerationMessage();
+    }
+    return 'Flashcards';
+  };
+
   // Request notification permission on mount
   useEffect(() => {
     if ('Notification' in window && Notification.permission === 'default') {
@@ -905,10 +928,12 @@ function ProjectDetailContent() {
   const generateFlashcardsMutation = useMutation({
     mutationFn: (contentId: number) => {
       setGenerationStatus({ type: 'flashcards', messageIndex: 0 });
+      setPendingContentId(contentId);
       return studentProjectsApi.generateFlashcardsFromContent(projectId, contentId, numCards);
     },
     onSuccess: (data) => {
       setGenerationStatus({ type: null, messageIndex: 0 });
+      setPendingContentId(null);
       setSuccess('Flashcards generated successfully!');
       setError(null);
       // Invalidate generated content queries for all contents
@@ -919,6 +944,7 @@ function ProjectDetailContent() {
     },
     onError: (error: unknown) => {
       setGenerationStatus({ type: null, messageIndex: 0 });
+      setPendingContentId(null);
       setError(
         error instanceof Error ? error.message : 'Failed to generate flashcards'
       );
@@ -929,10 +955,12 @@ function ProjectDetailContent() {
   const generateEssaysMutation = useMutation({
     mutationFn: (contentId: number) => {
       setGenerationStatus({ type: 'essays', messageIndex: 0 });
+      setPendingContentId(contentId);
       return studentProjectsApi.generateEssaysFromContent(projectId, contentId, numQuestions, difficulty);
     },
     onSuccess: (data) => {
       setGenerationStatus({ type: null, messageIndex: 0 });
+      setPendingContentId(null);
       setSuccess('Essay Q&A generated successfully!');
       setError(null);
       // Invalidate generated content queries for all contents
@@ -943,6 +971,7 @@ function ProjectDetailContent() {
     },
     onError: (error: unknown) => {
       setGenerationStatus({ type: null, messageIndex: 0 });
+      setPendingContentId(null);
       setError(
         error instanceof Error ? error.message : 'Failed to generate essay Q&A'
       );
@@ -1102,7 +1131,9 @@ function ProjectDetailContent() {
           )}
           
           {/* Generation Status Alert */}
-          {(generateQuizMutation.isPending && pendingContentId !== null) || generateFlashcardsMutation.isPending || generateEssaysMutation.isPending ? (
+          {((generateQuizMutation.isPending && pendingContentId !== null) || 
+            (generateFlashcardsMutation.isPending && pendingContentId !== null) || 
+            (generateEssaysMutation.isPending && pendingContentId !== null)) ? (
             <Alert type="info" className="mb-6">
               <div className="flex items-center gap-3">
                 <LoadingSpinner size="sm" />
@@ -1262,10 +1293,15 @@ function ProjectDetailContent() {
                         }
                       }}
                       isGeneratingQuiz={isQuizGenerationActive(c.id)}
-                      isGeneratingFlashcards={generateFlashcardsMutation.isPending}
-                      isGeneratingEssays={generateEssaysMutation.isPending}
+                      isGeneratingFlashcards={isFlashcardGenerationActive(c.id)}
+                      isGeneratingEssays={isEssayGenerationActive(c.id)}
                       isDeletingContent={deleteContentMutation.isPending}
-                      generationMessage={getQuizGenerationLabel(c.id)}
+                      generationMessage={
+                        isQuizGenerationActive(c.id) ? getQuizGenerationLabel(c.id) :
+                        isFlashcardGenerationActive(c.id) ? getFlashcardGenerationLabel(c.id) :
+                        isEssayGenerationActive(c.id) ? getEssayGenerationLabel(c.id) :
+                        'Generate'
+                      }
                     />
                   ))}
                 </div>
