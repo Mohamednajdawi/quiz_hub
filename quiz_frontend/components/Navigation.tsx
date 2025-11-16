@@ -90,26 +90,36 @@ export function Navigation() {
 
           {/* Desktop Navigation */}
           <div className="hidden md:flex md:items-center md:space-x-1 md:flex-1 md:justify-center md:ml-8">
-            {navigation.map((item) => {
-              const isActive = pathname === item.href || (item.href !== '/' && pathname.startsWith(item.href));
-              return (
-                <Link
-                  key={item.name}
-                  href={item.href}
-                  className={`group relative flex items-center px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
-                    isActive
-                      ? 'bg-indigo-50 text-indigo-700'
-                      : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'
-                  }`}
-                >
-                  <item.icon className={`w-4 h-4 mr-2 transition-colors ${isActive ? 'text-indigo-600' : 'text-gray-500 group-hover:text-gray-700'}`} />
-                  <span>{item.name}</span>
-                  {isActive && (
-                    <span className="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-1 h-1 bg-indigo-600 rounded-full" />
-                  )}
-                </Link>
-              );
-            })}
+            {/* Filter navigation items based on authentication */}
+            {navigation
+              .filter(item => {
+                // When not authenticated, only show Home and Pricing
+                if (!isAuthenticated) {
+                  return item.href === '/' || item.href === '/pricing';
+                }
+                // When authenticated, show all items
+                return true;
+              })
+              .map((item) => {
+                const isActive = pathname === item.href || (item.href !== '/' && pathname.startsWith(item.href));
+                return (
+                  <Link
+                    key={item.name}
+                    href={item.href}
+                    className={`group relative flex items-center px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
+                      isActive
+                        ? 'bg-indigo-50 text-indigo-700'
+                        : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'
+                    }`}
+                  >
+                    <item.icon className={`w-4 h-4 mr-2 transition-colors ${isActive ? 'text-indigo-600' : 'text-gray-500 group-hover:text-gray-700'}`} />
+                    <span>{item.name}</span>
+                    {isActive && (
+                      <span className="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-1 h-1 bg-indigo-600 rounded-full" />
+                    )}
+                  </Link>
+                );
+              })}
             
             {/* Admin Link - Only show if authenticated AND is admin */}
             {isAuthenticated && isAdmin && adminNavigation.map((item) => {
@@ -133,46 +143,48 @@ export function Navigation() {
                   );
                 })}
                 
-                {/* Study Tools Dropdown */}
-                <div className="relative" ref={dropdownRef}>
-                  <button
-                    onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                className={`group flex items-center px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
-                      isStudyToolActive
-                    ? 'bg-indigo-50 text-indigo-700'
-                    : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'
-                    }`}
-                  >
-                <GraduationCap className={`w-4 h-4 mr-2 transition-colors ${isStudyToolActive ? 'text-indigo-600' : 'text-gray-500 group-hover:text-gray-700'}`} />
-                <span>Study Tools</span>
-                <ChevronDown className={`w-4 h-4 ml-2 transition-all duration-200 ${isDropdownOpen ? 'rotate-180' : ''} ${isStudyToolActive ? 'text-indigo-600' : 'text-gray-500'}`} />
-                  </button>
-                  
-                  {isDropdownOpen && (
-                <div className="absolute left-0 mt-2 w-56 rounded-xl shadow-lg bg-white ring-1 ring-black ring-opacity-5 z-50 overflow-hidden">
-                  <div className="py-1.5">
-                        {studyTools.map((tool) => {
-                          const isActive = pathname === tool.href || pathname.startsWith(tool.href + '/');
-                          return (
-                            <Link
-                              key={tool.name}
-                              href={tool.href}
-                              onClick={() => setIsDropdownOpen(false)}
-                          className={`flex items-center px-4 py-2.5 text-sm transition-colors ${
-                                isActive
-                                  ? 'bg-indigo-50 text-indigo-700 font-medium'
-                              : 'text-gray-700 hover:bg-gray-50'
-                              }`}
-                            >
-                          <tool.icon className={`w-4 h-4 mr-3 ${isActive ? 'text-indigo-600' : 'text-gray-400'}`} />
-                              {tool.name}
-                            </Link>
-                          );
-                        })}
+                {/* Study Tools Dropdown - Only show if authenticated */}
+                {isAuthenticated && (
+                  <div className="relative" ref={dropdownRef}>
+                    <button
+                      onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                  className={`group flex items-center px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
+                        isStudyToolActive
+                      ? 'bg-indigo-50 text-indigo-700'
+                      : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'
+                      }`}
+                    >
+                  <GraduationCap className={`w-4 h-4 mr-2 transition-colors ${isStudyToolActive ? 'text-indigo-600' : 'text-gray-500 group-hover:text-gray-700'}`} />
+                  <span>Study Tools</span>
+                  <ChevronDown className={`w-4 h-4 ml-2 transition-all duration-200 ${isDropdownOpen ? 'rotate-180' : ''} ${isStudyToolActive ? 'text-indigo-600' : 'text-gray-500'}`} />
+                    </button>
+                    
+                    {isDropdownOpen && (
+                  <div className="absolute left-0 mt-2 w-56 rounded-xl shadow-lg bg-white ring-1 ring-black ring-opacity-5 z-50 overflow-hidden">
+                    <div className="py-1.5">
+                          {studyTools.map((tool) => {
+                            const isActive = pathname === tool.href || pathname.startsWith(tool.href + '/');
+                            return (
+                              <Link
+                                key={tool.name}
+                                href={tool.href}
+                                onClick={() => setIsDropdownOpen(false)}
+                            className={`flex items-center px-4 py-2.5 text-sm transition-colors ${
+                                  isActive
+                                    ? 'bg-indigo-50 text-indigo-700 font-medium'
+                                : 'text-gray-700 hover:bg-gray-50'
+                                }`}
+                              >
+                            <tool.icon className={`w-4 h-4 mr-3 ${isActive ? 'text-indigo-600' : 'text-gray-400'}`} />
+                                {tool.name}
+                              </Link>
+                            );
+                          })}
+                        </div>
                       </div>
-                    </div>
-                  )}
-                </div>
+                    )}
+                  </div>
+                )}
               </div>
 
           {/* Right Side - User Actions */}
@@ -356,23 +368,33 @@ export function Navigation() {
       {/* Mobile menu */}
       <div className="md:hidden border-t border-gray-200">
         <div className="px-2 pt-2 pb-3 space-y-1">
-          {navigation.map((item) => {
-            const isActive = pathname === item.href || (item.href !== '/' && pathname.startsWith(item.href));
-            return (
-              <Link
-                key={item.name}
-                href={item.href}
-                className={`flex items-center px-3 py-2.5 rounded-lg text-base font-medium transition-colors ${
-                  isActive
-                    ? 'bg-indigo-50 text-indigo-700'
-                    : 'text-gray-700 hover:bg-gray-50'
-                }`}
-              >
-                <item.icon className={`w-5 h-5 mr-3 ${isActive ? 'text-indigo-600' : 'text-gray-400'}`} />
-                {item.name}
-              </Link>
-            );
-          })}
+          {/* Filter navigation items based on authentication */}
+          {navigation
+            .filter(item => {
+              // When not authenticated, only show Home and Pricing
+              if (!isAuthenticated) {
+                return item.href === '/' || item.href === '/pricing';
+              }
+              // When authenticated, show all items
+              return true;
+            })
+            .map((item) => {
+              const isActive = pathname === item.href || (item.href !== '/' && pathname.startsWith(item.href));
+              return (
+                <Link
+                  key={item.name}
+                  href={item.href}
+                  className={`flex items-center px-3 py-2.5 rounded-lg text-base font-medium transition-colors ${
+                    isActive
+                      ? 'bg-indigo-50 text-indigo-700'
+                      : 'text-gray-700 hover:bg-gray-50'
+                  }`}
+                >
+                  <item.icon className={`w-5 h-5 mr-3 ${isActive ? 'text-indigo-600' : 'text-gray-400'}`} />
+                  {item.name}
+                </Link>
+              );
+            })}
           
           {/* Admin Link for Mobile */}
           {isAuthenticated && isAdmin && adminNavigation.map((item) => {
@@ -393,46 +415,48 @@ export function Navigation() {
             );
           })}
           
-          {/* Study Tools Dropdown for Mobile */}
-          <div>
-            <button
-              onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-              className={`flex items-center justify-between w-full px-3 py-2.5 rounded-lg text-base font-medium transition-colors ${
-                isStudyToolActive
-                  ? 'bg-indigo-50 text-indigo-700'
-                  : 'text-gray-700 hover:bg-gray-50'
-              }`}
-            >
-              <span className="flex items-center">
-                <GraduationCap className={`w-5 h-5 mr-3 ${isStudyToolActive ? 'text-indigo-600' : 'text-gray-400'}`} />
-                Study Tools
-              </span>
-              <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${isDropdownOpen ? 'rotate-180' : ''}`} />
-            </button>
-            
-            {isDropdownOpen && (
-              <div className="pl-4 mt-1 space-y-1">
-                {studyTools.map((tool) => {
-                  const isActive = pathname === tool.href || pathname.startsWith(tool.href + '/');
-                  return (
-                    <Link
-                      key={tool.name}
-                      href={tool.href}
-                      onClick={() => setIsDropdownOpen(false)}
-                      className={`flex items-center px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-                        isActive
-                          ? 'bg-indigo-50 text-indigo-700'
-                          : 'text-gray-600 hover:bg-gray-50'
-                      }`}
-                    >
-                      <tool.icon className={`w-4 h-4 mr-3 ${isActive ? 'text-indigo-600' : 'text-gray-400'}`} />
-                      {tool.name}
-                    </Link>
-                  );
-                })}
-              </div>
-            )}
-          </div>
+          {/* Study Tools Dropdown for Mobile - Only show if authenticated */}
+          {isAuthenticated && (
+            <div>
+              <button
+                onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                className={`flex items-center justify-between w-full px-3 py-2.5 rounded-lg text-base font-medium transition-colors ${
+                  isStudyToolActive
+                    ? 'bg-indigo-50 text-indigo-700'
+                    : 'text-gray-700 hover:bg-gray-50'
+                }`}
+              >
+                <span className="flex items-center">
+                  <GraduationCap className={`w-5 h-5 mr-3 ${isStudyToolActive ? 'text-indigo-600' : 'text-gray-400'}`} />
+                  Study Tools
+                </span>
+                <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${isDropdownOpen ? 'rotate-180' : ''}`} />
+              </button>
+              
+              {isDropdownOpen && (
+                <div className="pl-4 mt-1 space-y-1">
+                  {studyTools.map((tool) => {
+                    const isActive = pathname === tool.href || pathname.startsWith(tool.href + '/');
+                    return (
+                      <Link
+                        key={tool.name}
+                        href={tool.href}
+                        onClick={() => setIsDropdownOpen(false)}
+                        className={`flex items-center px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                          isActive
+                            ? 'bg-indigo-50 text-indigo-700'
+                            : 'text-gray-600 hover:bg-gray-50'
+                        }`}
+                      >
+                        <tool.icon className={`w-4 h-4 mr-3 ${isActive ? 'text-indigo-600' : 'text-gray-400'}`} />
+                        {tool.name}
+                      </Link>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          )}
           
           {isAuthenticated ? (
             <div className="pt-2 border-t border-gray-200 space-y-1">
