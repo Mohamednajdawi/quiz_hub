@@ -286,42 +286,92 @@ function DashboardPageContent() {
           const scoresSlice = analytics.scores.slice(-10);
           const maxScore = Math.max(...scoresSlice, 100);
           const minScore = Math.min(...scoresSlice, 0);
-          // For single data point or when all scores are the same, use the score as percentage of 100
           const range = maxScore - minScore || 100;
-          const isSinglePoint = scoresSlice.length === 1;
+          const chartHeight = 256; // h-64 = 256px
+          const padding = 40;
+          const innerWidth = 600; // Base width for calculation
+          const innerHeight = chartHeight - padding * 2;
+          
+          // Calculate points for the line
+          const points = scoresSlice.map((score: number, index: number) => {
+            const x = padding + (index / Math.max(scoresSlice.length - 1, 1)) * innerWidth;
+            const normalizedScore = range > 0 ? (score - minScore) / range : 0.5;
+            const y = padding + innerHeight - (normalizedScore * innerHeight);
+            return { x, y, score };
+          });
+          
+          // Create path for the line
+          const pathData = points.length > 1 
+            ? points.map((point, index) => `${index === 0 ? 'M' : 'L'} ${point.x} ${point.y}`).join(' ')
+            : `M ${points[0].x} ${points[0].y} L ${points[0].x + 20} ${points[0].y}`;
           
           return (
             <Card className="mb-8">
               <CardHeader title="Quiz Performance Trend" />
               <div className="p-6">
-                <div className="h-64 flex items-end justify-between gap-2 px-2">
-                  {scoresSlice.map((score: number, index: number) => {
-                    // Calculate height with better scaling
-                    // For single point, show as percentage of 100
-                    const normalizedScore = isSinglePoint 
-                      ? score / 100 
-                      : (score - minScore) / range;
-                    const height = Math.max(normalizedScore * 100, 10); // Minimum 10% height for visibility
-                    const isRecent = index >= scoresSlice.length - 3;
-                    return (
-                      <div key={index} className="flex-1 flex flex-col items-center group min-w-0">
-                        <div
-                          className={`w-full rounded-t transition-all hover:opacity-80 cursor-pointer ${
-                            isRecent ? 'bg-indigo-600' : 'bg-indigo-400'
-                          }`}
-                          style={{ 
-                            height: `${height}%`, 
-                            minHeight: '20px', // Ensure minimum pixel height
-                            maxHeight: '100%'
-                          }}
-                          title={`Score: ${score.toFixed(1)}%`}
+                <div className="relative" style={{ height: `${chartHeight}px` }}>
+                  <svg 
+                    width="100%" 
+                    height={chartHeight}
+                    className="overflow-visible"
+                    viewBox={`0 0 ${innerWidth + padding * 2} ${chartHeight}`}
+                    preserveAspectRatio="xMidYMid meet"
+                  >
+                    {/* Grid lines */}
+                    {[0, 25, 50, 75, 100].map((percent) => {
+                      const y = padding + innerHeight - ((percent / 100) * innerHeight);
+                      return (
+                        <line
+                          key={percent}
+                          x1={padding}
+                          y1={y}
+                          x2={innerWidth + padding}
+                          y2={y}
+                          stroke="#e5e7eb"
+                          strokeWidth="1"
+                          strokeDasharray="2,2"
                         />
-                        <span className="text-xs text-gray-500 mt-1 opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
-                          {score.toFixed(0)}%
-                        </span>
-                      </div>
-                    );
-                  })}
+                      );
+                    })}
+                    
+                    {/* Line path */}
+                    {points.length > 0 && (
+                      <path
+                        d={pathData}
+                        fill="none"
+                        stroke="#4f46e5"
+                        strokeWidth="3"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                    )}
+                    
+                    {/* Data points */}
+                    {points.map((point, index) => {
+                      const isRecent = index >= scoresSlice.length - 3;
+                      return (
+                        <g key={index}>
+                          <circle
+                            cx={point.x}
+                            cy={point.y}
+                            r="6"
+                            fill={isRecent ? "#4f46e5" : "#818cf8"}
+                            stroke="white"
+                            strokeWidth="2"
+                            className="hover:r-8 transition-all cursor-pointer"
+                          />
+                          <title>{`Score: ${point.score.toFixed(1)}%`}</title>
+                        </g>
+                      );
+                    })}
+                  </svg>
+                  
+                  {/* Y-axis labels */}
+                  <div className="absolute left-0 top-0 h-full flex flex-col justify-between text-xs text-gray-500 pr-2">
+                    <span>{maxScore.toFixed(0)}%</span>
+                    <span>{((maxScore + minScore) / 2).toFixed(0)}%</span>
+                    <span>{minScore.toFixed(0)}%</span>
+                  </div>
                 </div>
                 <div className="mt-4 flex justify-between text-xs text-gray-600">
                   <span>Last {Math.min(analytics.scores.length, 10)} attempts</span>
@@ -342,42 +392,92 @@ function DashboardPageContent() {
           const scoresSlice = combinedStats.essayScores.slice(-10);
           const maxScore = Math.max(...scoresSlice, 100);
           const minScore = Math.min(...scoresSlice, 0);
-          // For single data point or when all scores are the same, use the score as percentage of 100
           const range = maxScore - minScore || 100;
-          const isSinglePoint = scoresSlice.length === 1;
+          const chartHeight = 256; // h-64 = 256px
+          const padding = 40;
+          const innerWidth = 600; // Base width for calculation
+          const innerHeight = chartHeight - padding * 2;
+          
+          // Calculate points for the line
+          const points = scoresSlice.map((score: number, index: number) => {
+            const x = padding + (index / Math.max(scoresSlice.length - 1, 1)) * innerWidth;
+            const normalizedScore = range > 0 ? (score - minScore) / range : 0.5;
+            const y = padding + innerHeight - (normalizedScore * innerHeight);
+            return { x, y, score };
+          });
+          
+          // Create path for the line
+          const pathData = points.length > 1 
+            ? points.map((point, index) => `${index === 0 ? 'M' : 'L'} ${point.x} ${point.y}`).join(' ')
+            : `M ${points[0].x} ${points[0].y} L ${points[0].x + 20} ${points[0].y}`;
           
           return (
             <Card className="mb-8">
               <CardHeader title="Essay Performance Trend" />
               <div className="p-6">
-                <div className="h-64 flex items-end justify-between gap-2 px-2">
-                  {scoresSlice.map((score: number, index: number) => {
-                    // Calculate height with better scaling
-                    // For single point, show as percentage of 100
-                    const normalizedScore = isSinglePoint 
-                      ? score / 100 
-                      : (score - minScore) / range;
-                    const height = Math.max(normalizedScore * 100, 10); // Minimum 10% height for visibility
-                    const isRecent = index >= scoresSlice.length - 3;
-                    return (
-                      <div key={index} className="flex-1 flex flex-col items-center group min-w-0">
-                        <div
-                          className={`w-full rounded-t transition-all hover:opacity-80 cursor-pointer ${
-                            isRecent ? 'bg-purple-600' : 'bg-purple-400'
-                          }`}
-                          style={{ 
-                            height: `${height}%`, 
-                            minHeight: '20px', // Ensure minimum pixel height
-                            maxHeight: '100%'
-                          }}
-                          title={`Score: ${score.toFixed(1)}%`}
+                <div className="relative" style={{ height: `${chartHeight}px` }}>
+                  <svg 
+                    width="100%" 
+                    height={chartHeight}
+                    className="overflow-visible"
+                    viewBox={`0 0 ${innerWidth + padding * 2} ${chartHeight}`}
+                    preserveAspectRatio="xMidYMid meet"
+                  >
+                    {/* Grid lines */}
+                    {[0, 25, 50, 75, 100].map((percent) => {
+                      const y = padding + innerHeight - ((percent / 100) * innerHeight);
+                      return (
+                        <line
+                          key={percent}
+                          x1={padding}
+                          y1={y}
+                          x2={innerWidth + padding}
+                          y2={y}
+                          stroke="#e5e7eb"
+                          strokeWidth="1"
+                          strokeDasharray="2,2"
                         />
-                        <span className="text-xs text-gray-500 mt-1 opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
-                          {score.toFixed(0)}%
-                        </span>
-                      </div>
-                    );
-                  })}
+                      );
+                    })}
+                    
+                    {/* Line path */}
+                    {points.length > 0 && (
+                      <path
+                        d={pathData}
+                        fill="none"
+                        stroke="#9333ea"
+                        strokeWidth="3"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                    )}
+                    
+                    {/* Data points */}
+                    {points.map((point, index) => {
+                      const isRecent = index >= scoresSlice.length - 3;
+                      return (
+                        <g key={index}>
+                          <circle
+                            cx={point.x}
+                            cy={point.y}
+                            r="6"
+                            fill={isRecent ? "#9333ea" : "#a855f7"}
+                            stroke="white"
+                            strokeWidth="2"
+                            className="hover:r-8 transition-all cursor-pointer"
+                          />
+                          <title>{`Score: ${point.score.toFixed(1)}%`}</title>
+                        </g>
+                      );
+                    })}
+                  </svg>
+                  
+                  {/* Y-axis labels */}
+                  <div className="absolute left-0 top-0 h-full flex flex-col justify-between text-xs text-gray-500 pr-2">
+                    <span>{maxScore.toFixed(0)}%</span>
+                    <span>{((maxScore + minScore) / 2).toFixed(0)}%</span>
+                    <span>{minScore.toFixed(0)}%</span>
+                  </div>
                 </div>
                 <div className="mt-4 flex justify-between text-xs text-gray-600">
                   <span>Last {Math.min(combinedStats.essayScores.length, 10)} essays</span>
