@@ -81,10 +81,12 @@ function EssaysPageContent() {
     },
     enabled: true, // Always fetch
     retry: 1,
-    onError: (error: any) => {
-      console.error('[ESSAY] Query error:', error);
-    },
   });
+
+  // Log errors when they occur
+  if (topicsError) {
+    console.error('[ESSAY] Query error:', topicsError);
+  }
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
