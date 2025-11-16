@@ -430,28 +430,28 @@ function DashboardPageContent() {
               <CardHeader title="Performance Trend" />
               <div className="p-6">
                 {/* Checkboxes */}
-                <div className="flex gap-4 mb-4">
-                  <label className="flex items-center gap-2 cursor-pointer">
+                <div className="flex gap-6 mb-4">
+                  <label className="flex items-center gap-2 cursor-pointer group">
                     <input
                       type="checkbox"
                       checked={showQuiz}
                       onChange={(e) => setShowQuiz(e.target.checked)}
-                      className="w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
+                      className="w-4 h-4 text-blue-500 border-gray-300 rounded focus:ring-blue-500 focus:ring-2"
                     />
-                    <span className="text-sm text-gray-700 flex items-center gap-2">
-                      <div className="w-3 h-3 bg-indigo-600 rounded"></div>
+                    <span className="text-sm font-medium text-gray-700 flex items-center gap-2 group-hover:text-blue-600 transition-colors">
+                      <div className="w-3.5 h-3.5 bg-gradient-to-br from-blue-500 to-cyan-500 rounded shadow-sm"></div>
                       Quiz
                     </span>
                   </label>
-                  <label className="flex items-center gap-2 cursor-pointer">
+                  <label className="flex items-center gap-2 cursor-pointer group">
                     <input
                       type="checkbox"
                       checked={showEssay}
                       onChange={(e) => setShowEssay(e.target.checked)}
-                      className="w-4 h-4 text-purple-600 border-gray-300 rounded focus:ring-purple-500"
+                      className="w-4 h-4 text-pink-500 border-gray-300 rounded focus:ring-pink-500 focus:ring-2"
                     />
-                    <span className="text-sm text-gray-700 flex items-center gap-2">
-                      <div className="w-3 h-3 bg-purple-600 rounded"></div>
+                    <span className="text-sm font-medium text-gray-700 flex items-center gap-2 group-hover:text-pink-600 transition-colors">
+                      <div className="w-3.5 h-3.5 bg-gradient-to-br from-pink-500 to-rose-500 rounded shadow-sm"></div>
                       Essay
                     </span>
                   </label>
@@ -465,6 +465,23 @@ function DashboardPageContent() {
                     viewBox={`0 0 ${innerWidth + padding * 2} ${chartHeight}`}
                     preserveAspectRatio="xMidYMid meet"
                   >
+                    <defs>
+                      <filter id="glow">
+                        <feGaussianBlur stdDeviation="2" result="coloredBlur"/>
+                        <feMerge>
+                          <feMergeNode in="coloredBlur"/>
+                          <feMergeNode in="SourceGraphic"/>
+                        </feMerge>
+                      </filter>
+                      <linearGradient id="quizGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                        <stop offset="0%" stopColor="#3b82f6" />
+                        <stop offset="100%" stopColor="#06b6d4" />
+                      </linearGradient>
+                      <linearGradient id="essayGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                        <stop offset="0%" stopColor="#ec4899" />
+                        <stop offset="100%" stopColor="#f43f5e" />
+                      </linearGradient>
+                    </defs>
                     {/* Grid lines for scores (Y-axis) */}
                     {[0, 25, 50, 75, 100].map((percent) => {
                       const y = padding + innerHeight - ((percent / 100) * innerHeight);
@@ -482,29 +499,31 @@ function DashboardPageContent() {
                       );
                     })}
                     
-                    {/* Quiz line path */}
+                    {/* Quiz line path with gradient */}
                     {showQuiz && quizPathData && (
                       <path
                         d={quizPathData}
                         fill="none"
-                        stroke="#4f46e5"
-                        strokeWidth="3"
+                        stroke="url(#quizGradient)"
+                        strokeWidth="3.5"
                         strokeLinecap="round"
                         strokeLinejoin="round"
                         opacity={showQuiz ? 1 : 0.3}
+                        filter="url(#glow)"
                       />
                     )}
                     
-                    {/* Essay line path */}
+                    {/* Essay line path with gradient */}
                     {showEssay && essayPathData && (
                       <path
                         d={essayPathData}
                         fill="none"
-                        stroke="#9333ea"
-                        strokeWidth="3"
+                        stroke="url(#essayGradient)"
+                        strokeWidth="3.5"
                         strokeLinecap="round"
                         strokeLinejoin="round"
                         opacity={showEssay ? 1 : 0.3}
+                        filter="url(#glow)"
                       />
                     )}
                     
@@ -514,11 +533,19 @@ function DashboardPageContent() {
                         <circle
                           cx={point.x}
                           cy={point.y}
-                          r="6"
-                          fill="#4f46e5"
+                          r="7"
+                          fill="url(#quizGradient)"
                           stroke="white"
-                          strokeWidth="2"
-                          className="hover:r-8 transition-all cursor-pointer"
+                          strokeWidth="2.5"
+                          className="hover:r-9 transition-all cursor-pointer"
+                          filter="url(#glow)"
+                        />
+                        <circle
+                          cx={point.x}
+                          cy={point.y}
+                          r="4"
+                          fill="white"
+                          opacity="0.6"
                         />
                         <title>{`Quiz Score: ${point.score.toFixed(1)}%\nDate: ${format(point.date, 'MMM d, yyyy HH:mm')}`}</title>
                       </g>
@@ -530,11 +557,19 @@ function DashboardPageContent() {
                         <circle
                           cx={point.x}
                           cy={point.y}
-                          r="6"
-                          fill="#9333ea"
+                          r="7"
+                          fill="url(#essayGradient)"
                           stroke="white"
-                          strokeWidth="2"
-                          className="hover:r-8 transition-all cursor-pointer"
+                          strokeWidth="2.5"
+                          className="hover:r-9 transition-all cursor-pointer"
+                          filter="url(#glow)"
+                        />
+                        <circle
+                          cx={point.x}
+                          cy={point.y}
+                          r="4"
+                          fill="white"
+                          opacity="0.6"
                         />
                         <title>{`Essay Score: ${point.score.toFixed(1)}%\nDate: ${format(point.date, 'MMM d, yyyy HH:mm')}`}</title>
                       </g>
