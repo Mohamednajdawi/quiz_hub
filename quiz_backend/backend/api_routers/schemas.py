@@ -245,4 +245,12 @@ class StudentProjectListResponse(BaseModel):
 
 class StudentProjectReferenceCreate(BaseModel):
     reference_type: str  # quiz, flashcard, essay
-    topic_id: int 
+    topic_id: int
+
+
+class StoreEssayAnswerRequest(BaseModel):
+    essay_id: int
+    user_id: str
+    question_index: int
+    user_answer: str
+    timestamp: str 

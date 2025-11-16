@@ -9,7 +9,7 @@ from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 import logging
 
-from backend.api_routers.schemas import EssayQARequest
+from backend.api_routers.schemas import EssayQARequest, StoreEssayAnswerRequest
 from backend.database.db import get_db
 from backend.database.sqlite_dal import EssayQATopic, EssayQAQuestion
 from backend.utils.utils import generate_essay_qa, generate_essay_qa_from_pdf
@@ -372,17 +372,20 @@ async def get_essay_qa(topic_id: int, db: Session = Depends(get_db)) -> JSONResp
 
 @router.post("/store-essay-answer", tags=["EssayQA"])
 async def store_essay_answer(
-    essay_id: int,
-    user_id: str,
-    question_index: int,
-    user_answer: str,
-    timestamp: str,
+    request: StoreEssayAnswerRequest,
     db: Session = Depends(get_db)
 ) -> JSONResponse:
     """Store user's essay answer and generate AI feedback and score"""
     try:
         from backend.database.sqlite_dal import EssayAnswer, EssayQAQuestion, EssayQATopic
         from backend.utils.feedback import generate_essay_feedback
+        
+        # Extract fields from request
+        essay_id = request.essay_id
+        user_id = request.user_id
+        question_index = request.question_index
+        user_answer = request.user_answer
+        timestamp = request.timestamp
         
         # Get the essay topic and question to provide context for feedback
         topic = db.query(EssayQATopic).filter(EssayQATopic.id == essay_id).first()
