@@ -38,6 +38,8 @@ function DashboardPageContent() {
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 5;
+  const [showQuiz, setShowQuiz] = useState(true);
+  const [showEssay, setShowEssay] = useState(true);
 
   // Check if onboarding should be shown on mount
   useEffect(() => {
@@ -281,130 +283,180 @@ function DashboardPageContent() {
           </Card>
         </div>
 
-        {/* Performance Charts */}
-        {history && history.attempts && Array.isArray(history.attempts) && history.attempts.length > 0 && (() => {
-          // Sort attempts by timestamp (oldest first) and take last 20 for better visibility
-          const sortedAttempts = [...history.attempts]
-            .sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime())
+        {/* Combined Performance Chart */}
+        {((history && history.attempts && Array.isArray(history.attempts) && history.attempts.length > 0) || 
+          (essayAnswers && essayAnswers.answers && Array.isArray(essayAnswers.answers) && essayAnswers.answers.filter(a => a.score !== undefined).length > 0)) && (() => {
+          // Prepare quiz data
+          const quizData = (history?.attempts || [])
+            .map(attempt => ({
+              type: 'quiz' as const,
+              timestamp: attempt.timestamp,
+              score: attempt.percentage_score,
+              date: new Date(attempt.timestamp)
+            }))
+            .sort((a, b) => a.date.getTime() - b.date.getTime())
             .slice(-20);
           
-          const scores = sortedAttempts.map(a => a.percentage_score);
-          const maxScore = Math.max(...scores, 100);
-          const minScore = Math.min(...scores, 0);
-          const range = maxScore - minScore || 100;
-          const chartHeight = 256; // h-64 = 256px
-          const padding = 60; // Increased padding for time labels
-          const bottomPadding = 60; // Extra space for X-axis labels and "Time" label
-          const innerWidth = 600; // Base width for calculation
-          const innerHeight = chartHeight - padding - bottomPadding;
+          // Prepare essay data
+          const essayData = (essayAnswers?.answers || [])
+            .filter(a => a.score !== undefined)
+            .map(answer => ({
+              type: 'essay' as const,
+              timestamp: answer.timestamp,
+              score: answer.score!,
+              date: new Date(answer.timestamp)
+            }))
+            .sort((a, b) => a.date.getTime() - b.date.getTime())
+            .slice(-20);
           
-          // Get time range
-          const timestamps = sortedAttempts.map(a => new Date(a.timestamp).getTime());
+          // Combine all data points for unified time range
+          const allDataPoints = [...quizData, ...essayData];
+          
+          if (allDataPoints.length === 0) return null;
+          
+          // Get unified time range
+          const timestamps = allDataPoints.map(d => d.date.getTime());
           const minTime = Math.min(...timestamps);
           const maxTime = Math.max(...timestamps);
           const timeRange = maxTime - minTime || 1;
           
-          // Calculate points for the line (X = time, Y = score)
-          const points = sortedAttempts.map((attempt, index) => {
-            const timeValue = new Date(attempt.timestamp).getTime();
+          // Get unified score range
+          const allScores = allDataPoints.map(d => d.score);
+          const maxScore = Math.max(...allScores, 100);
+          const minScore = Math.min(...allScores, 0);
+          const range = maxScore - minScore || 100;
+          
+          const chartHeight = 256;
+          const padding = 60;
+          const bottomPadding = 60;
+          const innerWidth = 600;
+          const innerHeight = chartHeight - padding - bottomPadding;
+          
+          // Calculate points for quiz line
+          const quizPoints = showQuiz ? quizData.map((item) => {
+            const timeValue = item.date.getTime();
             const normalizedTime = (timeValue - minTime) / timeRange;
             const x = padding + normalizedTime * innerWidth;
-            const normalizedScore = range > 0 ? (attempt.percentage_score - minScore) / range : 0.5;
+            const normalizedScore = range > 0 ? (item.score - minScore) / range : 0.5;
             const y = padding + innerHeight - (normalizedScore * innerHeight);
-            return { 
-              x, 
-              y, 
-              score: attempt.percentage_score, 
-              timestamp: attempt.timestamp,
-              date: new Date(attempt.timestamp)
-            };
-          });
+            return { x, y, score: item.score, timestamp: item.timestamp, date: item.date };
+          }) : [];
           
-          // Create path for the line
-          const pathData = points.length > 1 
-            ? points.map((point, index) => `${index === 0 ? 'M' : 'L'} ${point.x} ${point.y}`).join(' ')
-            : `M ${points[0].x} ${points[0].y} L ${points[0].x + 20} ${points[0].y}`;
+          // Calculate points for essay line
+          const essayPoints = showEssay ? essayData.map((item) => {
+            const timeValue = item.date.getTime();
+            const normalizedTime = (timeValue - minTime) / timeRange;
+            const x = padding + normalizedTime * innerWidth;
+            const normalizedScore = range > 0 ? (item.score - minScore) / range : 0.5;
+            const y = padding + innerHeight - (normalizedScore * innerHeight);
+            return { x, y, score: item.score, timestamp: item.timestamp, date: item.date };
+          }) : [];
           
-          // Generate X-axis time labels with smart spacing to avoid overlaps
-          // Minimum spacing between labels (in SVG coordinate pixels)
-          // Account for label width (~50px for "MMM d" format) plus padding
-          const minLabelSpacing = 60; // pixels in SVG coordinate system
+          // Create paths
+          const quizPathData = quizPoints.length > 1 
+            ? quizPoints.map((point, index) => `${index === 0 ? 'M' : 'L'} ${point.x} ${point.y}`).join(' ')
+            : quizPoints.length === 1 ? `M ${quizPoints[0].x} ${quizPoints[0].y} L ${quizPoints[0].x + 20} ${quizPoints[0].y}` : '';
+          
+          const essayPathData = essayPoints.length > 1 
+            ? essayPoints.map((point, index) => `${index === 0 ? 'M' : 'L'} ${point.x} ${point.y}`).join(' ')
+            : essayPoints.length === 1 ? `M ${essayPoints[0].x} ${essayPoints[0].y} L ${essayPoints[0].x + 20} ${essayPoints[0].y}` : '';
+          
+          // Generate X-axis time labels
+          const minLabelSpacing = 60;
           const timeLabels = [];
+          const sortedAllData = allDataPoints.sort((a, b) => a.date.getTime() - b.date.getTime());
           
-          if (sortedAttempts.length === 1) {
-            // Single data point
-            timeLabels.push({
-              x: points[0].x,
-              date: new Date(sortedAttempts[0].timestamp),
-              index: 0
-            });
+          if (sortedAllData.length === 1) {
+            const point = sortedAllData[0];
+            const timeValue = point.date.getTime();
+            const normalizedTime = (timeValue - minTime) / timeRange;
+            const x = padding + normalizedTime * innerWidth;
+            timeLabels.push({ x, date: point.date, index: 0 });
           } else {
-            // Start with evenly spaced candidate labels
-            const maxLabels = Math.min(8, sortedAttempts.length);
+            const maxLabels = Math.min(8, sortedAllData.length);
             const candidates = [];
             for (let i = 0; i < maxLabels; i++) {
-              const index = Math.floor((i / (maxLabels - 1)) * (sortedAttempts.length - 1));
-              if (sortedAttempts[index]) {
-                candidates.push({
-                  x: points[index].x,
-                  date: new Date(sortedAttempts[index].timestamp),
-                  index
-                });
+              const index = Math.floor((i / (maxLabels - 1)) * (sortedAllData.length - 1));
+              if (sortedAllData[index]) {
+                const timeValue = sortedAllData[index].date.getTime();
+                const normalizedTime = (timeValue - minTime) / timeRange;
+                const x = padding + normalizedTime * innerWidth;
+                candidates.push({ x, date: sortedAllData[index].date, index });
               }
             }
             
-            // Filter candidates to ensure minimum spacing
             let lastX = -Infinity;
             for (const candidate of candidates) {
-              // Check if this label is far enough from the previous one
               if (candidate.x - lastX >= minLabelSpacing || timeLabels.length === 0) {
                 timeLabels.push(candidate);
                 lastX = candidate.x;
               }
             }
             
-            // Ensure first point is included (if not already and has space)
+            // Ensure first and last points
             if (timeLabels.length === 0 || timeLabels[0].index !== 0) {
-              const firstPoint = {
-                x: points[0].x,
-                date: new Date(sortedAttempts[0].timestamp),
-                index: 0
-              };
-              // Check if first point is far enough from existing first label
-              if (timeLabels.length === 0 || timeLabels[0].x - firstPoint.x >= minLabelSpacing) {
-                timeLabels.unshift(firstPoint);
-              } else if (timeLabels[0].x - firstPoint.x < minLabelSpacing / 2) {
-                // If first label is very close to start, replace it
-                timeLabels[0] = firstPoint;
+              const firstPoint = sortedAllData[0];
+              const timeValue = firstPoint.date.getTime();
+              const normalizedTime = (timeValue - minTime) / timeRange;
+              const x = padding + normalizedTime * innerWidth;
+              const firstLabel = { x, date: firstPoint.date, index: 0 };
+              if (timeLabels.length === 0 || timeLabels[0].x - firstLabel.x >= minLabelSpacing) {
+                timeLabels.unshift(firstLabel);
+              } else if (timeLabels[0].x - firstLabel.x < minLabelSpacing / 2) {
+                timeLabels[0] = firstLabel;
               }
             }
             
-            // Ensure last point is included (if not already and has space)
-            const lastIndex = sortedAttempts.length - 1;
+            const lastIndex = sortedAllData.length - 1;
             if (timeLabels.length === 0 || timeLabels[timeLabels.length - 1].index !== lastIndex) {
-              const lastPoint = {
-                x: points[lastIndex].x,
-                date: new Date(sortedAttempts[lastIndex].timestamp),
-                index: lastIndex
-              };
+              const lastPoint = sortedAllData[lastIndex];
+              const timeValue = lastPoint.date.getTime();
+              const normalizedTime = (timeValue - minTime) / timeRange;
+              const x = padding + normalizedTime * innerWidth;
+              const lastLabel = { x, date: lastPoint.date, index: lastIndex };
               const lastLabelX = timeLabels.length > 0 ? timeLabels[timeLabels.length - 1].x : -Infinity;
-              // Check if last point is far enough from existing last label
-              if (timeLabels.length === 0 || lastPoint.x - lastLabelX >= minLabelSpacing) {
-                timeLabels.push(lastPoint);
-              } else if (lastPoint.x - lastLabelX < minLabelSpacing / 2) {
-                // If last label is very close to end, replace it
-                timeLabels[timeLabels.length - 1] = lastPoint;
+              if (timeLabels.length === 0 || lastLabel.x - lastLabelX >= minLabelSpacing) {
+                timeLabels.push(lastLabel);
+              } else if (lastLabel.x - lastLabelX < minLabelSpacing / 2) {
+                timeLabels[timeLabels.length - 1] = lastLabel;
               }
             }
             
-            // Sort by index to maintain chronological order
             timeLabels.sort((a, b) => a.index - b.index);
           }
           
           return (
             <Card className="mb-8">
-              <CardHeader title="Quiz Performance Trend" />
+              <CardHeader title="Performance Trend" />
               <div className="p-6">
+                {/* Checkboxes */}
+                <div className="flex gap-4 mb-4">
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={showQuiz}
+                      onChange={(e) => setShowQuiz(e.target.checked)}
+                      className="w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
+                    />
+                    <span className="text-sm text-gray-700 flex items-center gap-2">
+                      <div className="w-3 h-3 bg-indigo-600 rounded"></div>
+                      Quiz
+                    </span>
+                  </label>
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={showEssay}
+                      onChange={(e) => setShowEssay(e.target.checked)}
+                      className="w-4 h-4 text-purple-600 border-gray-300 rounded focus:ring-purple-500"
+                    />
+                    <span className="text-sm text-gray-700 flex items-center gap-2">
+                      <div className="w-3 h-3 bg-purple-600 rounded"></div>
+                      Essay
+                    </span>
+                  </label>
+                </div>
+                
                 <div className="relative" style={{ height: `${chartHeight}px` }}>
                   <svg 
                     width="100%" 
@@ -430,265 +482,63 @@ function DashboardPageContent() {
                       );
                     })}
                     
-                    {/* Line path */}
-                    {points.length > 0 && (
+                    {/* Quiz line path */}
+                    {showQuiz && quizPathData && (
                       <path
-                        d={pathData}
+                        d={quizPathData}
                         fill="none"
                         stroke="#4f46e5"
                         strokeWidth="3"
                         strokeLinecap="round"
                         strokeLinejoin="round"
+                        opacity={showQuiz ? 1 : 0.3}
                       />
                     )}
                     
-                    {/* Data points */}
-                    {points.map((point, index) => {
-                      const isRecent = index >= sortedAttempts.length - 3;
-                      return (
-                        <g key={index}>
-                          <circle
-                            cx={point.x}
-                            cy={point.y}
-                            r="6"
-                            fill={isRecent ? "#4f46e5" : "#818cf8"}
-                            stroke="white"
-                            strokeWidth="2"
-                            className="hover:r-8 transition-all cursor-pointer"
-                          />
-                          <title>{`Score: ${point.score.toFixed(1)}%\nDate: ${format(point.date, 'MMM d, yyyy HH:mm')}`}</title>
-                        </g>
-                      );
-                    })}
-                  </svg>
-                  
-                  {/* Y-axis labels (Score) */}
-                  <div className="absolute left-0 top-0 flex flex-col justify-between text-xs text-gray-500 pr-2" style={{ height: `${innerHeight}px`, top: `${padding}px`, width: `${padding}px` }}>
-                    <span>{maxScore.toFixed(0)}%</span>
-                    <span>{((maxScore + minScore) / 2).toFixed(0)}%</span>
-                    <span>{minScore.toFixed(0)}%</span>
-                  </div>
-                  <div className="absolute -left-10 top-1/2 transform -rotate-90 origin-center text-xs font-medium text-gray-700 whitespace-nowrap" style={{ top: `calc(${padding}px + ${innerHeight / 2}px)` }}>
-                    Score (%)
-                  </div>
-                  
-                  {/* X-axis labels (Time) */}
-                  <div className="absolute bottom-0 left-0 right-0 text-xs text-gray-500" style={{ height: `${bottomPadding}px` }}>
-                    {timeLabels.map((label, idx) => {
-                      // Calculate position as percentage of total SVG width (including padding)
-                      const totalWidth = innerWidth + padding * 2;
-                      const positionPercent = (label.x / totalWidth) * 100;
-                      return (
-                        <span 
-                          key={idx}
-                          className="absolute"
-                          style={{ 
-                            left: `${positionPercent}%`,
-                            transform: 'translateX(-50%)',
-                            bottom: '5px'
-                          }}
-                        >
-                          {format(label.date, 'M/d')}
-                        </span>
-                      );
-                    })}
-                    <div className="absolute left-1/2 transform -translate-x-1/2 text-xs font-medium text-gray-700 whitespace-nowrap" style={{ bottom: '-25px' }}>
-                      Time
-                    </div>
-                  </div>
-                </div>
-                <div className="mt-4 flex justify-between text-xs text-gray-600">
-                  <span>Last {sortedAttempts.length} attempts over time</span>
-                  <span className="flex items-center gap-2">
-                    <div className="w-3 h-3 bg-indigo-400 rounded"></div>
-                    Older
-                    <div className="w-3 h-3 bg-indigo-600 rounded ml-2"></div>
-                    Recent
-                  </span>
-                </div>
-              </div>
-            </Card>
-          );
-        })()}
-
-        {/* Essay Performance Chart */}
-        {essayAnswers && essayAnswers.answers && Array.isArray(essayAnswers.answers) && essayAnswers.answers.filter(a => a.score !== undefined).length > 0 && (() => {
-          // Filter answers with scores and sort by timestamp (oldest first), take last 20
-          const sortedAnswers = [...essayAnswers.answers]
-            .filter(a => a.score !== undefined)
-            .sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime())
-            .slice(-20);
-          
-          const scores = sortedAnswers.map(a => a.score!);
-          const maxScore = Math.max(...scores, 100);
-          const minScore = Math.min(...scores, 0);
-          const range = maxScore - minScore || 100;
-          const chartHeight = 256; // h-64 = 256px
-          const padding = 60; // Increased padding for time labels
-          const bottomPadding = 60; // Extra space for X-axis labels and "Time" label
-          const innerWidth = 600; // Base width for calculation
-          const innerHeight = chartHeight - padding - bottomPadding;
-          
-          // Get time range
-          const timestamps = sortedAnswers.map(a => new Date(a.timestamp).getTime());
-          const minTime = Math.min(...timestamps);
-          const maxTime = Math.max(...timestamps);
-          const timeRange = maxTime - minTime || 1;
-          
-          // Calculate points for the line (X = time, Y = score)
-          const points = sortedAnswers.map((answer, index) => {
-            const timeValue = new Date(answer.timestamp).getTime();
-            const normalizedTime = (timeValue - minTime) / timeRange;
-            const x = padding + normalizedTime * innerWidth;
-            const normalizedScore = range > 0 ? (answer.score! - minScore) / range : 0.5;
-            const y = padding + innerHeight - (normalizedScore * innerHeight);
-            return { 
-              x, 
-              y, 
-              score: answer.score!, 
-              timestamp: answer.timestamp,
-              date: new Date(answer.timestamp)
-            };
-          });
-          
-          // Create path for the line
-          const pathData = points.length > 1 
-            ? points.map((point, index) => `${index === 0 ? 'M' : 'L'} ${point.x} ${point.y}`).join(' ')
-            : `M ${points[0].x} ${points[0].y} L ${points[0].x + 20} ${points[0].y}`;
-          
-          // Generate X-axis time labels with smart spacing to avoid overlaps
-          const minLabelSpacing = 60; // pixels in SVG coordinate system
-          const timeLabels = [];
-          
-          if (sortedAnswers.length === 1) {
-            // Single data point
-            timeLabels.push({
-              x: points[0].x,
-              date: new Date(sortedAnswers[0].timestamp),
-              index: 0
-            });
-          } else {
-            // Start with evenly spaced candidate labels
-            const maxLabels = Math.min(8, sortedAnswers.length);
-            const candidates = [];
-            for (let i = 0; i < maxLabels; i++) {
-              const index = Math.floor((i / (maxLabels - 1)) * (sortedAnswers.length - 1));
-              if (sortedAnswers[index]) {
-                candidates.push({
-                  x: points[index].x,
-                  date: new Date(sortedAnswers[index].timestamp),
-                  index
-                });
-              }
-            }
-            
-            // Filter candidates to ensure minimum spacing
-            let lastX = -Infinity;
-            for (const candidate of candidates) {
-              // Check if this label is far enough from the previous one
-              if (candidate.x - lastX >= minLabelSpacing || timeLabels.length === 0) {
-                timeLabels.push(candidate);
-                lastX = candidate.x;
-              }
-            }
-            
-            // Ensure first point is included (if not already and has space)
-            if (timeLabels.length === 0 || timeLabels[0].index !== 0) {
-              const firstPoint = {
-                x: points[0].x,
-                date: new Date(sortedAnswers[0].timestamp),
-                index: 0
-              };
-              // Check if first point is far enough from existing first label
-              if (timeLabels.length === 0 || timeLabels[0].x - firstPoint.x >= minLabelSpacing) {
-                timeLabels.unshift(firstPoint);
-              } else if (timeLabels[0].x - firstPoint.x < minLabelSpacing / 2) {
-                // If first label is very close to start, replace it
-                timeLabels[0] = firstPoint;
-              }
-            }
-            
-            // Ensure last point is included (if not already and has space)
-            const lastIndex = sortedAnswers.length - 1;
-            if (timeLabels.length === 0 || timeLabels[timeLabels.length - 1].index !== lastIndex) {
-              const lastPoint = {
-                x: points[lastIndex].x,
-                date: new Date(sortedAnswers[lastIndex].timestamp),
-                index: lastIndex
-              };
-              const lastLabelX = timeLabels.length > 0 ? timeLabels[timeLabels.length - 1].x : -Infinity;
-              // Check if last point is far enough from existing last label
-              if (timeLabels.length === 0 || lastPoint.x - lastLabelX >= minLabelSpacing) {
-                timeLabels.push(lastPoint);
-              } else if (lastPoint.x - lastLabelX < minLabelSpacing / 2) {
-                // If last label is very close to end, replace it
-                timeLabels[timeLabels.length - 1] = lastPoint;
-              }
-            }
-            
-            // Sort by index to maintain chronological order
-            timeLabels.sort((a, b) => a.index - b.index);
-          }
-          
-          return (
-            <Card className="mb-8">
-              <CardHeader title="Essay Performance Trend" />
-              <div className="p-6">
-                <div className="relative" style={{ height: `${chartHeight}px` }}>
-                  <svg 
-                    width="100%" 
-                    height={chartHeight}
-                    className="overflow-visible"
-                    viewBox={`0 0 ${innerWidth + padding * 2} ${chartHeight}`}
-                    preserveAspectRatio="xMidYMid meet"
-                  >
-                    {/* Grid lines for scores (Y-axis) */}
-                    {[0, 25, 50, 75, 100].map((percent) => {
-                      const y = padding + innerHeight - ((percent / 100) * innerHeight);
-                      return (
-                        <line
-                          key={percent}
-                          x1={padding}
-                          y1={y}
-                          x2={innerWidth + padding}
-                          y2={y}
-                          stroke="#e5e7eb"
-                          strokeWidth="1"
-                          strokeDasharray="2,2"
-                        />
-                      );
-                    })}
-                    
-                    {/* Line path */}
-                    {points.length > 0 && (
+                    {/* Essay line path */}
+                    {showEssay && essayPathData && (
                       <path
-                        d={pathData}
+                        d={essayPathData}
                         fill="none"
                         stroke="#9333ea"
                         strokeWidth="3"
                         strokeLinecap="round"
                         strokeLinejoin="round"
+                        opacity={showEssay ? 1 : 0.3}
                       />
                     )}
                     
-                    {/* Data points */}
-                    {points.map((point, index) => {
-                      const isRecent = index >= sortedAnswers.length - 3;
-                      return (
-                        <g key={index}>
-                          <circle
-                            cx={point.x}
-                            cy={point.y}
-                            r="6"
-                            fill={isRecent ? "#9333ea" : "#a855f7"}
-                            stroke="white"
-                            strokeWidth="2"
-                            className="hover:r-8 transition-all cursor-pointer"
-                          />
-                          <title>{`Score: ${point.score.toFixed(1)}%\nDate: ${format(point.date, 'MMM d, yyyy HH:mm')}`}</title>
-                        </g>
-                      );
-                    })}
+                    {/* Quiz data points */}
+                    {showQuiz && quizPoints.map((point, index) => (
+                      <g key={`quiz-${index}`}>
+                        <circle
+                          cx={point.x}
+                          cy={point.y}
+                          r="6"
+                          fill="#4f46e5"
+                          stroke="white"
+                          strokeWidth="2"
+                          className="hover:r-8 transition-all cursor-pointer"
+                        />
+                        <title>{`Quiz Score: ${point.score.toFixed(1)}%\nDate: ${format(point.date, 'MMM d, yyyy HH:mm')}`}</title>
+                      </g>
+                    ))}
+                    
+                    {/* Essay data points */}
+                    {showEssay && essayPoints.map((point, index) => (
+                      <g key={`essay-${index}`}>
+                        <circle
+                          cx={point.x}
+                          cy={point.y}
+                          r="6"
+                          fill="#9333ea"
+                          stroke="white"
+                          strokeWidth="2"
+                          className="hover:r-8 transition-all cursor-pointer"
+                        />
+                        <title>{`Essay Score: ${point.score.toFixed(1)}%\nDate: ${format(point.date, 'MMM d, yyyy HH:mm')}`}</title>
+                      </g>
+                    ))}
                   </svg>
                   
                   {/* Y-axis labels (Score) */}
@@ -704,7 +554,6 @@ function DashboardPageContent() {
                   {/* X-axis labels (Time) */}
                   <div className="absolute bottom-0 left-0 right-0 text-xs text-gray-500" style={{ height: `${bottomPadding}px` }}>
                     {timeLabels.map((label, idx) => {
-                      // Calculate position as percentage of total SVG width (including padding)
                       const totalWidth = innerWidth + padding * 2;
                       const positionPercent = (label.x / totalWidth) * 100;
                       return (
@@ -726,13 +575,14 @@ function DashboardPageContent() {
                     </div>
                   </div>
                 </div>
-                <div className="mt-4 flex justify-between text-xs text-gray-600">
-                  <span>Last {sortedAnswers.length} essays over time</span>
-                  <span className="flex items-center gap-2">
-                    <div className="w-3 h-3 bg-purple-400 rounded"></div>
-                    Older
-                    <div className="w-3 h-3 bg-purple-600 rounded ml-2"></div>
-                    Recent
+                <div className="mt-4 text-xs text-gray-600">
+                  <span>
+                    {showQuiz && showEssay 
+                      ? `${quizData.length} quizzes • ${essayData.length} essays over time`
+                      : showQuiz 
+                        ? `${quizData.length} quizzes over time`
+                        : `${essayData.length} essays over time`
+                    }
                   </span>
                 </div>
               </div>
