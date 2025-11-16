@@ -425,7 +425,7 @@ function DashboardPageContent() {
         )}
 
         {/* Recent Activity Timeline */}
-        {(history?.attempts.length > 0 || essayAnswers?.answers.length > 0) && (
+        {((history?.attempts && history.attempts.length > 0) || (essayAnswers?.answers && essayAnswers.answers.length > 0)) && (
           <Card className="mb-8">
             <CardHeader title="Recent Activity" />
             <div className="divide-y divide-gray-200">
