@@ -282,28 +282,71 @@ function DashboardPageContent() {
         </div>
 
         {/* Performance Charts */}
-        {analytics && analytics.scores && Array.isArray(analytics.scores) && analytics.scores.length > 0 && (() => {
-          const scoresSlice = analytics.scores.slice(-10);
-          const maxScore = Math.max(...scoresSlice, 100);
-          const minScore = Math.min(...scoresSlice, 0);
+        {history && history.attempts && Array.isArray(history.attempts) && history.attempts.length > 0 && (() => {
+          // Sort attempts by timestamp (oldest first) and take last 20 for better visibility
+          const sortedAttempts = [...history.attempts]
+            .sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime())
+            .slice(-20);
+          
+          const scores = sortedAttempts.map(a => a.percentage_score);
+          const maxScore = Math.max(...scores, 100);
+          const minScore = Math.min(...scores, 0);
           const range = maxScore - minScore || 100;
           const chartHeight = 256; // h-64 = 256px
-          const padding = 40;
+          const padding = 60; // Increased padding for time labels
+          const bottomPadding = 60; // Extra space for X-axis labels and "Time" label
           const innerWidth = 600; // Base width for calculation
-          const innerHeight = chartHeight - padding * 2;
+          const innerHeight = chartHeight - padding - bottomPadding;
           
-          // Calculate points for the line
-          const points = scoresSlice.map((score: number, index: number) => {
-            const x = padding + (index / Math.max(scoresSlice.length - 1, 1)) * innerWidth;
-            const normalizedScore = range > 0 ? (score - minScore) / range : 0.5;
+          // Get time range
+          const timestamps = sortedAttempts.map(a => new Date(a.timestamp).getTime());
+          const minTime = Math.min(...timestamps);
+          const maxTime = Math.max(...timestamps);
+          const timeRange = maxTime - minTime || 1;
+          
+          // Calculate points for the line (X = time, Y = score)
+          const points = sortedAttempts.map((attempt, index) => {
+            const timeValue = new Date(attempt.timestamp).getTime();
+            const normalizedTime = (timeValue - minTime) / timeRange;
+            const x = padding + normalizedTime * innerWidth;
+            const normalizedScore = range > 0 ? (attempt.percentage_score - minScore) / range : 0.5;
             const y = padding + innerHeight - (normalizedScore * innerHeight);
-            return { x, y, score };
+            return { 
+              x, 
+              y, 
+              score: attempt.percentage_score, 
+              timestamp: attempt.timestamp,
+              date: new Date(attempt.timestamp)
+            };
           });
           
           // Create path for the line
           const pathData = points.length > 1 
             ? points.map((point, index) => `${index === 0 ? 'M' : 'L'} ${point.x} ${point.y}`).join(' ')
             : `M ${points[0].x} ${points[0].y} L ${points[0].x + 20} ${points[0].y}`;
+          
+          // Generate X-axis time labels (show 5-6 evenly spaced labels)
+          const numLabels = Math.min(6, sortedAttempts.length);
+          const timeLabels = [];
+          if (sortedAttempts.length === 1) {
+            // Single data point
+            timeLabels.push({
+              x: points[0].x,
+              date: new Date(sortedAttempts[0].timestamp),
+              index: 0
+            });
+          } else {
+            for (let i = 0; i < numLabels; i++) {
+              const index = Math.floor((i / (numLabels - 1)) * (sortedAttempts.length - 1));
+              if (sortedAttempts[index]) {
+                timeLabels.push({
+                  x: points[index].x,
+                  date: new Date(sortedAttempts[index].timestamp),
+                  index
+                });
+              }
+            }
+          }
           
           return (
             <Card className="mb-8">
@@ -317,7 +360,7 @@ function DashboardPageContent() {
                     viewBox={`0 0 ${innerWidth + padding * 2} ${chartHeight}`}
                     preserveAspectRatio="xMidYMid meet"
                   >
-                    {/* Grid lines */}
+                    {/* Grid lines for scores (Y-axis) */}
                     {[0, 25, 50, 75, 100].map((percent) => {
                       const y = padding + innerHeight - ((percent / 100) * innerHeight);
                       return (
@@ -348,7 +391,7 @@ function DashboardPageContent() {
                     
                     {/* Data points */}
                     {points.map((point, index) => {
-                      const isRecent = index >= scoresSlice.length - 3;
+                      const isRecent = index >= sortedAttempts.length - 3;
                       return (
                         <g key={index}>
                           <circle
@@ -360,21 +403,49 @@ function DashboardPageContent() {
                             strokeWidth="2"
                             className="hover:r-8 transition-all cursor-pointer"
                           />
-                          <title>{`Score: ${point.score.toFixed(1)}%`}</title>
+                          <title>{`Score: ${point.score.toFixed(1)}%\nDate: ${format(point.date, 'MMM d, yyyy HH:mm')}`}</title>
                         </g>
                       );
                     })}
                   </svg>
                   
-                  {/* Y-axis labels */}
-                  <div className="absolute left-0 top-0 h-full flex flex-col justify-between text-xs text-gray-500 pr-2">
+                  {/* Y-axis labels (Score) */}
+                  <div className="absolute left-0 top-0 flex flex-col justify-between text-xs text-gray-500 pr-2" style={{ height: `${innerHeight}px`, top: `${padding}px`, width: `${padding}px` }}>
                     <span>{maxScore.toFixed(0)}%</span>
                     <span>{((maxScore + minScore) / 2).toFixed(0)}%</span>
                     <span>{minScore.toFixed(0)}%</span>
                   </div>
+                  <div className="absolute -left-10 top-1/2 transform -rotate-90 origin-center text-xs font-medium text-gray-700 whitespace-nowrap" style={{ top: `calc(${padding}px + ${innerHeight / 2}px)` }}>
+                    Score (%)
+                  </div>
+                  
+                  {/* X-axis labels (Time) */}
+                  <div className="absolute bottom-0 left-0 right-0 text-xs text-gray-500" style={{ height: `${bottomPadding}px` }}>
+                    {timeLabels.map((label, idx) => {
+                      // Calculate position as percentage of total SVG width (including padding)
+                      const totalWidth = innerWidth + padding * 2;
+                      const positionPercent = (label.x / totalWidth) * 100;
+                      return (
+                        <span 
+                          key={idx}
+                          className="absolute"
+                          style={{ 
+                            left: `${positionPercent}%`,
+                            transform: 'translateX(-50%)',
+                            bottom: '5px'
+                          }}
+                        >
+                          {format(label.date, 'MMM d')}
+                        </span>
+                      );
+                    })}
+                    <div className="absolute left-1/2 transform -translate-x-1/2 text-xs font-medium text-gray-700 whitespace-nowrap" style={{ bottom: '-25px' }}>
+                      Time
+                    </div>
+                  </div>
                 </div>
                 <div className="mt-4 flex justify-between text-xs text-gray-600">
-                  <span>Last {Math.min(analytics.scores.length, 10)} attempts</span>
+                  <span>Last {sortedAttempts.length} attempts over time</span>
                   <span className="flex items-center gap-2">
                     <div className="w-3 h-3 bg-indigo-400 rounded"></div>
                     Older
