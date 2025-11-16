@@ -24,7 +24,6 @@ function EssayDetailPageContent() {
   const { user } = useAuth();
   const essayId = parseInt(params.id as string);
   const [userAnswers, setUserAnswers] = useState<Record<number, string>>({});
-  const [revealedAnswers, setRevealedAnswers] = useState<Record<number, boolean>>({});
   const [combinedFeedback, setCombinedFeedback] = useState<EssayFeedback | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -111,12 +110,6 @@ function EssayDetailPageContent() {
     }));
   };
 
-  const toggleRevealAnswer = (questionIndex: number) => {
-    setRevealedAnswers((prev) => ({
-      ...prev,
-      [questionIndex]: !prev[questionIndex],
-    }));
-  };
 
   return (
     <Layout>
@@ -131,8 +124,8 @@ function EssayDetailPageContent() {
 
           <div className="space-y-6 mb-6">
             {essay.questions.map((question, index) => {
-              const isAnswerRevealed = revealedAnswers[index] || false;
               const currentUserAnswer = userAnswers[index] || '';
+              const showAnswers = !!combinedFeedback;
               
               return (
                 <div key={index} className="border-b border-gray-200 pb-6">
@@ -157,16 +150,7 @@ function EssayDetailPageContent() {
                     />
                   </div>
 
-                  <div className="flex justify-center gap-3 mb-4">
-                    <Button
-                      variant={isAnswerRevealed ? "secondary" : "outline"}
-                      onClick={() => toggleRevealAnswer(index)}
-                    >
-                      {isAnswerRevealed ? "Hide Answer" : "Reveal Answer"}
-                    </Button>
-                  </div>
-
-                  {isAnswerRevealed && (
+                  {showAnswers && (
                     <>
                       <div className="bg-green-50 border-2 border-green-200 rounded-lg p-4 mb-4">
                         <div className="text-sm text-green-600 font-medium mb-2">Full Answer</div>
