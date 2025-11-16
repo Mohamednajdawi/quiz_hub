@@ -27,12 +27,13 @@ from backend.database.sqlite_dal import (
     QuizQuestion,
     FlashcardTopic,
     EssayQATopic,
+    EssayQAQuestion,
     Subscription,
     GenerationJob,
 )
 from backend.api_routers.routers.auth_router import get_current_user_dependency
 from backend.utils.credits import consume_generation_token
-from backend.utils.utils import generate_quiz_from_pdf
+from backend.utils.utils import generate_quiz_from_pdf, generate_essay_qa_from_pdf
 from backend.database.sqlite_dal import User as UserModel
 from backend.config.settings import get_app_config, get_pdf_storage_dir
 from backend.database.db import SessionLocal
@@ -64,6 +65,11 @@ def get_max_projects_for_user(user_id: str, db: Session) -> int:
 
 
 class QuizGenerationJobRequest(BaseModel):
+    num_questions: Optional[int] = None
+    difficulty: Optional[str] = "medium"
+
+
+class EssayGenerationJobRequest(BaseModel):
     num_questions: Optional[int] = None
     difficulty: Optional[str] = "medium"
 
@@ -674,6 +680,128 @@ def _process_quiz_generation_job(job_id: int) -> None:
         session.close()
 
 
+def _process_essay_generation_job(job_id: int) -> None:
+    session = SessionLocal()
+    try:
+        job = session.query(GenerationJob).filter(GenerationJob.id == job_id).first()
+        if not job:
+            logging.error("[GEN JOB] Job %s not found", job_id)
+            return
+
+        job.status = "in_progress"
+        job.updated_at = datetime.datetime.now()
+        session.commit()
+
+        user = session.query(User).filter(User.id == job.user_id).first()
+        if not user:
+            job.status = "failed"
+            job.error_message = "User not found"
+            job.completed_at = datetime.datetime.now()
+            job.updated_at = datetime.datetime.now()
+            session.commit()
+            return
+
+        content = session.query(StudentProjectContent).filter(
+            StudentProjectContent.id == job.content_id,
+            StudentProjectContent.project_id == job.project_id,
+        ).first()
+
+        if not content:
+            job.status = "failed"
+            job.error_message = "Content not found"
+            job.completed_at = datetime.datetime.now()
+            job.updated_at = datetime.datetime.now()
+            session.commit()
+            return
+
+        if content.content_type != "pdf" or not content.content_url:
+            job.status = "failed"
+            job.error_message = "Only PDF content is supported for essay generation"
+            job.completed_at = datetime.datetime.now()
+            job.updated_at = datetime.datetime.now()
+            session.commit()
+            return
+
+        payload = job.payload or {}
+        requested_questions = payload.get("num_questions") or 3
+        difficulty = payload.get("difficulty") or "medium"
+
+        essay_data = generate_essay_qa_from_pdf(
+            content.content_url,
+            requested_questions,
+            difficulty,
+        )
+
+        # Create essay topic
+        try:
+            essay_topic = EssayQATopic(
+                topic=essay_data["topic"],
+                category=essay_data["category"],
+                subcategory=essay_data["subcategory"],
+                difficulty=difficulty,
+                creation_timestamp=datetime.datetime.now(),
+                created_by_user_id=user.id,
+            )
+        except Exception:
+            # Fallback: create without difficulty if column doesn't exist
+            essay_topic = EssayQATopic(
+                topic=essay_data["topic"],
+                category=essay_data["category"],
+                subcategory=essay_data["subcategory"],
+                creation_timestamp=datetime.datetime.now(),
+                created_by_user_id=user.id,
+            )
+        session.add(essay_topic)
+        session.flush()
+
+        # Add questions
+        for q in essay_data["questions"]:
+            essay_question = EssayQAQuestion(
+                question=q["question"],
+                full_answer=q["full_answer"],
+                key_info=q["key_info"],
+                topic_id=essay_topic.id,
+            )
+            session.add(essay_question)
+
+        # Create reference
+        essay_reference = StudentProjectEssayReference(
+            project_id=job.project_id,
+            content_id=job.content_id,
+            essay_topic_id=essay_topic.id,
+            created_at=datetime.datetime.now(),
+        )
+        session.add(essay_reference)
+
+        consume_generation_token(session, user)
+
+        job.status = "completed"
+        job.result_topic_id = essay_topic.id
+        job.completed_at = datetime.datetime.now()
+        job.updated_at = datetime.datetime.now()
+        session.commit()
+
+        logging.info(
+            "[GEN JOB] Essay generation completed for job %s -> essay %s",
+            job_id,
+            essay_topic.id,
+        )
+    except Exception as exc:  # pylint: disable=broad-except
+        logging.exception("[GEN JOB] Essay generation failed for job %s: %s", job_id, exc)
+        try:
+            job = session.query(GenerationJob).filter(GenerationJob.id == job_id).first()
+            if job:
+                job.status = "failed"
+                job.error_message = str(exc)
+                job.completed_at = datetime.datetime.now()
+                job.updated_at = datetime.datetime.now()
+                session.commit()
+        except Exception:  # pylint: disable=broad-except
+            session.rollback()
+    finally:
+        session.close()
+
+
 @router.post(
     "/student-projects/{project_id}/content/{content_id}/quiz-generation",
     tags=["Student Projects"],
@@ -773,9 +901,14 @@ async def get_generation_job_status(
     result: Optional[dict] = None
 
     if job.status == "completed" and job.result_topic_id:
-        quiz = db.query(QuizTopic).filter(QuizTopic.id == job.result_topic_id).first()
-        if quiz:
-            result = {"quiz_id": quiz.id, "topic": quiz.topic}
+        if job.job_type == "quiz":
+            quiz = db.query(QuizTopic).filter(QuizTopic.id == job.result_topic_id).first()
+            if quiz:
+                result = {"quiz_id": quiz.id, "topic": quiz.topic}
+        elif job.job_type == "essay":
+            essay = db.query(EssayQATopic).filter(EssayQATopic.id == job.result_topic_id).first()
+            if essay:
+                result = {"essay_id": essay.id, "topic": essay.topic}
 
     return GenerationJobStatusResponse(
         job_id=job.id,
@@ -788,6 +921,82 @@ async def get_generation_job_status(
         created_at=job.created_at.isoformat() if job.created_at else None,
         updated_at=job.updated_at.isoformat() if job.updated_at else None,
         completed_at=job.completed_at.isoformat() if job.completed_at else None,
+    )
+
+
+@router.post(
+    "/student-projects/{project_id}/content/{content_id}/essay-generation",
+    tags=["Student Projects"],
+    status_code=202,
+)
+async def start_essay_generation_job(
+    project_id: int,
+    content_id: int,
+    request: EssayGenerationJobRequest,
+    background_tasks: BackgroundTasks,
+    current_user: UserModel = Depends(get_current_user_dependency),
+    db: Session = Depends(get_db),
+) -> JSONResponse:
+    """Start an asynchronous essay generation job for a project content."""
+    if request.difficulty not in ["easy", "medium", "hard"]:
+        raise HTTPException(
+            status_code=400,
+            detail="Invalid difficulty level. Choose from: easy, medium, hard",
+        )
+
+    project = db.query(StudentProject).filter(
+        StudentProject.id == project_id,
+        StudentProject.user_id == current_user.id,
+    ).first()
+
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+
+    content = db.query(StudentProjectContent).filter(
+        StudentProjectContent.id == content_id,
+        StudentProjectContent.project_id == project_id,
+    ).first()
+
+    if not content:
+        raise HTTPException(status_code=404, detail="Content not found")
+
+    if content.content_type != "pdf" or not content.content_url:
+        raise HTTPException(
+            status_code=400,
+            detail="Only PDF content can be used for essay generation",
+        )
+
+    payload = {
+        "num_questions": request.num_questions if request.num_questions and request.num_questions > 0 else None,
+        "difficulty": request.difficulty,
+    }
+
+    job = GenerationJob(
+        user_id=current_user.id,
+        project_id=project_id,
+        content_id=content_id,
+        job_type="essay",
+        status="pending",
+        payload=payload,
+        created_at=datetime.datetime.now(),
+        updated_at=datetime.datetime.now(),
+    )
+    db.add(job)
+    db.commit()
+    db.refresh(job)
+
+    background_tasks.add_task(_process_essay_generation_job, job.id)
+
+    return JSONResponse(
+        content={
+            "job_id": job.id,
+            "status": job.status,
+            "job_type": job.job_type,
+            "requested_questions": payload.get("num_questions"),
+            "difficulty": payload.get("difficulty"),
+            "message": "Essay generation started. You will be notified when it is ready.",
+        },
+        status_code=202,
     )
 
 
