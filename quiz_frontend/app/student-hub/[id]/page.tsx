@@ -114,12 +114,8 @@ function ContentItem({
   };
 
   const handleViewEssay = async (essayId: number) => {
-    try {
-      const essayData = await essayApi.getEssayQA(essayId);
-      router.push(`/essays/view?data=${encodeURIComponent(JSON.stringify(essayData))}`);
-    } catch (error) {
-      console.error('Failed to load essay:', error);
-    }
+    // Navigate directly to the essay detail page where users can answer questions
+    router.push(`/essays/${essayId}`);
   };
 
   const hasGeneratedContent = generatedContent && (

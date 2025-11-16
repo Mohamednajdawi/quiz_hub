@@ -277,86 +277,86 @@ function DashboardPageContent() {
           </Card>
         </div>
 
+        {/* Performance Charts */}
+        {analytics && analytics.scores.length > 0 && (
+          <Card className="mb-8">
+            <CardHeader title="Quiz Performance Trend" />
+            <div className="p-6">
+              <div className="h-64 flex items-end justify-between gap-1">
+                {analytics.scores.slice(-10).map((score, index) => {
+                  const maxScore = Math.max(...analytics.scores.slice(-10), 100);
+                  const height = Math.max((score / maxScore) * 100, 5);
+                  const isRecent = index >= analytics.scores.slice(-10).length - 3;
+                  return (
+                    <div key={index} className="flex-1 flex flex-col items-center group">
+                      <div
+                        className={`w-full rounded-t transition-all hover:opacity-80 cursor-pointer ${
+                          isRecent ? 'bg-indigo-600' : 'bg-indigo-400'
+                        }`}
+                        style={{ height: `${height}%` }}
+                        title={`Score: ${score.toFixed(1)}%`}
+                      />
+                      <span className="text-xs text-gray-500 mt-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                        {score.toFixed(0)}%
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+              <div className="mt-4 flex justify-between text-xs text-gray-600">
+                <span>Last {Math.min(analytics.scores.length, 10)} attempts</span>
+                <span className="flex items-center gap-2">
+                  <div className="w-3 h-3 bg-indigo-400 rounded"></div>
+                  Older
+                  <div className="w-3 h-3 bg-indigo-600 rounded ml-2"></div>
+                  Recent
+                </span>
+              </div>
+            </div>
+          </Card>
+        )}
+
+        {/* Essay Performance Chart */}
+        {combinedStats.essayScores.length > 0 && (
+          <Card className="mb-8">
+            <CardHeader title="Essay Performance Trend" />
+            <div className="p-6">
+              <div className="h-64 flex items-end justify-between gap-1">
+                {combinedStats.essayScores.slice(-10).map((score, index) => {
+                  const maxScore = Math.max(...combinedStats.essayScores.slice(-10), 100);
+                  const height = Math.max((score / maxScore) * 100, 5);
+                  const isRecent = index >= combinedStats.essayScores.slice(-10).length - 3;
+                  return (
+                    <div key={index} className="flex-1 flex flex-col items-center group">
+                      <div
+                        className={`w-full rounded-t transition-all hover:opacity-80 cursor-pointer ${
+                          isRecent ? 'bg-purple-600' : 'bg-purple-400'
+                        }`}
+                        style={{ height: `${height}%` }}
+                        title={`Score: ${score.toFixed(1)}%`}
+                      />
+                      <span className="text-xs text-gray-500 mt-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                        {score.toFixed(0)}%
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+              <div className="mt-4 flex justify-between text-xs text-gray-600">
+                <span>Last {Math.min(combinedStats.essayScores.length, 10)} essays</span>
+                <span className="flex items-center gap-2">
+                  <div className="w-3 h-3 bg-purple-400 rounded"></div>
+                  Older
+                  <div className="w-3 h-3 bg-purple-600 rounded ml-2"></div>
+                  Recent
+                </span>
+              </div>
+            </div>
+          </Card>
+        )}
+
         {analytics && (
           <>
-
-            {/* Performance Chart */}
-            {analytics.scores.length > 0 && (
-              <Card className="mb-8">
-                <CardHeader title="Quiz Performance Trend" />
-                <div className="p-6">
-                  <div className="h-64 flex items-end justify-between gap-1">
-                    {analytics.scores.slice(-10).map((score, index) => {
-                      const maxScore = Math.max(...analytics.scores.slice(-10), 100);
-                      const height = Math.max((score / maxScore) * 100, 5);
-                      const isRecent = index >= analytics.scores.slice(-10).length - 3;
-                      return (
-                        <div key={index} className="flex-1 flex flex-col items-center group">
-                          <div
-                            className={`w-full rounded-t transition-all hover:opacity-80 cursor-pointer ${
-                              isRecent ? 'bg-indigo-600' : 'bg-indigo-400'
-                            }`}
-                            style={{ height: `${height}%` }}
-                            title={`Score: ${score.toFixed(1)}%`}
-                          />
-                          <span className="text-xs text-gray-500 mt-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                            {score.toFixed(0)}%
-                          </span>
-                        </div>
-                      );
-                    })}
-                  </div>
-                  <div className="mt-4 flex justify-between text-xs text-gray-600">
-                    <span>Last {Math.min(analytics.scores.length, 10)} attempts</span>
-                    <span className="flex items-center gap-2">
-                      <div className="w-3 h-3 bg-indigo-400 rounded"></div>
-                      Older
-                      <div className="w-3 h-3 bg-indigo-600 rounded ml-2"></div>
-                      Recent
-                    </span>
-                  </div>
-                </div>
-              </Card>
-            )}
-
-            {/* Essay Performance Chart */}
-            {combinedStats.essayScores.length > 0 && (
-              <Card className="mb-8">
-                <CardHeader title="Essay Performance Trend" />
-                <div className="p-6">
-                  <div className="h-64 flex items-end justify-between gap-1">
-                    {combinedStats.essayScores.slice(-10).map((score, index) => {
-                      const maxScore = Math.max(...combinedStats.essayScores.slice(-10), 100);
-                      const height = Math.max((score / maxScore) * 100, 5);
-                      const isRecent = index >= combinedStats.essayScores.slice(-10).length - 3;
-                      return (
-                        <div key={index} className="flex-1 flex flex-col items-center group">
-                          <div
-                            className={`w-full rounded-t transition-all hover:opacity-80 cursor-pointer ${
-                              isRecent ? 'bg-purple-600' : 'bg-purple-400'
-                            }`}
-                            style={{ height: `${height}%` }}
-                            title={`Score: ${score.toFixed(1)}%`}
-                          />
-                          <span className="text-xs text-gray-500 mt-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                            {score.toFixed(0)}%
-                          </span>
-                        </div>
-                      );
-                    })}
-                  </div>
-                  <div className="mt-4 flex justify-between text-xs text-gray-600">
-                    <span>Last {Math.min(combinedStats.essayScores.length, 10)} essays</span>
-                    <span className="flex items-center gap-2">
-                      <div className="w-3 h-3 bg-purple-400 rounded"></div>
-                      Older
-                      <div className="w-3 h-3 bg-purple-600 rounded ml-2"></div>
-                      Recent
-                    </span>
-                  </div>
-                </div>
-              </Card>
-            )}
 
             {/* Category Performance */}
             {Object.keys(analytics.category_attempts).length > 0 && (
