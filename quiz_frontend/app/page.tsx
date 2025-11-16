@@ -438,15 +438,6 @@ export default function Home() {
                   Track your performance with detailed statistics, category breakdowns, and progress visualization.
                 </p>
               </Card>
-              <Card className="p-6 border-2 hover:border-amber-200 transition-all">
-                <div className="w-12 h-12 bg-amber-100 rounded-lg flex items-center justify-center mb-4">
-                  <Shield className="w-6 h-6 text-amber-600" />
-                </div>
-                <h3 className="text-lg font-bold text-gray-900 mb-2">Persistent Workspace</h3>
-                <p className="text-gray-700 text-sm">
-                  Your PDFs, versions, and quiz history live on Railway-backed storage—no more disappearing data after redeployments.
-                </p>
-              </Card>
             </div>
           </div>
         </section>
