@@ -282,84 +282,116 @@ function DashboardPageContent() {
         </div>
 
         {/* Performance Charts */}
-        {analytics && analytics.scores && Array.isArray(analytics.scores) && analytics.scores.length > 0 && (
-          <Card className="mb-8">
-            <CardHeader title="Quiz Performance Trend" />
-            <div className="p-6">
-              <div className="h-64 flex items-end justify-between gap-1">
-                {analytics.scores.slice(-10).map((score: number, index: number) => {
-                  const scoresSlice = analytics.scores.slice(-10);
-                  const maxScore = Math.max(...scoresSlice, 100);
-                  const height = Math.max((score / maxScore) * 100, 5);
-                  const isRecent = index >= scoresSlice.length - 3;
-                  return (
-                    <div key={index} className="flex-1 flex flex-col items-center group">
-                      <div
-                        className={`w-full rounded-t transition-all hover:opacity-80 cursor-pointer ${
-                          isRecent ? 'bg-indigo-600' : 'bg-indigo-400'
-                        }`}
-                        style={{ height: `${height}%` }}
-                        title={`Score: ${score.toFixed(1)}%`}
-                      />
-                      <span className="text-xs text-gray-500 mt-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                        {score.toFixed(0)}%
-                      </span>
-                    </div>
-                  );
-                })}
+        {analytics && analytics.scores && Array.isArray(analytics.scores) && analytics.scores.length > 0 && (() => {
+          const scoresSlice = analytics.scores.slice(-10);
+          const maxScore = Math.max(...scoresSlice, 100);
+          const minScore = Math.min(...scoresSlice, 0);
+          // For single data point or when all scores are the same, use the score as percentage of 100
+          const range = maxScore - minScore || 100;
+          const isSinglePoint = scoresSlice.length === 1;
+          
+          return (
+            <Card className="mb-8">
+              <CardHeader title="Quiz Performance Trend" />
+              <div className="p-6">
+                <div className="h-64 flex items-end justify-between gap-2 px-2">
+                  {scoresSlice.map((score: number, index: number) => {
+                    // Calculate height with better scaling
+                    // For single point, show as percentage of 100
+                    const normalizedScore = isSinglePoint 
+                      ? score / 100 
+                      : (score - minScore) / range;
+                    const height = Math.max(normalizedScore * 100, 10); // Minimum 10% height for visibility
+                    const isRecent = index >= scoresSlice.length - 3;
+                    return (
+                      <div key={index} className="flex-1 flex flex-col items-center group min-w-0">
+                        <div
+                          className={`w-full rounded-t transition-all hover:opacity-80 cursor-pointer ${
+                            isRecent ? 'bg-indigo-600' : 'bg-indigo-400'
+                          }`}
+                          style={{ 
+                            height: `${height}%`, 
+                            minHeight: '20px', // Ensure minimum pixel height
+                            maxHeight: '100%'
+                          }}
+                          title={`Score: ${score.toFixed(1)}%`}
+                        />
+                        <span className="text-xs text-gray-500 mt-1 opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
+                          {score.toFixed(0)}%
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+                <div className="mt-4 flex justify-between text-xs text-gray-600">
+                  <span>Last {Math.min(analytics.scores.length, 10)} attempts</span>
+                  <span className="flex items-center gap-2">
+                    <div className="w-3 h-3 bg-indigo-400 rounded"></div>
+                    Older
+                    <div className="w-3 h-3 bg-indigo-600 rounded ml-2"></div>
+                    Recent
+                  </span>
+                </div>
               </div>
-              <div className="mt-4 flex justify-between text-xs text-gray-600">
-                <span>Last {Math.min(analytics.scores.length, 10)} attempts</span>
-                <span className="flex items-center gap-2">
-                  <div className="w-3 h-3 bg-indigo-400 rounded"></div>
-                  Older
-                  <div className="w-3 h-3 bg-indigo-600 rounded ml-2"></div>
-                  Recent
-                </span>
-              </div>
-            </div>
-          </Card>
-        )}
+            </Card>
+          );
+        })()}
 
         {/* Essay Performance Chart */}
-        {combinedStats.essayScores && Array.isArray(combinedStats.essayScores) && combinedStats.essayScores.length > 0 && (
-          <Card className="mb-8">
-            <CardHeader title="Essay Performance Trend" />
-            <div className="p-6">
-              <div className="h-64 flex items-end justify-between gap-1">
-                {combinedStats.essayScores.slice(-10).map((score: number, index: number) => {
-                  const scoresSlice = combinedStats.essayScores.slice(-10);
-                  const maxScore = Math.max(...scoresSlice, 100);
-                  const height = Math.max((score / maxScore) * 100, 5);
-                  const isRecent = index >= scoresSlice.length - 3;
-                  return (
-                    <div key={index} className="flex-1 flex flex-col items-center group">
-                      <div
-                        className={`w-full rounded-t transition-all hover:opacity-80 cursor-pointer ${
-                          isRecent ? 'bg-purple-600' : 'bg-purple-400'
-                        }`}
-                        style={{ height: `${height}%` }}
-                        title={`Score: ${score.toFixed(1)}%`}
-                      />
-                      <span className="text-xs text-gray-500 mt-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                        {score.toFixed(0)}%
-                      </span>
-                    </div>
-                  );
-                })}
+        {combinedStats.essayScores && Array.isArray(combinedStats.essayScores) && combinedStats.essayScores.length > 0 && (() => {
+          const scoresSlice = combinedStats.essayScores.slice(-10);
+          const maxScore = Math.max(...scoresSlice, 100);
+          const minScore = Math.min(...scoresSlice, 0);
+          // For single data point or when all scores are the same, use the score as percentage of 100
+          const range = maxScore - minScore || 100;
+          const isSinglePoint = scoresSlice.length === 1;
+          
+          return (
+            <Card className="mb-8">
+              <CardHeader title="Essay Performance Trend" />
+              <div className="p-6">
+                <div className="h-64 flex items-end justify-between gap-2 px-2">
+                  {scoresSlice.map((score: number, index: number) => {
+                    // Calculate height with better scaling
+                    // For single point, show as percentage of 100
+                    const normalizedScore = isSinglePoint 
+                      ? score / 100 
+                      : (score - minScore) / range;
+                    const height = Math.max(normalizedScore * 100, 10); // Minimum 10% height for visibility
+                    const isRecent = index >= scoresSlice.length - 3;
+                    return (
+                      <div key={index} className="flex-1 flex flex-col items-center group min-w-0">
+                        <div
+                          className={`w-full rounded-t transition-all hover:opacity-80 cursor-pointer ${
+                            isRecent ? 'bg-purple-600' : 'bg-purple-400'
+                          }`}
+                          style={{ 
+                            height: `${height}%`, 
+                            minHeight: '20px', // Ensure minimum pixel height
+                            maxHeight: '100%'
+                          }}
+                          title={`Score: ${score.toFixed(1)}%`}
+                        />
+                        <span className="text-xs text-gray-500 mt-1 opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
+                          {score.toFixed(0)}%
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+                <div className="mt-4 flex justify-between text-xs text-gray-600">
+                  <span>Last {Math.min(combinedStats.essayScores.length, 10)} essays</span>
+                  <span className="flex items-center gap-2">
+                    <div className="w-3 h-3 bg-purple-400 rounded"></div>
+                    Older
+                    <div className="w-3 h-3 bg-purple-600 rounded ml-2"></div>
+                    Recent
+                  </span>
+                </div>
               </div>
-              <div className="mt-4 flex justify-between text-xs text-gray-600">
-                <span>Last {Math.min(combinedStats.essayScores.length, 10)} essays</span>
-                <span className="flex items-center gap-2">
-                  <div className="w-3 h-3 bg-purple-400 rounded"></div>
-                  Older
-                  <div className="w-3 h-3 bg-purple-600 rounded ml-2"></div>
-                  Recent
-                </span>
-              </div>
-            </div>
-          </Card>
-        )}
+            </Card>
+          );
+        })()}
 
 
         {/* Recent Activity - Unified Table */}
