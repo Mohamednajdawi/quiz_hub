@@ -242,6 +242,10 @@ export default function Home() {
                       <CheckCircle2 className="w-4 h-4 text-pink-600 mr-2 flex-shrink-0" />
                       Writing practice
                     </li>
+                    <li className="flex items-center text-sm text-gray-600">
+                      <CheckCircle2 className="w-4 h-4 text-pink-600 mr-2 flex-shrink-0" />
+                      With AI feedback
+                    </li>
                   </ul>
                   <div className="mt-auto">
                     <Link href="/essays">
