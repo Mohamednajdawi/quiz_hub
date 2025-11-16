@@ -35,7 +35,12 @@ def main() -> None:
         command.upgrade(config, "head")
         print("✅ Database is up to date")
     except Exception as e:
+        import traceback
         print(f"❌ Migration failed: {e}")
+        print("📋 Full traceback:")
+        traceback.print_exc()
+        print("\n💡 Tip: If migration fails, you can manually run it via Railway CLI:")
+        print("   railway run python run_migration.py")
         sys.exit(1)
 
 
