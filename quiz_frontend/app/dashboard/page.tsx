@@ -237,7 +237,7 @@ function DashboardPageContent() {
 
         {/* Quick Actions */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
-          <Card className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => router.push('/quizzes')}>
+          <Card onClick={() => router.push('/quizzes')}>
             <div className="flex items-center gap-4">
               <div className="bg-indigo-100 rounded-lg p-3">
                 <BarChart3 className="h-6 w-6 text-indigo-600" />
@@ -250,7 +250,7 @@ function DashboardPageContent() {
             </div>
           </Card>
 
-          <Card className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => router.push('/essays')}>
+          <Card onClick={() => router.push('/essays')}>
             <div className="flex items-center gap-4">
               <div className="bg-purple-100 rounded-lg p-3">
                 <FileText className="h-6 w-6 text-purple-600" />
@@ -263,7 +263,7 @@ function DashboardPageContent() {
             </div>
           </Card>
 
-          <Card className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => router.push('/projects')}>
+          <Card onClick={() => router.push('/projects')}>
             <div className="flex items-center gap-4">
               <div className="bg-green-100 rounded-lg p-3">
                 <BookOpen className="h-6 w-6 text-green-600" />

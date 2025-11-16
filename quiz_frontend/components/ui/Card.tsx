@@ -1,11 +1,26 @@
 interface CardProps {
   children: React.ReactNode;
   className?: string;
+  onClick?: () => void;
 }
 
-export function Card({ children, className = '' }: CardProps) {
+export function Card({ children, className = '', onClick }: CardProps) {
+  const baseClasses = 'bg-white rounded-lg shadow-md p-6';
+  const clickableClasses = onClick ? 'cursor-pointer transition-shadow hover:shadow-lg' : '';
+  
   return (
-    <div className={`bg-white rounded-lg shadow-md p-6 ${className}`}>
+    <div 
+      className={`${baseClasses} ${clickableClasses} ${className}`}
+      onClick={onClick}
+      onKeyDown={onClick ? (e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          onClick();
+        }
+      } : undefined}
+      role={onClick ? 'button' : undefined}
+      tabIndex={onClick ? 0 : undefined}
+    >
       {children}
     </div>
   );
