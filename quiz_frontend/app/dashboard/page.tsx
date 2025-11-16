@@ -14,7 +14,7 @@ import { WelcomeOnboarding, shouldShowOnboarding } from '@/components/WelcomeOnb
 import { attemptApi } from '@/lib/api/attempts';
 import { essayApi } from '@/lib/api/essay';
 import { formatFeedbackToHtml } from '@/lib/utils/formatFeedback';
-import { format, formatDistanceToNow } from 'date-fns';
+import { format } from 'date-fns';
 import { 
   BarChart3, 
   TrendingUp, 
@@ -424,85 +424,19 @@ function DashboardPageContent() {
           </>
         )}
 
-        {/* Recent Activity Timeline */}
+        {/* Recent Activity - Unified Table */}
         {((history?.attempts && history.attempts.length > 0) || (essayAnswers?.answers && essayAnswers.answers.length > 0)) && (
           <Card className="mb-8">
             <CardHeader title="Recent Activity" />
-            <div className="divide-y divide-gray-200">
-              {/* Combine and sort activities */}
-              {[
-                ...(history?.attempts.slice(0, 5).map(attempt => ({
-                  type: 'quiz' as const,
-                  id: attempt.id,
-                  timestamp: attempt.timestamp,
-                  title: attempt.topic_name || 'Quiz',
-                  subtitle: `${attempt.category || 'Unknown'} • ${attempt.subcategory || 'Quiz'}`,
-                  score: attempt.percentage_score,
-                  data: attempt,
-                })) || []),
-                ...(essayAnswers?.answers.slice(0, 5).map(answer => ({
-                  type: 'essay' as const,
-                  id: answer.id,
-                  timestamp: answer.timestamp,
-                  title: answer.topic,
-                  subtitle: `Q${answer.question_index + 1}: ${answer.question.slice(0, 50)}...`,
-                  score: answer.score,
-                  data: answer,
-                })) || []),
-              ]
-                .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
-                .slice(0, 10)
-                .map((activity) => (
-                  <div key={`${activity.type}-${activity.id}`} className="p-4 hover:bg-gray-50 transition-colors">
-                    <div className="flex items-start gap-4">
-                      <div className={`flex-shrink-0 rounded-full p-2 ${
-                        activity.type === 'quiz' ? 'bg-indigo-100' : 'bg-purple-100'
-                      }`}>
-                        {activity.type === 'quiz' ? (
-                          <BarChart3 className="h-5 w-5 text-indigo-600" />
-                        ) : (
-                          <FileText className="h-5 w-5 text-purple-600" />
-                        )}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-start justify-between gap-4">
-                          <div className="flex-1">
-                            <p className="text-sm font-semibold text-gray-900">{activity.title}</p>
-                            <p className="text-sm text-gray-600 mt-1">{activity.subtitle}</p>
-                            <p className="text-xs text-gray-500 mt-1">
-                              {formatDistanceToNow(new Date(activity.timestamp), { addSuffix: true })}
-                            </p>
-                          </div>
-                          {activity.score !== undefined && (
-                            <span className={`text-sm font-semibold whitespace-nowrap ${
-                              activity.score >= 70
-                                ? 'text-green-600'
-                                : activity.score >= 50
-                                ? 'text-yellow-600'
-                                : 'text-red-600'
-                            }`}>
-                              {activity.score.toFixed(1)}%
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-            </div>
-          </Card>
-        )}
-
-        {/* Recent Quiz History */}
-        {history && history.attempts.length > 0 && (
-          <Card className="mb-8">
-            <CardHeader title="Recent Quiz History" />
             <div className="overflow-x-auto">
               <table className="min-w-full divide-y divide-gray-200">
                 <thead className="bg-gray-50">
                   <tr>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
-                      Topic
+                      Type
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
+                      Name
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
                       Score
@@ -519,41 +453,101 @@ function DashboardPageContent() {
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
-                  {history.attempts.slice(0, 10).map((attempt) => (
-                    <HistoryRow key={attempt.id} attempt={attempt} />
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </Card>
-        )}
-
-        {/* Recent Essay Answers */}
-        {essayAnswers && essayAnswers.answers.length > 0 && (
-          <Card className="mb-8">
-            <CardHeader title="Recent Essay Answers" />
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
-                      Topic / Question
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
-                      Score
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
-                      Date
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
-                      AI Feedback
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {essayAnswers.answers.slice(0, 10).map((answer) => (
-                    <EssayAnswerRow key={answer.id} answer={answer} />
-                  ))}
+                  {[
+                    ...(history?.attempts.map(attempt => ({
+                      type: 'quiz' as const,
+                      id: attempt.id,
+                      timestamp: attempt.timestamp,
+                      name: attempt.topic_name || 'Quiz',
+                      category: attempt.category,
+                      subcategory: attempt.subcategory,
+                      score: attempt.percentage_score,
+                      timeTaken: attempt.time_taken_seconds,
+                      aiFeedback: attempt.ai_feedback,
+                      data: attempt,
+                    })) || []),
+                    ...(essayAnswers?.answers.map(answer => ({
+                      type: 'essay' as const,
+                      id: answer.id,
+                      timestamp: answer.timestamp,
+                      name: `${answer.topic} - Q${answer.question_index + 1}: ${answer.question}`,
+                      category: answer.category,
+                      subcategory: answer.subcategory,
+                      score: answer.score,
+                      timeTaken: null,
+                      aiFeedback: answer.ai_feedback,
+                      data: answer,
+                    })) || []),
+                  ]
+                    .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
+                    .slice(0, 20)
+                    .map((activity) => (
+                      <tr key={`${activity.type}-${activity.id}`} className="hover:bg-gray-50">
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                            activity.type === 'quiz'
+                              ? 'bg-indigo-100 text-indigo-800'
+                              : 'bg-purple-100 text-purple-800'
+                          }`}>
+                            {activity.type === 'quiz' ? (
+                              <>
+                                <BarChart3 className="w-3 h-3 mr-1" />
+                                Quiz
+                              </>
+                            ) : (
+                              <>
+                                <FileText className="w-3 h-3 mr-1" />
+                                Essay
+                              </>
+                            )}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4">
+                          <div className="text-sm font-medium text-gray-900">
+                            {activity.name.length > 100 
+                              ? `${activity.name.slice(0, 100)}...` 
+                              : activity.name}
+                          </div>
+                          <div className="text-xs text-gray-500 mt-1">
+                            {activity.category || 'Unknown'} • {activity.subcategory || activity.type}
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          {activity.score !== undefined ? (
+                            <span className={`text-sm font-medium ${
+                              activity.score >= 70
+                                ? 'text-green-600'
+                                : activity.score >= 50
+                                ? 'text-yellow-600'
+                                : 'text-red-600'
+                            }`}>
+                              {activity.score.toFixed(1)}%
+                            </span>
+                          ) : (
+                            <span className="text-sm text-gray-400 italic">Pending</span>
+                          )}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
+                          {activity.timeTaken !== null ? (
+                            <>
+                              {Math.floor(activity.timeTaken / 60)}m {activity.timeTaken % 60}s
+                            </>
+                          ) : (
+                            <span className="text-gray-400">—</span>
+                          )}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
+                          {format(new Date(activity.timestamp), 'MMM d, yyyy')}
+                        </td>
+                        <td className="px-6 py-4 text-xs text-gray-700 whitespace-normal max-w-xs">
+                          {activity.aiFeedback ? (
+                            <ActivityFeedback feedback={activity.aiFeedback} />
+                          ) : (
+                            <span className="italic text-gray-400">Feedback not available</span>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
                 </tbody>
               </table>
             </div>
@@ -604,175 +598,36 @@ export default function DashboardPage() {
   );
 }
 
-type HistoryAttempt = {
-  id: number;
-  topic_name?: string;
-  category?: string;
-  subcategory?: string;
-  timestamp: string;
-  score: number;
-  total_questions: number;
-  percentage_score: number;
-  time_taken_seconds: number;
-  ai_feedback?: string;
-};
-
-function HistoryRow({ attempt }: { attempt: HistoryAttempt }) {
+// Reusable component for activity feedback
+function ActivityFeedback({ feedback }: { feedback: string }) {
   const [expanded, setExpanded] = useState(false);
 
-  const formattedFeedback = attempt.ai_feedback
-    ? formatFeedbackToHtml(attempt.ai_feedback)
-    : '';
-
+  const formattedFeedback = formatFeedbackToHtml(feedback);
   const plainText = formattedFeedback
-    ? formattedFeedback.replace(/<br\s*\/?>/gi, ' ').replace(/<[^>]+>/g, ' ')
-    : '';
-
+    .replace(/<br\s*\/?>/gi, ' ')
+    .replace(/<[^>]+>/g, ' ');
   const normalizedText = plainText.replace(/\s+/g, ' ').trim();
-  const preview =
-    normalizedText.length > 160 ? `${normalizedText.slice(0, 160).trim()}…` : normalizedText;
+  const preview = normalizedText.length > 160 
+    ? `${normalizedText.slice(0, 160).trim()}…` 
+    : normalizedText;
 
   return (
-    <tr>
-      <td className="px-6 py-4 whitespace-nowrap">
-        <div className="text-sm font-medium text-gray-900">{attempt.topic_name ?? 'Quiz'}</div>
-        <div className="text-sm text-gray-700">
-          {(attempt.category ?? 'Unknown Category')} • {(attempt.subcategory ?? 'Quiz')}
-        </div>
-      </td>
-      <td className="px-6 py-4 whitespace-nowrap">
-        <span
-          className={`text-sm font-medium ${
-            attempt.percentage_score >= 70
-              ? 'text-green-600'
-              : attempt.percentage_score >= 50
-              ? 'text-yellow-600'
-              : 'text-red-600'
-          }`}
+    <div className="leading-relaxed">
+      {expanded ? (
+        <div dangerouslySetInnerHTML={{ __html: formattedFeedback }} />
+      ) : (
+        <span>{preview}</span>
+      )}
+      {normalizedText.length > 160 && (
+        <button
+          type="button"
+          onClick={() => setExpanded((prev) => !prev)}
+          className="mt-2 inline-flex items-center text-xs font-medium text-indigo-600 hover:text-indigo-700"
         >
-          {attempt.percentage_score.toFixed(1)}%
-        </span>
-        <div className="text-xs text-gray-700">
-          {attempt.score}/{attempt.total_questions}
-        </div>
-      </td>
-      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
-        {Math.floor(attempt.time_taken_seconds / 60)}m {attempt.time_taken_seconds % 60}s
-      </td>
-      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
-        {format(new Date(attempt.timestamp), 'MMM d, yyyy')}
-      </td>
-      <td className="px-6 py-4 text-xs text-gray-700 whitespace-normal max-w-xs">
-        {formattedFeedback ? (
-          <div className="leading-relaxed">
-            {expanded ? (
-              <div dangerouslySetInnerHTML={{ __html: formattedFeedback }} />
-            ) : (
-              <span>{preview}</span>
-            )}
-            {normalizedText.length > 160 && (
-              <button
-                type="button"
-                onClick={() => setExpanded((prev) => !prev)}
-                className="mt-2 inline-flex items-center text-xs font-medium text-indigo-600 hover:text-indigo-700"
-              >
-                {expanded ? 'See less' : 'See more'}
-              </button>
-            )}
-          </div>
-        ) : (
-          <span className="italic text-gray-400">Feedback not available</span>
-        )}
-      </td>
-    </tr>
-  );
-}
-
-type EssayAnswerData = {
-  id: number;
-  essay_topic_id: number;
-  topic: string;
-  category: string;
-  subcategory: string;
-  question_index: number;
-  question: string;
-  user_answer: string;
-  timestamp: string;
-  ai_feedback?: string;
-  score?: number;
-};
-
-function EssayAnswerRow({ answer }: { answer: EssayAnswerData }) {
-  const [expanded, setExpanded] = useState(false);
-
-  const formattedFeedback = answer.ai_feedback
-    ? formatFeedbackToHtml(answer.ai_feedback)
-    : '';
-
-  const plainText = formattedFeedback
-    ? formattedFeedback.replace(/<br\s*\/?>/gi, ' ').replace(/<[^>]+>/g, ' ')
-    : '';
-
-  const normalizedText = plainText.replace(/\s+/g, ' ').trim();
-  const preview =
-    normalizedText.length > 160 ? `${normalizedText.slice(0, 160).trim()}…` : normalizedText;
-
-  return (
-    <tr>
-      <td className="px-6 py-4">
-        <div className="text-sm font-medium text-gray-900">{answer.topic}</div>
-        <div className="text-sm text-gray-700">
-          {answer.category} • {answer.subcategory}
-        </div>
-        <div className="text-xs text-gray-500 mt-1">
-          Q{answer.question_index + 1}: {answer.question.length > 60 
-            ? `${answer.question.slice(0, 60)}...` 
-            : answer.question}
-        </div>
-      </td>
-      <td className="px-6 py-4 whitespace-nowrap">
-        {answer.score !== undefined ? (
-          <span
-            className={`text-sm font-medium ${
-              answer.score >= 70
-                ? 'text-green-600'
-                : answer.score >= 50
-                ? 'text-yellow-600'
-                : 'text-red-600'
-            }`}
-          >
-            {answer.score.toFixed(1)}%
-          </span>
-        ) : (
-          <span className="text-sm text-gray-400 italic">Pending</span>
-        )}
-      </td>
-      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
-        {format(new Date(answer.timestamp), 'MMM d, yyyy')}
-      </td>
-      <td className="px-6 py-4 text-xs text-gray-700 whitespace-normal max-w-xs">
-        {formattedFeedback ? (
-          <div className="leading-relaxed">
-            {expanded ? (
-              <div dangerouslySetInnerHTML={{ __html: formattedFeedback }} />
-            ) : (
-              <span>{preview}</span>
-            )}
-            {normalizedText.length > 160 && (
-              <button
-                type="button"
-                onClick={() => setExpanded((prev) => !prev)}
-                className="mt-2 inline-flex items-center text-xs font-medium text-indigo-600 hover:text-indigo-700"
-              >
-                {expanded ? 'See less' : 'See more'}
-              </button>
-            )}
-          </div>
-        ) : (
-          <span className="italic text-gray-400">Feedback not available</span>
-        )}
-      </td>
-    </tr>
+          {expanded ? 'See less' : 'See more'}
+        </button>
+      )}
+    </div>
   );
 }
 
