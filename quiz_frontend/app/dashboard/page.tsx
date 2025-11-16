@@ -25,7 +25,9 @@ import {
   Plus,
   Activity,
   Zap,
-  ArrowRight
+  ArrowRight,
+  ChevronLeft,
+  ChevronRight
 } from 'lucide-react';
 
 function DashboardPageContent() {
@@ -34,6 +36,8 @@ function DashboardPageContent() {
   const userId = user?.id || null;
   const router = useRouter();
   const [showOnboarding, setShowOnboarding] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 5;
 
   // Check if onboarding should be shown on mount
   useEffect(() => {
@@ -278,15 +282,16 @@ function DashboardPageContent() {
         </div>
 
         {/* Performance Charts */}
-        {analytics && analytics.scores.length > 0 && (
+        {analytics && analytics.scores && Array.isArray(analytics.scores) && analytics.scores.length > 0 && (
           <Card className="mb-8">
             <CardHeader title="Quiz Performance Trend" />
             <div className="p-6">
               <div className="h-64 flex items-end justify-between gap-1">
-                {analytics.scores.slice(-10).map((score, index) => {
-                  const maxScore = Math.max(...analytics.scores.slice(-10), 100);
+                {analytics.scores.slice(-10).map((score: number, index: number) => {
+                  const scoresSlice = analytics.scores.slice(-10);
+                  const maxScore = Math.max(...scoresSlice, 100);
                   const height = Math.max((score / maxScore) * 100, 5);
-                  const isRecent = index >= analytics.scores.slice(-10).length - 3;
+                  const isRecent = index >= scoresSlice.length - 3;
                   return (
                     <div key={index} className="flex-1 flex flex-col items-center group">
                       <div
@@ -317,15 +322,16 @@ function DashboardPageContent() {
         )}
 
         {/* Essay Performance Chart */}
-        {combinedStats.essayScores.length > 0 && (
+        {combinedStats.essayScores && Array.isArray(combinedStats.essayScores) && combinedStats.essayScores.length > 0 && (
           <Card className="mb-8">
             <CardHeader title="Essay Performance Trend" />
             <div className="p-6">
               <div className="h-64 flex items-end justify-between gap-1">
-                {combinedStats.essayScores.slice(-10).map((score, index) => {
-                  const maxScore = Math.max(...combinedStats.essayScores.slice(-10), 100);
+                {combinedStats.essayScores.slice(-10).map((score: number, index: number) => {
+                  const scoresSlice = combinedStats.essayScores.slice(-10);
+                  const maxScore = Math.max(...scoresSlice, 100);
                   const height = Math.max((score / maxScore) * 100, 5);
-                  const isRecent = index >= combinedStats.essayScores.slice(-10).length - 3;
+                  const isRecent = index >= scoresSlice.length - 3;
                   return (
                     <div key={index} className="flex-1 flex flex-col items-center group">
                       <div
@@ -355,133 +361,73 @@ function DashboardPageContent() {
           </Card>
         )}
 
-        {analytics && (
-          <>
-
-            {/* Category Performance */}
-            {Object.keys(analytics.category_attempts).length > 0 && (
-              <Card className="mb-8">
-                <CardHeader title="Category Performance" />
-                <div className="space-y-4">
-                  {Object.entries(analytics.category_attempts).map(([category, attempts]) => {
-                    const accuracy =
-                      analytics.category_accuracy[category] * 100 || 0;
-                    return (
-                      <div key={category}>
-                        <div className="flex justify-between mb-1">
-                          <span className="text-sm font-medium text-gray-900">{category}</span>
-                          <span className="text-sm text-gray-700">
-                            {attempts} attempts • {accuracy.toFixed(1)}% accuracy
-                          </span>
-                        </div>
-                        <div className="w-full bg-gray-200 rounded-full h-2">
-                          <div
-                            className="bg-indigo-600 h-2 rounded-full"
-                            style={{ width: `${accuracy}%` }}
-                          />
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </Card>
-            )}
-
-            {/* Strengths & Weaknesses */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-              {analytics.strengths.length > 0 && (
-                <Card>
-                  <CardHeader title="Strengths" />
-                  <div className="space-y-2">
-                    {analytics.strengths.map((strength) => (
-                      <div
-                        key={strength}
-                        className="flex items-center p-2 bg-green-50 rounded-md"
-                      >
-                        <span className="text-green-700 font-medium">{strength}</span>
-                      </div>
-                    ))}
-                  </div>
-                </Card>
-              )}
-
-              {analytics.weaknesses.length > 0 && (
-                <Card>
-                  <CardHeader title="Areas for Improvement" />
-                  <div className="space-y-2">
-                    {analytics.weaknesses.map((weakness) => (
-                      <div
-                        key={weakness}
-                        className="flex items-center p-2 bg-red-50 rounded-md"
-                      >
-                        <span className="text-red-700 font-medium">{weakness}</span>
-                      </div>
-                    ))}
-                  </div>
-                </Card>
-              )}
-            </div>
-          </>
-        )}
 
         {/* Recent Activity - Unified Table */}
-        {((history?.attempts && history.attempts.length > 0) || (essayAnswers?.answers && essayAnswers.answers.length > 0)) && (
-          <Card className="mb-8">
-            <CardHeader title="Recent Activity" />
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
-                      Type
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
-                      Name
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
-                      Score
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
-                      Time
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
-                      Date
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
-                      AI Feedback
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {[
-                    ...(history?.attempts.map(attempt => ({
-                      type: 'quiz' as const,
-                      id: attempt.id,
-                      timestamp: attempt.timestamp,
-                      name: attempt.topic_name || 'Quiz',
-                      category: attempt.category,
-                      subcategory: attempt.subcategory,
-                      score: attempt.percentage_score,
-                      timeTaken: attempt.time_taken_seconds,
-                      aiFeedback: attempt.ai_feedback,
-                      data: attempt,
-                    })) || []),
-                    ...(essayAnswers?.answers.map(answer => ({
-                      type: 'essay' as const,
-                      id: answer.id,
-                      timestamp: answer.timestamp,
-                      name: `${answer.topic} - Q${answer.question_index + 1}: ${answer.question}`,
-                      category: answer.category,
-                      subcategory: answer.subcategory,
-                      score: answer.score,
-                      timeTaken: null,
-                      aiFeedback: answer.ai_feedback,
-                      data: answer,
-                    })) || []),
-                  ]
-                    .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
-                    .slice(0, 20)
-                    .map((activity) => (
+        {((history?.attempts && history.attempts.length > 0) || (essayAnswers?.answers && essayAnswers.answers.length > 0)) && (() => {
+          // Combine and sort all activities
+          const allActivities = [
+            ...(history?.attempts.map(attempt => ({
+              type: 'quiz' as const,
+              id: attempt.id,
+              timestamp: attempt.timestamp,
+              name: attempt.topic_name || 'Quiz',
+              category: attempt.category,
+              subcategory: attempt.subcategory,
+              score: attempt.percentage_score,
+              timeTaken: attempt.time_taken_seconds,
+              aiFeedback: attempt.ai_feedback,
+              data: attempt,
+            })) || []),
+            ...(essayAnswers?.answers.map(answer => ({
+              type: 'essay' as const,
+              id: answer.id,
+              timestamp: answer.timestamp,
+              name: `${answer.topic} - Q${answer.question_index + 1}: ${answer.question}`,
+              category: answer.category,
+              subcategory: answer.subcategory,
+              score: answer.score,
+              timeTaken: null,
+              aiFeedback: answer.ai_feedback,
+              data: answer,
+            })) || []),
+          ].sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+
+          // Calculate pagination
+          const totalItems = allActivities.length;
+          const totalPages = Math.ceil(totalItems / itemsPerPage);
+          const startIndex = (currentPage - 1) * itemsPerPage;
+          const endIndex = startIndex + itemsPerPage;
+          const currentItems = allActivities.slice(startIndex, endIndex);
+
+          return (
+            <Card className="mb-8">
+              <CardHeader title="Recent Activity" />
+              <div className="overflow-x-auto">
+                <table className="min-w-full divide-y divide-gray-200">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
+                        Type
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
+                        Name
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
+                        Score
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
+                        Time
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
+                        Date
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
+                        AI Feedback
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {currentItems.map((activity) => (
                       <tr key={`${activity.type}-${activity.id}`} className="hover:bg-gray-50">
                         <td className="px-6 py-4 whitespace-nowrap">
                           <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
@@ -548,11 +494,56 @@ function DashboardPageContent() {
                         </td>
                       </tr>
                     ))}
-                </tbody>
-              </table>
-            </div>
-          </Card>
-        )}
+                  </tbody>
+                </table>
+              </div>
+              
+              {/* Pagination Controls */}
+              {totalPages > 1 && (
+                <div className="px-6 py-4 border-t border-gray-200 flex items-center justify-between">
+                  <div className="text-sm text-gray-700">
+                    Showing {startIndex + 1} to {Math.min(endIndex, totalItems)} of {totalItems} activities
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="outline"
+                      onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                      disabled={currentPage === 1}
+                      className="px-3 py-1 flex items-center gap-1"
+                    >
+                      <ChevronLeft className="h-4 w-4" />
+                      Previous
+                    </Button>
+                    <div className="flex items-center gap-1">
+                      {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                        <button
+                          key={page}
+                          onClick={() => setCurrentPage(page)}
+                          className={`px-3 py-1 text-sm rounded transition-colors ${
+                            currentPage === page
+                              ? 'bg-indigo-600 text-white'
+                              : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                          }`}
+                        >
+                          {page}
+                        </button>
+                      ))}
+                    </div>
+                    <Button
+                      variant="outline"
+                      onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                      disabled={currentPage === totalPages}
+                      className="px-3 py-1 flex items-center gap-1"
+                    >
+                      Next
+                      <ChevronRight className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </Card>
+          );
+        })()}
 
         {(!analytics || analytics.total_quizzes === 0) && (!essayAnswers || essayAnswers.total_answers === 0) && (
           <Card className="border-2 border-dashed border-gray-300">
