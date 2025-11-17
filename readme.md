@@ -82,6 +82,19 @@
 - **HTTP Client**: Axios
 - **Icons**: Lucide React
 
+### 🎨 Brand Color Palette
+
+| Token | Hex | Usage |
+| --- | --- | --- |
+| Deep Navy | `#0e1f47` | Primary text, dark accents |
+| Core Blue | `#163172` | Navigation, headings, emphasis |
+| Secondary Blue | `#1e439d` | Focus rings, hover states |
+| Bright Blue | `#2756c7` | Primary buttons, CTAs |
+| Cloud White | `#ffffff` | Surfaces, cards |
+| Soft Gray | `#e6e6e6` | Backgrounds, dividers |
+
+These shades are defined as CSS variables in `quiz_frontend/app/globals.css` and applied across shared components (layout, navigation, buttons, and footer) so the entire frontend stays consistent with the logo palette.
+
 ---
 
 ## 🚀 Setup & Installation

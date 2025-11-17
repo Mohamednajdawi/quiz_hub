@@ -76,13 +76,13 @@ export function Navigation() {
   };
 
   return (
-    <nav className="bg-white border-b border-gray-200 sticky top-0 z-40 backdrop-blur-sm bg-white/95">
+    <nav className="bg-white border-b border-[#e6e6e6] sticky top-0 z-40 backdrop-blur-sm bg-white/95 text-brand">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           {/* Logo */}
               <div className="flex-shrink-0 flex items-center">
             <Link href="/" className="flex items-center group">
-              <span className="text-2xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
+              <span className="text-2xl font-bold bg-gradient-to-r from-[#163172] to-[#2756c7] bg-clip-text text-transparent">
                 Quiz Hub
               </span>
             </Link>
@@ -108,14 +108,14 @@ export function Navigation() {
                     href={item.href}
                     className={`group relative flex items-center px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
                       isActive
-                        ? 'bg-indigo-50 text-indigo-700'
-                        : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'
+                        ? 'bg-[#e6e6e6] text-[#163172]'
+                        : 'text-[#0e1f47] hover:bg-[#f2f2f2]'
                     }`}
                   >
-                    <item.icon className={`w-4 h-4 mr-2 transition-colors ${isActive ? 'text-indigo-600' : 'text-gray-500 group-hover:text-gray-700'}`} />
+                    <item.icon className={`w-4 h-4 mr-2 transition-colors ${isActive ? 'text-[#163172]' : 'text-[#596078] group-hover:text-[#0e1f47]'}`} />
                     <span>{item.name}</span>
                     {isActive && (
-                      <span className="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-1 h-1 bg-indigo-600 rounded-full" />
+                      <span className="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-1 h-1 bg-[#163172] rounded-full" />
                     )}
                   </Link>
                 );
@@ -130,14 +130,14 @@ export function Navigation() {
                       href={item.href}
                   className={`group relative flex items-center px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
                         isActive
-                      ? 'bg-red-50 text-red-700'
-                      : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'
+                      ? 'bg-[#e6e6e6] text-[#163172]'
+                      : 'text-[#0e1f47] hover:bg-[#f2f2f2]'
                   }`}
                 >
-                  <item.icon className={`w-4 h-4 mr-2 transition-colors ${isActive ? 'text-red-600' : 'text-gray-500 group-hover:text-gray-700'}`} />
+                  <item.icon className={`w-4 h-4 mr-2 transition-colors ${isActive ? 'text-[#163172]' : 'text-[#596078] group-hover:text-[#0e1f47]'}`} />
                   <span>{item.name}</span>
                   {isActive && (
-                    <span className="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-1 h-1 bg-red-600 rounded-full" />
+                    <span className="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-1 h-1 bg-[#163172] rounded-full" />
                   )}
                     </Link>
                   );
@@ -150,13 +150,13 @@ export function Navigation() {
                       onClick={() => setIsDropdownOpen(!isDropdownOpen)}
                   className={`group flex items-center px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
                         isStudyToolActive
-                      ? 'bg-indigo-50 text-indigo-700'
-                      : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'
+                      ? 'bg-[#e6e6e6] text-[#163172]'
+                      : 'text-[#0e1f47] hover:bg-[#f2f2f2]'
                       }`}
                     >
-                  <GraduationCap className={`w-4 h-4 mr-2 transition-colors ${isStudyToolActive ? 'text-indigo-600' : 'text-gray-500 group-hover:text-gray-700'}`} />
+                  <GraduationCap className={`w-4 h-4 mr-2 transition-colors ${isStudyToolActive ? 'text-[#163172]' : 'text-[#596078] group-hover:text-[#0e1f47]'}`} />
                   <span>Study Tools</span>
-                  <ChevronDown className={`w-4 h-4 ml-2 transition-all duration-200 ${isDropdownOpen ? 'rotate-180' : ''} ${isStudyToolActive ? 'text-indigo-600' : 'text-gray-500'}`} />
+                  <ChevronDown className={`w-4 h-4 ml-2 transition-all duration-200 ${isDropdownOpen ? 'rotate-180' : ''} ${isStudyToolActive ? 'text-[#163172]' : 'text-[#596078]'}`} />
                     </button>
                     
                     {isDropdownOpen && (
@@ -171,11 +171,11 @@ export function Navigation() {
                                 onClick={() => setIsDropdownOpen(false)}
                             className={`flex items-center px-4 py-2.5 text-sm transition-colors ${
                                   isActive
-                                    ? 'bg-indigo-50 text-indigo-700 font-medium'
-                                : 'text-gray-700 hover:bg-gray-50'
+                                    ? 'bg-[#e6e6e6] text-[#163172] font-medium'
+                                : 'text-[#0e1f47] hover:bg-[#f2f2f2]'
                                 }`}
                               >
-                            <tool.icon className={`w-4 h-4 mr-3 ${isActive ? 'text-indigo-600' : 'text-gray-400'}`} />
+                            <tool.icon className={`w-4 h-4 mr-3 ${isActive ? 'text-[#163172]' : 'text-[#9fa4b4]'}`} />
                                 {tool.name}
                               </Link>
                             );
@@ -192,18 +192,18 @@ export function Navigation() {
               {isAuthenticated ? (
                 <>
                 {/* User Info - Desktop Only */}
-                <div className="hidden lg:flex items-center gap-3 px-3 py-1.5 rounded-lg bg-gray-50">
+                <div className="hidden lg:flex items-center gap-3 px-3 py-1.5 rounded-lg bg-brand-surface">
                   {/* Avatar */}
                   <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-semibold ${
                     isPro 
                       ? 'bg-gradient-to-br from-yellow-400 to-orange-500' 
-                      : 'bg-gradient-to-br from-indigo-500 to-purple-600'
+                      : 'bg-gradient-to-r from-[#163172] to-[#2756c7]'
                   }`}>
                     {isPro ? <Crown className="w-4 h-4" /> : getUserInitials()}
                   </div>
                   <div className="flex flex-col min-w-0">
                     <div className="flex items-center gap-2">
-                      <span className="text-sm font-medium text-gray-900 truncate max-w-[120px]">
+                      <span className="text-sm font-medium text-brand truncate max-w-[120px]">
                         {displayName}
                       </span>
                       {isPro && (
@@ -213,7 +213,7 @@ export function Navigation() {
                       )}
                     </div>
                     {!isPro && remainingGenerations !== null && (
-                      <div className="flex items-center gap-1 text-xs text-indigo-600">
+                      <div className="flex items-center gap-1 text-xs text-[#163172]">
                         <Sparkles className="h-3 w-3" />
                         <span>{remainingGenerations} left</span>
                       </div>
@@ -231,7 +231,7 @@ export function Navigation() {
                 <div className="relative" ref={userMenuRef}>
                   <button
                     onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
-                    className="flex items-center justify-center w-10 h-10 rounded-lg text-gray-700 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors"
+                    className="flex items-center justify-center w-10 h-10 rounded-lg text-[#0e1f47] hover:bg-[#e6e6e6] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#1e439d] transition-colors"
                     aria-label="User menu"
                   >
                     <MoreVertical className="w-5 h-5" />
@@ -349,13 +349,13 @@ export function Navigation() {
                 <div className="flex items-center gap-2">
                   <Link
                     href="/login"
-                  className="px-4 py-2 text-sm font-medium text-gray-700 hover:text-gray-900 transition-colors"
+                  className="px-4 py-2 text-sm font-medium text-[#0e1f47] hover:text-[#163172] transition-colors"
                   >
                     Login
                   </Link>
                   <Link
                     href="/register"
-                  className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors"
+                  className="px-4 py-2 text-sm font-medium text-white bg-[#2756c7] rounded-lg hover:bg-[#1e439d] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#163172] transition-colors"
                   >
                     Sign Up
                   </Link>
