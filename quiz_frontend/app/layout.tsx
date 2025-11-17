@@ -78,7 +78,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased full-width`}
+        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
         <StructuredData />
         <Providers>{children}</Providers>
