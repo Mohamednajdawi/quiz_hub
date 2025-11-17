@@ -143,3 +143,238 @@ def generate_quiz_feedback(
         logging.error("[QUIZ FEEDBACK] Failed to generate feedback: %s", exc)
         return None
 
+
+def generate_essay_feedback(
+    *,
+    question: str,
+    user_answer: str,
+    correct_answer: str,
+    key_info: list[str],
+) -> tuple[Optional[str], Optional[float]]:
+    """
+    Generate feedback and score for an essay answer using LLM.
+    
+    Args:
+        question: The essay question
+        user_answer: The user's answer
+        correct_answer: The correct/expected answer
+        key_info: List of key information points that should be covered
+        
+    Returns:
+        A tuple of (feedback_string, score_percentage) or (None, None) if generation fails.
+        Score is a float between 0-100.
+    """
+    
+    api_key = os.environ.get("OPENAI_API_KEY") or os.environ.get("OPEN_API_KEY")
+    if not api_key:
+        logging.warning("[ESSAY FEEDBACK] OPENAI_API_KEY not configured; skipping AI feedback generation.")
+        return None, None
+    
+    client = OpenAI(api_key=api_key)
+    model = os.environ.get("OPENAI_MODEL", "gpt-4.1-mini-2025-04-14")
+    
+    # Format key info points
+    key_info_text = "\n".join([f"- {info}" for info in key_info]) if key_info else "No specific key points provided."
+    
+    # Prepare the prompt
+    prompt_text = f"""Question: {question}
+
+Expected Answer (Reference):
+{correct_answer}
+
+Key Information Points to Cover:
+{key_info_text}
+
+Student's Answer:
+{user_answer}
+
+Please evaluate the student's answer and provide:
+1. A score from 0-100 based on:
+   - Accuracy and correctness of the information
+   - Coverage of key information points
+   - Clarity and organization
+   - Depth of understanding demonstrated
+   
+2. Constructive feedback (2-4 sentences) that:
+   - Acknowledges what the student did well
+   - Points out what's missing or incorrect
+   - Provides specific guidance on how to improve
+   - Uses **bold** formatting for key concepts or action items
+   
+Format your response as JSON:
+{{
+  "score": <number 0-100>,
+  "feedback": "<feedback text with markdown formatting>"
+}}"""
+    
+    try:
+        response = client.chat.completions.create(
+            model=model,
+            messages=[
+                {
+                    "role": "system",
+                    "content": (
+                        "You are an encouraging and constructive educator. "
+                        "Evaluate essay answers fairly and provide helpful feedback. "
+                        "Always return valid JSON with 'score' (0-100) and 'feedback' (string) fields. "
+                        "Use **bold** formatting in feedback for emphasis on key concepts or action items."
+                    ),
+                },
+                {
+                    "role": "user",
+                    "content": prompt_text,
+                },
+            ],
+            max_tokens=2000,
+            temperature=0.3,
+            response_format={"type": "json_object"},
+        )
+        
+        message = response.choices[0].message.content if response.choices else None
+        if not message:
+            logging.warning("[ESSAY FEEDBACK] OpenAI returned no feedback content.")
+            return None, None
+        
+        # Parse JSON response
+        import json
+        try:
+            result = json.loads(message)
+            score = float(result.get("score", 0))
+            feedback = result.get("feedback", "")
+            
+            # Validate score range
+            score = max(0, min(100, score))
+            
+            return feedback.strip(), score
+        except (json.JSONDecodeError, ValueError, KeyError) as e:
+            logging.error("[ESSAY FEEDBACK] Failed to parse JSON response: %s. Raw response: %s", e, message)
+            # Fallback: try to extract score and feedback from text
+            return message.strip(), None
+            
+    except Exception as exc:  # pylint: disable=broad-except
+        logging.error("[ESSAY FEEDBACK] Failed to generate feedback: %s", exc)
+        return None, None
+
+
+def generate_combined_essay_feedback(
+    *,
+    questions_and_answers: list[dict],
+) -> tuple[Optional[str], Optional[float]]:
+    """
+    Generate combined feedback and score for multiple essay answers using LLM.
+    
+    Args:
+        questions_and_answers: List of dicts, each containing:
+            - question: str
+            - user_answer: str
+            - correct_answer: str
+            - key_info: list[str]
+    
+    Returns:
+        A tuple of (feedback_string, score_percentage) or (None, None) if generation fails.
+        Score is a float between 0-100.
+    """
+    
+    api_key = os.environ.get("OPENAI_API_KEY") or os.environ.get("OPEN_API_KEY")
+    if not api_key:
+        logging.warning("[ESSAY FEEDBACK] OPENAI_API_KEY not configured; skipping AI feedback generation.")
+        return None, None
+    
+    client = OpenAI(api_key=api_key)
+    model = os.environ.get("OPENAI_MODEL", "gpt-4.1-mini-2025-04-14")
+    
+    # Build the prompt with all questions and answers
+    qa_sections = []
+    for idx, qa in enumerate(questions_and_answers, 1):
+        question = qa.get("question", "")
+        user_answer = qa.get("user_answer", "")
+        correct_answer = qa.get("correct_answer", "")
+        key_info = qa.get("key_info", [])
+        key_info_text = "\n".join([f"- {info}" for info in key_info]) if key_info else "No specific key points provided."
+        
+        qa_sections.append(f"""Question {idx}: {question}
+
+Expected Answer (Reference):
+{correct_answer}
+
+Key Information Points to Cover:
+{key_info_text}
+
+Student's Answer:
+{user_answer}
+""")
+    
+    all_qa_text = "\n" + "="*50 + "\n".join(qa_sections) + "="*50
+    
+    prompt_text = f"""You are evaluating a student's complete essay response set. The student has answered {len(questions_and_answers)} questions.{all_qa_text}
+
+Please evaluate ALL answers together and provide:
+1. A single overall score from 0-100 based on:
+   - Overall accuracy and correctness across all answers
+   - Coverage of key information points across all questions
+   - Consistency and coherence across answers
+   - Clarity and organization throughout
+   - Depth of understanding demonstrated overall
+   
+2. Comprehensive feedback (3-5 sentences) that:
+   - Acknowledges what the student did well across all answers
+   - Points out what's missing or incorrect across the responses
+   - Provides specific guidance on how to improve overall
+   - Uses **bold** formatting for key concepts or action items
+   - Addresses the complete set of answers, not individual questions
+   
+Format your response as JSON:
+{{
+  "score": <number 0-100>,
+  "feedback": "<feedback text with markdown formatting>"
+}}"""
+    
+    try:
+        response = client.chat.completions.create(
+            model=model,
+            messages=[
+                {
+                    "role": "system",
+                    "content": (
+                        "You are an encouraging and constructive educator. "
+                        "Evaluate the complete set of essay answers together and provide overall feedback. "
+                        "Always return valid JSON with 'score' (0-100) and 'feedback' (string) fields. "
+                        "Use **bold** formatting in feedback for emphasis on key concepts or action items. "
+                        "Provide one overall assessment, not per-question feedback."
+                    ),
+                },
+                {
+                    "role": "user",
+                    "content": prompt_text,
+                },
+            ],
+            max_tokens=2000,
+            temperature=0.3,
+            response_format={"type": "json_object"},
+        )
+        
+        message = response.choices[0].message.content if response.choices else None
+        if not message:
+            logging.warning("[ESSAY FEEDBACK] OpenAI returned no feedback content.")
+            return None, None
+        
+        # Parse JSON response
+        import json
+        try:
+            result = json.loads(message)
+            score = float(result.get("score", 0))
+            feedback = result.get("feedback", "")
+            
+            # Validate score range
+            score = max(0, min(100, score))
+            
+            return feedback.strip(), score
+        except (json.JSONDecodeError, ValueError, KeyError) as e:
+            logging.error("[ESSAY FEEDBACK] Failed to parse JSON response: %s. Raw response: %s", e, message)
+            # Fallback: try to extract score and feedback from text
+            return message.strip(), None
+            
+    except Exception as exc:  # pylint: disable=broad-except
+        logging.error("[ESSAY FEEDBACK] Failed to generate combined feedback: %s", exc)
+        return None, None
+

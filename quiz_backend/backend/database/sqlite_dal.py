@@ -214,6 +214,10 @@ class EssayAnswer(Base):
     user_answer = Column(Text, nullable=False)
     timestamp = Column(DateTime, default=datetime.datetime.now)
     
+    # AI feedback and scoring
+    ai_feedback = Column(Text, nullable=True)  # AI-generated feedback
+    score = Column(Float, nullable=True)  # Score as percentage (0-100)
+    
     # Relationships
     essay_topic = relationship("EssayQATopic")
     user = relationship("User")

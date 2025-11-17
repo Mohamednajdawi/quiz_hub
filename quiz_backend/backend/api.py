@@ -31,11 +31,13 @@ if cors_origins_env:
     # Parse comma-separated origins
     allowed_origins = [origin.strip() for origin in cors_origins_env.split(",") if origin.strip()]
     allow_credentials = True
+    print(f"[CORS] Configured with specific origins: {allowed_origins}")
 else:
     # Development mode: allow all origins but disable credentials
     # (browsers don't allow credentials with wildcard origins)
     allowed_origins = ["*"]
     allow_credentials = False
+    print("[CORS] WARNING: Allowing all origins (development mode). Set CORS_ALLOWED_ORIGINS for production!")
 
 app.add_middleware(
     CORSMiddleware,
@@ -43,6 +45,7 @@ app.add_middleware(
     allow_credentials=allow_credentials,
     allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"], 
     allow_headers=["*"],
+    expose_headers=["*"],
 )
 
 # Add rate limiting middleware (can be disabled via environment variable)

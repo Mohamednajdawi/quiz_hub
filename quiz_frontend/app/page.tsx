@@ -1,6 +1,7 @@
 import { Layout } from '@/components/Layout';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
+import Image from 'next/image';
 import Link from 'next/link';
 import { 
   GraduationCap, 
@@ -19,9 +20,56 @@ import {
 } from 'lucide-react';
 
 export default function Home() {
+  const previewImages = [
+    {
+      src: '/gallery-quiz.svg',
+      title: 'Quiz Workspace',
+      description: 'Run lightning-fast practice sessions with AI feedback.',
+    },
+    {
+      src: '/gallery-flashcards.svg',
+      title: 'Flashcards View',
+      description: 'Swipe through adaptive cards driven by your quiz data.',
+    },
+    {
+      src: '/gallery-essay.svg',
+      title: 'Essay Builder',
+      description: 'Outline, draft, and refine long-form answers in one place.',
+    },
+  ];
+
   return (
     <Layout>
       <div className="min-h-screen">
+        {/* Product Video */}
+        <section className="bg-gradient-to-br from-indigo-50 via-white to-purple-100 text-gray-900 py-16 sm:py-20">
+          <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+            <p className="text-sm font-semibold uppercase tracking-[0.3em] text-indigo-500 mb-4 text-center">
+              Product Walkthrough
+            </p>
+            <h1 className="text-4xl sm:text-5xl font-bold text-center leading-tight text-gray-900">
+              See QuizHub in action in under a minute
+            </h1>
+            <p className="mt-4 text-center text-lg text-gray-700 max-w-3xl mx-auto">
+              Watch how PDFs become quizzes, flashcards, and essay prompts without touching a document editor.
+            </p>
+            <div className="mt-10 rounded-3xl overflow-hidden border border-indigo-100 shadow-2xl bg-white/80 backdrop-blur">
+              <div className="aspect-video bg-gray-900">
+                <video
+                  className="w-full h-full object-cover"
+                  autoPlay
+                  loop
+                  muted
+                  playsInline
+                  controls
+                  poster="/gallery-quiz.svg"
+                  src="https://cdn.coverr.co/videos/coverr-learning-in-progress-1022/1080p.mp4"
+                />
+              </div>
+            </div>
+          </div>
+        </section>
+
         {/* Hero Section */}
         <section className="relative overflow-hidden bg-gradient-to-br from-indigo-50 via-white to-purple-50 py-20 sm:py-32">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -30,17 +78,11 @@ export default function Home() {
                 <Sparkles className="w-4 h-4" />
                 Freshly Updated AI Learning Workspace
               </div>
-              <h1 className="text-5xl sm:text-6xl md:text-7xl font-bold text-gray-900 mb-6 leading-tight">
-                Transform Your
-                <span className="block text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-purple-600">
-                  Study Materials
-                </span>
-                Into Learning Tools
-              </h1>
-              <p className="mt-6 max-w-3xl mx-auto text-xl text-gray-700 leading-relaxed">
-                Generate interactive quizzes, flashcards, and essay questions from any PDF or URL. 
-                Chat with your documents, get concept-level AI feedback after every quiz, and let adaptive flashcards reinforce your weak spots. 
-                Powered by advanced AI to help you study smarter, not harder.
+              <h2 className="text-4xl sm:text-5xl md:text-6xl font-bold text-gray-900 mb-6 leading-tight">
+                Turn any PDF into active study fuel
+              </h2>
+              <p className="mt-4 max-w-2xl mx-auto text-lg text-gray-700">
+                Upload, generate, and review in one streamlined space. QuizHub keeps the copy short and the learning loop fast.
               </p>
               <div className="mt-10 flex flex-col sm:flex-row gap-4 justify-center">
                 <Link href="/register">
@@ -55,20 +97,46 @@ export default function Home() {
                   </Button>
                 </Link>
               </div>
-              <div className="mt-12 flex items-center justify-center gap-8 text-sm text-gray-600">
+              <div className="mt-12 flex flex-col sm:flex-row items-center justify-center gap-4 text-sm text-gray-600">
+                <div className="flex items-center gap-2">
+                  <CheckCircle2 className="w-5 h-5 text-green-500" />
+                  <span>Launch your first quiz in 60 seconds</span>
+                </div>
                 <div className="flex items-center gap-2">
                   <CheckCircle2 className="w-5 h-5 text-green-500" />
                   <span>No credit card required</span>
                 </div>
-                <div className="flex items-center gap-2">
-                  <CheckCircle2 className="w-5 h-5 text-green-500" />
-                  <span>Free to start</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <CheckCircle2 className="w-5 h-5 text-green-500" />
-                  <span>Instant generation</span>
-                </div>
               </div>
+            </div>
+          </div>
+        </section>
+
+        {/* Image Gallery */}
+        <section className="py-16 bg-white border-b border-gray-100">
+          <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="text-center mb-12">
+              <h3 className="text-3xl font-bold text-gray-900">Screens you will live in</h3>
+              <p className="text-gray-600 max-w-2xl mx-auto">
+                A quick peek at the updated workspace so you can skip the tour and start creating.
+              </p>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+              {previewImages.map((image) => (
+                <div key={image.title} className="space-y-3">
+                  <div className="rounded-2xl border border-gray-200 shadow-sm overflow-hidden bg-gray-50">
+                    <Image
+                      src={image.src}
+                      alt={image.title}
+                      width={640}
+                      height={360}
+                      className="w-full h-full object-cover"
+                      priority
+                    />
+                  </div>
+                  <h4 className="text-lg font-semibold text-gray-900">{image.title}</h4>
+                  <p className="text-sm text-gray-600">{image.description}</p>
+                </div>
+              ))}
             </div>
           </div>
         </section>
@@ -241,6 +309,10 @@ export default function Home() {
                     <li className="flex items-center text-sm text-gray-600">
                       <CheckCircle2 className="w-4 h-4 text-pink-600 mr-2 flex-shrink-0" />
                       Writing practice
+                    </li>
+                    <li className="flex items-center text-sm text-gray-600">
+                      <CheckCircle2 className="w-4 h-4 text-pink-600 mr-2 flex-shrink-0" />
+                      With AI feedback
                     </li>
                   </ul>
                   <div className="mt-auto">
@@ -444,7 +516,7 @@ export default function Home() {
                 </div>
                 <h3 className="text-lg font-bold text-gray-900 mb-2">Persistent Workspace</h3>
                 <p className="text-gray-700 text-sm">
-                  Your PDFs, versions, and quiz history live on Railway-backed storage—no more disappearing data after redeployments.
+                  Your PDFs are stored securely for future use, allowing you to generate quizzes, flashcards, and essays anytime without re-uploading.
                 </p>
               </Card>
             </div>

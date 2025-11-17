@@ -1,0 +1,20 @@
+<svg width="640" height="360" viewBox="0 0 640 360" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="640" height="360" rx="32" fill="url(#paint0_linear_flash)" />
+  <rect x="120" y="70" width="200" height="220" rx="24" fill="#EEF2FF" stroke="#6366F1" stroke-width="2" />
+  <rect x="180" y="94" width="80" height="12" rx="6" fill="#4F46E5" opacity="0.6" />
+  <rect x="148" y="128" width="144" height="16" rx="8" fill="#A5B4FC" opacity="0.8" />
+  <rect x="148" y="160" width="144" height="16" rx="8" fill="#A5B4FC" opacity="0.5" />
+  <rect x="148" y="192" width="96" height="16" rx="8" fill="#A5B4FC" opacity="0.3" />
+  <rect x="320" y="90" width="200" height="220" rx="24" fill="#FDF2F8" stroke="#DB2777" stroke-width="2" />
+  <rect x="356" y="114" width="128" height="16" rx="8" fill="#F472B6" opacity="0.8" />
+  <rect x="356" y="146" width="128" height="16" rx="8" fill="#F472B6" opacity="0.5" />
+  <rect x="356" y="178" width="92" height="16" rx="8" fill="#F472B6" opacity="0.3" />
+  <rect x="356" y="214" width="72" height="12" rx="6" fill="#DB2777" opacity="0.6" />
+  <defs>
+    <linearGradient id="paint0_linear_flash" x1="0" y1="0" x2="640" y2="360" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FDF2F8" />
+      <stop offset="1" stop-color="#EEF2FF" />
+    </linearGradient>
+  </defs>
+</svg>
+

@@ -27,7 +27,8 @@ export interface GenerationJobStatus {
   requested_questions?: number | null;
   difficulty?: 'easy' | 'medium' | 'hard' | null;
   result?: {
-    quiz_id: number;
+    quiz_id?: number;
+    essay_id?: number;
     topic: string;
   } | null;
   error_message?: string | null;
@@ -175,6 +176,25 @@ export const studentProjectsApi = {
         // Don't set Content-Type - let axios/browser set it with boundary for multipart/form-data
       },
     });
+    return data;
+  },
+
+  startEssayGenerationJob: async (
+    projectId: number,
+    contentId: number,
+    payload: { num_questions?: number; difficulty: 'easy' | 'medium' | 'hard' }
+  ): Promise<{
+    job_id: number;
+    status: string;
+    job_type: string;
+    requested_questions?: number | null;
+    difficulty?: string | null;
+    message?: string;
+  }> => {
+    const { data } = await apiClient.post(
+      `/student-projects/${projectId}/content/${contentId}/essay-generation`,
+      payload
+    );
     return data;
   },
 

@@ -57,11 +57,23 @@ function EssaysPageContent() {
   
   // Get user's essays if authenticated, otherwise get all essays
   const { data: topics, error: topicsError, isLoading: topicsLoading } = useQuery({
-    queryKey: ['essay-topics', isAuthenticated ? 'my' : 'all'],
+    queryKey: ['essay-topics', isAuthenticated ? 'my' : 'all', user?.id],
     queryFn: async () => {
       if (isAuthenticated) {
-        console.log('[ESSAY] Fetching my essays for authenticated user');
-        return await essayApi.getMyTopics();
+        console.log('[ESSAY] Fetching my essays for authenticated user:', user?.id);
+        try {
+          const result = await essayApi.getMyTopics();
+          console.log('[ESSAY] Successfully fetched essays:', result);
+          return result;
+        } catch (error: any) {
+          console.error('[ESSAY] Error fetching my essays:', error);
+          console.error('[ESSAY] Error details:', {
+            message: error?.message,
+            response: error?.response?.data,
+            status: error?.response?.status,
+          });
+          throw error;
+        }
       } else {
         console.log('[ESSAY] Fetching all essays (not authenticated)');
         return await essayApi.getTopics();
@@ -70,6 +82,11 @@ function EssaysPageContent() {
     enabled: true, // Always fetch
     retry: 1,
   });
+
+  // Log errors when they occur
+  if (topicsError) {
+    console.error('[ESSAY] Query error:', topicsError);
+  }
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
@@ -221,9 +238,19 @@ function EssaysPageContent() {
             
             {topicsError && (
               <Alert type="error" className="mb-4">
-                {topicsError instanceof Error ? topicsError.message : 'Failed to load essay Q&A'}
-                <div className="mt-2 text-sm">
-                  {isAuthenticated ? 'Make sure you are logged in and have generated essay Q&A from your projects.' : 'Failed to load essay Q&A list.'}
+                <div className="font-semibold mb-2">
+                  {topicsError instanceof Error ? topicsError.message : 'Failed to load essay Q&A'}
+                </div>
+                <div className="mt-2 text-sm space-y-1">
+                  {isAuthenticated ? (
+                    <>
+                      <p>• Make sure you are logged in and have generated essay Q&A from your projects.</p>
+                      <p>• Check your browser console for detailed error information.</p>
+                      <p>• If the error persists, try refreshing the page or logging out and back in.</p>
+                    </>
+                  ) : (
+                    <p>Failed to load essay Q&A list. Please try again later.</p>
+                  )}
                 </div>
               </Alert>
             )}
