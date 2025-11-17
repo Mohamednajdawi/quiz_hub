@@ -50,9 +50,9 @@ function TierCard({ tier, billingPeriod, onUpgrade, isLoading }: { tier: Pricing
 
   return (
     <Card
-      className={`flex flex-col h-full border-2 rounded-2xl transition-all !p-0 overflow-hidden ${
+      className={`flex flex-col h-full min-h-[560px] border-2 rounded-2xl transition-all !p-0 overflow-hidden ${
         tier.highlighted
-          ? 'border-[#2756c7] shadow-xl scale-[1.02]'
+          ? 'border-[#2756c7] shadow-xl'
           : 'border-[#e6e6e6]'
       }`}
     >
