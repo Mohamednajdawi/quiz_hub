@@ -42,19 +42,19 @@ export default function Home() {
     <Layout>
       <div className="min-h-screen">
         {/* Product Video */}
-        <section className="bg-gray-950 text-white py-16 sm:py-20">
+        <section className="bg-gradient-to-br from-indigo-50 via-white to-purple-100 text-gray-900 py-16 sm:py-20">
           <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
-            <p className="text-sm font-semibold uppercase tracking-[0.3em] text-indigo-300 mb-4 text-center">
+            <p className="text-sm font-semibold uppercase tracking-[0.3em] text-indigo-500 mb-4 text-center">
               Product Walkthrough
             </p>
-            <h1 className="text-4xl sm:text-5xl font-bold text-center leading-tight">
+            <h1 className="text-4xl sm:text-5xl font-bold text-center leading-tight text-gray-900">
               See QuizHub in action in under a minute
             </h1>
-            <p className="mt-4 text-center text-lg text-indigo-100 max-w-3xl mx-auto">
+            <p className="mt-4 text-center text-lg text-gray-700 max-w-3xl mx-auto">
               Watch how PDFs become quizzes, flashcards, and essay prompts without touching a document editor.
             </p>
-            <div className="mt-10 rounded-3xl overflow-hidden border border-white/10 shadow-2xl">
-              <div className="aspect-video bg-black">
+            <div className="mt-10 rounded-3xl overflow-hidden border border-indigo-100 shadow-2xl bg-white/80 backdrop-blur">
+              <div className="aspect-video bg-gray-900">
                 <video
                   className="w-full h-full object-cover"
                   autoPlay
