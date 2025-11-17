@@ -50,37 +50,40 @@ function TierCard({ tier, billingPeriod, onUpgrade, isLoading }: { tier: Pricing
 
   return (
     <Card
-      className={`flex flex-col h-full border-2 transition-all ${
-        tier.highlighted ? 'border-indigo-500 shadow-lg' : 'border-gray-200'
+      className={`flex flex-col h-full border-2 rounded-2xl transition-all !p-0 overflow-hidden ${
+        tier.highlighted
+          ? 'border-[#2756c7] shadow-xl scale-[1.02]'
+          : 'border-[#e6e6e6]'
       }`}
     >
-      <div className="mb-4">
+      <div className="p-6 pb-4 border-b border-[#f2f2f2] bg-white">
         <CardHeader title={tier.name} description={tier.tagline} />
-        {/* No credit card badge for free tier */}
         {isFreeTier && (
-          <div className="px-6 mt-2">
-            <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+          <div className="mt-3">
+            <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-[#d9f2d9] text-[#20603c]">
               ✓ No credit card required
             </span>
           </div>
         )}
       </div>
 
-      <div className="px-6">
-        <div className="flex items-baseline gap-2 text-gray-900 mb-2">
-          <span className="text-3xl font-bold">{displayPrice}</span>
-          {displaySuffix && <span className="text-sm text-gray-600">{displaySuffix}</span>}
+      <div className="p-6 space-y-4 flex-1">
+        <div>
+          <div className="flex items-baseline gap-2 text-brand mb-1">
+            <span className="text-4xl font-bold">{displayPrice}</span>
+            {displaySuffix && <span className="text-sm text-[#596078]">{displaySuffix}</span>}
+          </div>
+          {showAnnual && tier.annual_savings && (
+            <p className="text-sm text-[#20603c] font-medium">{tier.annual_savings}</p>
+          )}
         </div>
-        {showAnnual && tier.annual_savings && (
-          <p className="text-sm text-green-600 font-medium mb-3">{tier.annual_savings}</p>
-        )}
-        {tier.description && <p className="text-sm text-gray-600 mb-6">{tier.description}</p>}
+        {tier.description && <p className="text-sm text-[#596078]">{tier.description}</p>}
 
         {tier.features?.length ? (
-          <ul className="space-y-3 text-sm text-gray-700">
+          <ul className="space-y-3 text-sm text-brand mt-4">
             {tier.features.map((feature) => (
-              <li key={feature} className="flex items-start gap-2">
-                <span className="mt-1 h-2 w-2 rounded-full bg-indigo-500" aria-hidden />
+              <li key={feature} className="flex items-start gap-3">
+                <span className="mt-1 h-2.5 w-2.5 rounded-full bg-[#2756c7]" aria-hidden />
                 <span>{feature}</span>
               </li>
             ))}
@@ -89,7 +92,7 @@ function TierCard({ tier, billingPeriod, onUpgrade, isLoading }: { tier: Pricing
       </div>
 
       {tier.cta && (
-        <div className="mt-auto px-6 pb-6 pt-8">
+        <div className="p-6 pt-0 bg-white">
           {isRegistrationLink || isExternalLink ? (
             <Link href={tier.cta.href} className="block">
               <Button variant={ctaVariant} className="w-full">
@@ -97,8 +100,8 @@ function TierCard({ tier, billingPeriod, onUpgrade, isLoading }: { tier: Pricing
               </Button>
             </Link>
           ) : (
-            <Button 
-              variant={ctaVariant} 
+            <Button
+              variant={ctaVariant}
               className="w-full"
               onClick={(e) => {
                 e.preventDefault();
@@ -109,9 +112,8 @@ function TierCard({ tier, billingPeriod, onUpgrade, isLoading }: { tier: Pricing
               {isLoading ? 'Loading...' : tier.cta.label}
             </Button>
           )}
-          {/* Cancel anytime message for paid tiers */}
           {!isFreeTier && (
-            <p className="text-xs text-center text-gray-500 mt-2">
+            <p className="text-xs text-center text-[#7a8094] mt-2">
               Cancel anytime
             </p>
           )}
@@ -177,7 +179,7 @@ function PricingPageContent() {
   return (
     <Layout>
       <div className="px-4 sm:px-6 lg:px-8">
-        <div className="max-w-5xl mx-auto">
+        <div className="max-w-6xl mx-auto">
           {/* Success/Cancel Messages */}
           {searchParams?.get('success') === 'true' && (
             <Alert type="success" className="mb-6">
@@ -198,14 +200,14 @@ function PricingPageContent() {
           )}
 
           <div className="text-center mb-12">
-            <h1 className="text-4xl sm:text-5xl font-bold text-gray-900 mb-4">
+            <h1 className="text-4xl sm:text-5xl font-bold text-brand mb-4">
               {isManageMode ? 'Manage Subscription' : hero.title}
             </h1>
             {!isManageMode && hero.subtitle && (
-              <p className="text-lg text-gray-700 max-w-2xl mx-auto mb-8">{hero.subtitle}</p>
+              <p className="text-lg text-[#596078] max-w-2xl mx-auto mb-8">{hero.subtitle}</p>
             )}
             {isManageMode && (
-              <p className="text-lg text-gray-700 max-w-2xl mx-auto mb-8">
+              <p className="text-lg text-[#596078] max-w-2xl mx-auto mb-8">
                 Update your subscription plan or manage your billing information.
               </p>
             )}
@@ -213,23 +215,23 @@ function PricingPageContent() {
             {/* Billing Period Tabs - Only show if not in manage mode */}
             {!isManageMode && (
               <div className="flex justify-center mb-8">
-                <div className="inline-flex rounded-lg border border-gray-200 bg-white p-1">
+                <div className="inline-flex rounded-full border border-[#e6e6e6] bg-white p-1">
                   <button
                     onClick={() => setBillingPeriod('monthly')}
-                    className={`px-6 py-2 rounded-md text-sm font-medium transition-colors ${
+                    className={`px-6 py-2 rounded-full text-sm font-medium transition-all ${
                       billingPeriod === 'monthly'
-                        ? 'bg-indigo-600 text-white'
-                        : 'text-gray-700 hover:text-gray-900'
+                        ? 'bg-[#2756c7] text-white shadow-sm'
+                        : 'text-brand hover:bg-[#f2f2f2]'
                     }`}
                   >
                     Monthly
                   </button>
                   <button
                     onClick={() => setBillingPeriod('yearly')}
-                    className={`px-6 py-2 rounded-md text-sm font-medium transition-colors ${
+                    className={`px-6 py-2 rounded-full text-sm font-medium transition-all ${
                       billingPeriod === 'yearly'
-                        ? 'bg-indigo-600 text-white'
-                        : 'text-gray-700 hover:text-gray-900'
+                        ? 'bg-[#2756c7] text-white shadow-sm'
+                        : 'text-brand hover:bg-[#f2f2f2]'
                     }`}
                   >
                     Yearly
@@ -269,7 +271,7 @@ function PricingPageContent() {
                         {subscription.plan_type && (
                           <div className="flex items-center gap-2 text-gray-700">
                             <span className="font-medium">Plan:</span>
-                            <span className="text-indigo-600 font-semibold capitalize">{subscription.plan_type}</span>
+                            <span className="text-[#2756c7] font-semibold capitalize">{subscription.plan_type}</span>
                           </div>
                         )}
                         <div className="flex items-center gap-2 text-gray-700">
@@ -303,7 +305,7 @@ function PricingPageContent() {
                     </div>
                     <p className="text-sm text-gray-600">
                       To manage your subscription, visit your{' '}
-                      <Link href="/profile" className="text-indigo-600 hover:underline">
+                          <Link href="/profile" className="text-[#2756c7] hover:underline">
                         profile page
                       </Link>
                       {' '}or contact support.
@@ -312,7 +314,7 @@ function PricingPageContent() {
                 ) : (
                   <div className="text-center py-4">
                     <p className="text-gray-600">No active subscription found.</p>
-                    <Link href="/pricing" className="text-indigo-600 hover:underline mt-2 inline-block">
+                    <Link href="/pricing" className="text-[#2756c7] hover:underline mt-2 inline-block">
                       View pricing plans
                     </Link>
                   </div>
@@ -326,7 +328,7 @@ function PricingPageContent() {
               <LoadingSpinner size="lg" />
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8 items-stretch">
               {tiers.map((tier) => (
                 <TierCard 
                   key={tier.id ?? tier.name} 
@@ -341,7 +343,7 @@ function PricingPageContent() {
 
           {/* Trust Section */}
           <div className="mt-12 text-center">
-            <div className="inline-flex flex-wrap items-center justify-center gap-6 text-sm text-gray-600">
+            <div className="inline-flex flex-wrap items-center justify-center gap-6 text-sm text-[#596078]">
               <div className="flex items-center gap-2">
                 <svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -349,13 +351,13 @@ function PricingPageContent() {
                 <span>No credit card required for free plan</span>
               </div>
               <div className="flex items-center gap-2">
-                <svg className="w-5 h-5 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-5 h-5 text-[#2756c7]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
                 <span>Cancel anytime</span>
               </div>
               <div className="flex items-center gap-2">
-                <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-5 h-5 text-[#1e439d]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
                 </svg>
                 <span>Secure payment</span>
@@ -369,10 +371,10 @@ function PricingPageContent() {
               description="We love hearing from students, educators, and teams. Drop us a note and we’ll tailor a plan for you."
             />
             <div className="px-6 pb-6">
-              <div className="text-sm text-gray-700">
+              <div className="text-sm text-[#596078]">
                 <p>
-                  Email <a className="text-indigo-600 hover:underline" href="mailto:support@quizhub.com">support@quizhub.com</a> for billing questions, or reach out to
-                  <a className="text-indigo-600 hover:underline" href="mailto:sales@quizhub.com"> sales@quizhub.com</a> if you are planning a rollout for your institution.
+                  Email <a className="text-[#2756c7] hover:underline" href="mailto:support@quizhub.com">support@quizhub.com</a> for billing questions, or reach out to
+                  <a className="text-[#2756c7] hover:underline" href="mailto:sales@quizhub.com"> sales@quizhub.com</a> if you are planning a rollout for your institution.
                 </p>
               </div>
             </div>
