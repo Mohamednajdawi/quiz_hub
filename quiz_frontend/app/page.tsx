@@ -8,15 +8,8 @@ import {
   BookOpen, 
   FileText, 
   ArrowRight, 
-  Sparkles, 
-  Zap, 
-  Shield, 
-  Clock, 
   CheckCircle2,
-  FolderOpen,
-  BarChart3,
-  Users,
-  Star
+  FolderOpen
 } from 'lucide-react';
 
 export default function Home() {
@@ -137,52 +130,6 @@ export default function Home() {
           </div>
         </section>
 
-        {/* What's New Section */}
-        <section className="py-16 bg-white border-b border-gray-100">
-          <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="text-center mb-12">
-              <h2 className="text-3xl font-bold text-gray-900 mb-3">What’s New in QuizHub</h2>
-              <p className="text-lg text-gray-700 max-w-3xl mx-auto">
-                Recent upgrades that keep your study flow simple and personal.
-              </p>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              <Card className="p-6 border border-gray-200 hover:border-gray-300 transition-shadow">
-                <div className="flex items-center gap-3 mb-4 text-indigo-600 font-semibold text-sm uppercase tracking-wide">
-                  <BarChart3 className="w-5 h-5" />
-                  Smart Insights
-                </div>
-                <h3 className="text-lg font-bold text-gray-900 mb-2">One-line AI feedback</h3>
-                <p className="text-sm text-gray-700 leading-relaxed">
-                  Every quiz ends with a short summary of what to review next.
-                </p>
-              </Card>
-
-              <Card className="p-6 border border-gray-200 hover:border-gray-300 transition-shadow">
-                <div className="flex items-center gap-3 mb-4 text-purple-600 font-semibold text-sm uppercase tracking-wide">
-                  <Sparkles className="w-5 h-5" />
-                  Adaptive Practice
-                </div>
-                <h3 className="text-lg font-bold text-gray-900 mb-2">Flashcards that adapt</h3>
-                <p className="text-sm text-gray-700 leading-relaxed">
-                  Weak topics surface first, no toggles required.
-                </p>
-              </Card>
-
-              <Card className="p-6 border border-gray-200 hover:border-gray-300 transition-shadow">
-                <div className="flex items-center gap-3 mb-4 text-amber-600 font-semibold text-sm uppercase tracking-wide">
-                  <FolderOpen className="w-5 h-5" />
-                  Organized Projects
-                </div>
-                <h3 className="text-lg font-bold text-gray-900 mb-2">Student Hub timeline</h3>
-                <p className="text-sm text-gray-700 leading-relaxed">
-                  Upload once and keep every quiz, card, and essay version in order.
-                </p>
-              </Card>
-            </div>
-          </div>
-        </section>
-
         {/* Features Section */}
         <section className="py-20 bg-white border-b border-gray-100">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -293,52 +240,24 @@ export default function Home() {
         </section>
 
         {/* Student Hub Feature */}
-        <section className="py-20 bg-white border-b border-gray-100">
+        <section className="py-16 bg-white border-b border-gray-100">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
               <div>
-                <h2 className="text-4xl font-bold text-gray-900 mb-6">
+                <h2 className="text-3xl font-bold text-gray-900 mb-4">
                   Student Hub
                 </h2>
-                <p className="text-xl text-gray-700 mb-8 leading-relaxed">
+                <p className="text-lg text-gray-700 mb-6 leading-relaxed">
                   Organize PDFs, launch generators, and review outputs in a single dashboard.
                 </p>
-                <ul className="space-y-4 mb-8">
-                  <li className="flex items-start gap-3">
-                    <div className="w-6 h-6 bg-indigo-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
-                      <CheckCircle2 className="w-4 h-4 text-indigo-600" />
-                    </div>
-                    <div>
-                      <h4 className="font-semibold text-gray-900 mb-1">Project Organization</h4>
-                      <p className="text-gray-700">Group PDFs by subject and upload several at once.</p>
-                    </div>
+                <ul className="space-y-3 mb-6">
+                  <li className="flex items-center gap-3">
+                    <CheckCircle2 className="w-5 h-5 text-indigo-600 flex-shrink-0" />
+                    <span className="text-gray-700">Project organization and inline PDF workspace</span>
                   </li>
-                  <li className="flex items-start gap-3">
-                    <div className="w-6 h-6 bg-indigo-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
-                      <CheckCircle2 className="w-4 h-4 text-indigo-600" />
-                    </div>
-                    <div>
-                      <h4 className="font-semibold text-gray-900 mb-1">Inline PDF Workspace</h4>
-                      <p className="text-gray-700">Preview PDFs inline and launch generators without extra windows.</p>
-                    </div>
-                  </li>
-                  <li className="flex items-start gap-3">
-                    <div className="w-6 h-6 bg-indigo-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
-                      <CheckCircle2 className="w-4 h-4 text-indigo-600" />
-                    </div>
-                    <div>
-                      <h4 className="font-semibold text-gray-900 mb-1">AI Chat with PDFs</h4>
-                      <p className="text-gray-700">Ask quick questions and get answers sourced from your upload.</p>
-                    </div>
-                  </li>
-                  <li className="flex items-start gap-3">
-                    <div className="w-6 h-6 bg-indigo-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
-                      <CheckCircle2 className="w-4 h-4 text-indigo-600" />
-                    </div>
-                    <div>
-                      <h4 className="font-semibold text-gray-900 mb-1">Version Timeline</h4>
-                      <p className="text-gray-700">See the latest quiz, card, or essay version at a glance.</p>
-                    </div>
+                  <li className="flex items-center gap-3">
+                    <CheckCircle2 className="w-5 h-5 text-indigo-600 flex-shrink-0" />
+                    <span className="text-gray-700">AI chat with PDFs and version timeline</span>
                   </li>
                 </ul>
                 <Link href="/student-hub">
@@ -349,24 +268,24 @@ export default function Home() {
                 </Link>
               </div>
               <div className="relative">
-                <div className="bg-white rounded-2xl shadow-xl p-8 border border-gray-200">
-                  <div className="space-y-4">
-                    <div className="flex items-center gap-3 p-4 bg-indigo-50 rounded-lg border border-indigo-100">
-                      <FolderOpen className="w-6 h-6 text-indigo-600" />
+                <div className="bg-white rounded-2xl shadow-xl p-6 border border-gray-200">
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-3 p-3 bg-indigo-50 rounded-lg border border-indigo-100">
+                      <FolderOpen className="w-5 h-5 text-indigo-600" />
                       <div>
                         <div className="font-semibold text-gray-900">Math 101 Notes</div>
                         <div className="text-sm text-gray-600">3 PDFs • 5 Quizzes</div>
                       </div>
                     </div>
-                    <div className="flex items-center gap-3 p-4 bg-purple-50 rounded-lg border border-purple-100">
-                      <BookOpen className="w-6 h-6 text-purple-600" />
+                    <div className="flex items-center gap-3 p-3 bg-purple-50 rounded-lg border border-purple-100">
+                      <BookOpen className="w-5 h-5 text-purple-600" />
                       <div>
                         <div className="font-semibold text-gray-900">History Project</div>
                         <div className="text-sm text-gray-600">2 PDFs • 8 Flashcards</div>
                       </div>
                     </div>
-                    <div className="flex items-center gap-3 p-4 bg-pink-50 rounded-lg border border-pink-100">
-                      <FileText className="w-6 h-6 text-pink-600" />
+                    <div className="flex items-center gap-3 p-3 bg-pink-50 rounded-lg border border-pink-100">
+                      <FileText className="w-5 h-5 text-pink-600" />
                       <div>
                         <div className="font-semibold text-gray-900">Science Research</div>
                         <div className="text-sm text-gray-600">4 PDFs • 12 Essays</div>
@@ -374,147 +293,6 @@ export default function Home() {
                     </div>
                   </div>
                 </div>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* How It Works */}
-        <section className="py-20 bg-white border-b border-gray-100">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="text-center mb-16">
-              <h2 className="text-4xl font-bold text-gray-900 mb-4">How It Works</h2>
-              <p className="text-xl text-gray-700 max-w-2xl mx-auto">
-                Get started in minutes. No complex setup required.
-              </p>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-              <div className="text-center">
-                <div className="relative inline-flex items-center justify-center mb-6">
-                  <div className="absolute w-24 h-24 bg-indigo-100 rounded-full"></div>
-                  <div className="relative w-20 h-20 bg-gradient-to-br from-indigo-500 to-indigo-600 rounded-full flex items-center justify-center">
-                    <span className="text-white font-bold text-2xl">1</span>
-                  </div>
-                </div>
-                <h3 className="text-xl font-bold text-gray-900 mb-3">Upload or Link</h3>
-                <p className="text-gray-700">
-                  Provide a URL or upload a PDF document. Our AI will extract and analyze the content.
-                </p>
-              </div>
-              <div className="text-center">
-                <div className="relative inline-flex items-center justify-center mb-6">
-                  <div className="absolute w-24 h-24 bg-purple-100 rounded-full"></div>
-                  <div className="relative w-20 h-20 bg-gradient-to-br from-purple-500 to-purple-600 rounded-full flex items-center justify-center">
-                    <span className="text-white font-bold text-2xl">2</span>
-                  </div>
-                </div>
-                <h3 className="text-xl font-bold text-gray-900 mb-3">Customize</h3>
-                <p className="text-gray-700">
-                  Choose your difficulty level, number of questions, and content type. 
-                  Tailor everything to your learning needs.
-                </p>
-              </div>
-              <div className="text-center">
-                <div className="relative inline-flex items-center justify-center mb-6">
-                  <div className="absolute w-24 h-24 bg-pink-100 rounded-full"></div>
-                  <div className="relative w-20 h-20 bg-gradient-to-br from-pink-500 to-pink-600 rounded-full flex items-center justify-center">
-                    <span className="text-white font-bold text-2xl">3</span>
-                  </div>
-                </div>
-                <h3 className="text-xl font-bold text-gray-900 mb-3">Learn & Practice</h3>
-                <p className="text-gray-700">
-                  Get your generated content instantly. Start studying and track your progress 
-                  with detailed analytics.
-                </p>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* Additional Features Section */}
-        <section className="py-20 bg-white border-b border-gray-100">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="text-center mb-16">
-              <h2 className="text-4xl font-bold text-gray-900 mb-4">Quick Extras</h2>
-              <p className="text-xl text-gray-700 max-w-2xl mx-auto">
-                Helpful touches that keep teams and solo learners in sync.
-              </p>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-              <Card className="p-6 border-2 hover:border-indigo-200 transition-all">
-                <div className="w-12 h-12 bg-indigo-100 rounded-lg flex items-center justify-center mb-4">
-                  <Users className="w-6 h-6 text-indigo-600" />
-                </div>
-                <h3 className="text-lg font-bold text-gray-900 mb-2">Quiz Sharing</h3>
-                <p className="text-gray-700 text-sm">
-                  Share quizzes with friends using 6-digit codes. Perfect for study groups and classroom activities.
-                </p>
-              </Card>
-              <Card className="p-6 border-2 hover:border-purple-200 transition-all">
-                <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center mb-4">
-                  <Star className="w-6 h-6 text-purple-600" />
-                </div>
-                <h3 className="text-lg font-bold text-gray-900 mb-2">Referral Program</h3>
-                <p className="text-gray-700 text-sm">
-                  Invite friends and earn bonus generations. Get 5 free generations for each successful referral.
-                </p>
-              </Card>
-              <Card className="p-6 border-2 hover:border-pink-200 transition-all">
-                <div className="w-12 h-12 bg-pink-100 rounded-lg flex items-center justify-center mb-4">
-                  <BarChart3 className="w-6 h-6 text-pink-600" />
-                </div>
-                <h3 className="text-lg font-bold text-gray-900 mb-2">Analytics Dashboard</h3>
-                <p className="text-gray-700 text-sm">
-                  Track your performance with detailed statistics, category breakdowns, and progress visualization.
-                </p>
-              </Card>
-              <Card className="p-6 border-2 hover:border-amber-200 transition-all">
-                <div className="w-12 h-12 bg-amber-100 rounded-lg flex items-center justify-center mb-4">
-                  <Shield className="w-6 h-6 text-amber-600" />
-                </div>
-                <h3 className="text-lg font-bold text-gray-900 mb-2">Persistent Workspace</h3>
-                <p className="text-gray-700 text-sm">
-                  Your PDFs are stored securely for future use, allowing you to generate quizzes, flashcards, and essays anytime without re-uploading.
-                </p>
-              </Card>
-            </div>
-          </div>
-        </section>
-
-        {/* Benefits Section */}
-        <section className="py-20 bg-gray-50 border-b border-gray-100">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="text-center mb-16">
-              <h2 className="text-4xl font-bold text-gray-900 mb-4">Why Choose Us?</h2>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              <div className="text-center p-6">
-                <div className="w-16 h-16 bg-indigo-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <Zap className="w-8 h-8 text-indigo-600" />
-                </div>
-                <h3 className="font-bold text-gray-900 mb-2">Lightning Fast</h3>
-                <p className="text-gray-600 text-sm">Generate in seconds, not hours.</p>
-              </div>
-              <div className="text-center p-6">
-                <div className="w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <Shield className="w-8 h-8 text-purple-600" />
-                </div>
-                <h3 className="font-bold text-gray-900 mb-2">Secure & Private</h3>
-                <p className="text-gray-600 text-sm">Your data stays private.</p>
-              </div>
-              <div className="text-center p-6">
-                <div className="w-16 h-16 bg-pink-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <BarChart3 className="w-8 h-8 text-pink-600" />
-                </div>
-                <h3 className="font-bold text-gray-900 mb-2">Track Progress</h3>
-                <p className="text-gray-600 text-sm">See exactly what to review.</p>
-              </div>
-              <div className="text-center p-6">
-                <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <Clock className="w-8 h-8 text-green-600" />
-                </div>
-                <h3 className="font-bold text-gray-900 mb-2">Save Time</h3>
-                <p className="text-gray-600 text-sm">Spend less time preparing.</p>
               </div>
             </div>
           </div>
