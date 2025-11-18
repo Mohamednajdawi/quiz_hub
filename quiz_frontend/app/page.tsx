@@ -49,9 +49,9 @@ export default function Home() {
         {/* Hero Section with Video and CTA */}
         <section className="relative bg-white text-gray-900 py-24 sm:py-32 lg:py-40 border-b border-gray-100">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 lg:gap-24 items-center">
+            <div className="grid grid-cols-1 lg:grid-cols-5 gap-12 lg:gap-16 items-center">
               {/* Video Section - Left Side */}
-              <div className="order-2 lg:order-1">
+              <div className="order-2 lg:order-1 lg:col-span-3">
                 <div className="w-full rounded-lg overflow-hidden border border-gray-200 bg-white">
                   <div className="aspect-video bg-gray-900">
                     <video
@@ -69,14 +69,14 @@ export default function Home() {
               </div>
 
               {/* CTA Section - Right Side */}
-              <div className="order-1 lg:order-2">
-                <h1 className="text-4xl sm:text-5xl lg:text-6xl font-normal text-gray-900 mb-6 leading-tight tracking-tight">
+              <div className="order-1 lg:order-2 lg:col-span-2">
+                <h1 className="text-3xl sm:text-4xl lg:text-5xl font-normal text-gray-900 mb-5 leading-tight tracking-tight">
                   Study tools in one calm workspace
                 </h1>
-                <p className="text-lg sm:text-xl text-gray-600 mb-8 leading-relaxed max-w-lg">
+                <p className="text-base sm:text-lg text-gray-600 mb-7 leading-relaxed">
                   Upload once, get quizzes, flashcards, and essays in seconds—no extra tabs or jargon.
                 </p>
-                <div className="mb-8">
+                <div className="mb-7">
                   <Link href="/register">
                     <Button variant="primary" size="lg" className="text-base px-8 py-3 font-medium transition-all duration-200 hover:opacity-90">
                       Get Started Free
