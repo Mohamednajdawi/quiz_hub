@@ -34,66 +34,67 @@ export default function Home() {
   return (
     <Layout>
       <div className="min-h-screen">
-        {/* Product Video */}
-        <section className="bg-white text-gray-900 py-16 sm:py-20 border-b border-gray-100">
-          <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-            <p className="text-xs font-semibold uppercase tracking-[0.3em] text-indigo-600 mb-3">
-              Product Walkthrough
-            </p>
-            <h1 className="text-4xl sm:text-5xl font-bold leading-tight text-gray-900">
-              See QuizHub in action in under a minute
-            </h1>
-            <p className="mt-4 text-lg text-gray-700">
-              Watch PDFs turn into quizzes, flashcards, and essays without leaving the page.
-            </p>
-            <div className="mt-10 rounded-3xl overflow-hidden border border-gray-200 shadow-xl bg-white">
-              <div className="aspect-video bg-gray-900">
-                <video
-                  className="w-full h-full object-cover"
-                  autoPlay
-                  loop
-                  muted
-                  playsInline
-                  controls
-                  poster="/gallery-quiz.svg"
-                  src="https://cdn.coverr.co/videos/coverr-learning-in-progress-1022/1080p.mp4"
-                />
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* Hero Section */}
-        <section className="relative overflow-hidden bg-gray-50 py-20 sm:py-28 border-b border-gray-100">
+        {/* Hero Section with Video and CTA */}
+        <section className="bg-white text-gray-900 py-16 sm:py-20 lg:py-24 border-b border-gray-100">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="text-center">
-              <h2 className="text-4xl sm:text-5xl font-bold text-gray-900 mb-6 leading-tight">
-                Study tools in one calm workspace
-              </h2>
-              <p className="mt-4 max-w-2xl mx-auto text-lg text-gray-700">
-                Upload once, get quizzes, flashcards, and essays in seconds—no extra tabs or jargon.
-              </p>
-              <div className="mt-10 flex flex-col sm:flex-row gap-4 justify-center">
-                <Link href="/register">
-                  <Button variant="primary" size="lg" className="text-lg px-8 py-6">
-                    Get Started Free
-                    <ArrowRight className="ml-2 w-5 h-5" />
-                  </Button>
-                </Link>
-                <Link href="/quizzes">
-                  <Button variant="outline" size="lg" className="text-lg px-8 py-6">
-                    Try Demo
-                  </Button>
-                </Link>
-              </div>
-              <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-4 text-sm text-gray-600">
-                <div className="flex items-center gap-2">
-                  <CheckCircle2 className="w-5 h-5 text-green-500" />
-                  <span>Launch your first quiz in 60 seconds</span>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16 items-center">
+              {/* Video Section - Left Side */}
+              <div className="order-2 lg:order-1">
+                <p className="text-xs font-semibold uppercase tracking-[0.3em] text-indigo-600 mb-3">
+                  Product Walkthrough
+                </p>
+                <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold leading-tight text-gray-900 mb-4">
+                  See QuizHub in action in under a minute
+                </h1>
+                <p className="text-base sm:text-lg text-gray-700 mb-6">
+                  Watch PDFs turn into quizzes, flashcards, and essays without leaving the page.
+                </p>
+                <div className="rounded-2xl lg:rounded-3xl overflow-hidden border border-gray-200 shadow-xl bg-white">
+                  <div className="aspect-video bg-gray-900">
+                    <video
+                      className="w-full h-full object-cover"
+                      autoPlay
+                      loop
+                      muted
+                      playsInline
+                      controls
+                      poster="/gallery-quiz.svg"
+                      src="https://cdn.coverr.co/videos/coverr-learning-in-progress-1022/1080p.mp4"
+                    />
+                  </div>
                 </div>
-                <div className="flex items-center gap-2">
-                  <CheckCircle2 className="w-5 h-5 text-green-500" />
-                  <span>No credit card required</span>
+              </div>
+
+              {/* CTA Section - Right Side */}
+              <div className="order-1 lg:order-2 flex flex-col justify-center lg:pl-8">
+                <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-gray-900 mb-6 leading-tight">
+                  Study tools in one calm workspace
+                </h2>
+                <p className="text-lg sm:text-xl text-gray-700 mb-8 leading-relaxed">
+                  Upload once, get quizzes, flashcards, and essays in seconds—no extra tabs or jargon.
+                </p>
+                <div className="flex flex-col gap-4 mb-8">
+                  <Link href="/register">
+                    <Button variant="primary" size="lg" className="w-full sm:w-auto text-lg px-8 py-6">
+                      Get Started Free
+                      <ArrowRight className="ml-2 w-5 h-5" />
+                    </Button>
+                  </Link>
+                  <Link href="/quizzes">
+                    <Button variant="outline" size="lg" className="w-full sm:w-auto text-lg px-8 py-6">
+                      Try Demo
+                    </Button>
+                  </Link>
+                </div>
+                <div className="flex flex-col gap-3 text-sm text-gray-600">
+                  <div className="flex items-center gap-2">
+                    <CheckCircle2 className="w-5 h-5 text-green-500 flex-shrink-0" />
+                    <span>Launch your first quiz in 60 seconds</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <CheckCircle2 className="w-5 h-5 text-green-500 flex-shrink-0" />
+                    <span>No credit card required</span>
+                  </div>
                 </div>
               </div>
             </div>
