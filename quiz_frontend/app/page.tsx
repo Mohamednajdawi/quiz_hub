@@ -40,7 +40,7 @@ export default function Home() {
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
             <div className="text-center">
               <p className="text-sm sm:text-base text-gray-700 font-medium">
-                <span className="text-indigo-600 font-semibold">Trusted by students</span> at 50+ universities worldwide
+                <span className="text-indigo-600 font-semibold">Trusted by students</span> Join the team!
               </p>
             </div>
           </div>
@@ -52,19 +52,19 @@ export default function Home() {
           <div className="absolute inset-0 opacity-[0.02] bg-[linear-gradient(to_right,#808080_1px,transparent_1px),linear-gradient(to_bottom,#808080_1px,transparent_1px)] bg-[size:4rem_4rem]"></div>
           
           <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16 items-center">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-20 items-center">
               {/* Video Section - Left Side */}
-              <div className="order-2 lg:order-1">
-                <p className="text-xs font-semibold uppercase tracking-[0.3em] text-indigo-600 mb-3">
+              <div className="order-2 lg:order-1 flex flex-col items-center lg:items-start text-center lg:text-left">
+                <p className="text-xs font-semibold uppercase tracking-[0.3em] text-indigo-600 mb-4">
                   Product Walkthrough
                 </p>
-                <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold leading-tight text-gray-900 mb-4">
+                <h1 className="text-3xl sm:text-4xl lg:text-5xl xl:text-6xl font-bold leading-tight text-gray-900 mb-5 max-w-xl">
                   See QuizHub in action in under a minute
                 </h1>
-                <p className="text-base sm:text-lg text-gray-700 mb-6">
+                <p className="text-base sm:text-lg text-gray-600 mb-8 max-w-lg leading-relaxed">
                   Watch PDFs turn into quizzes, flashcards, and essays without leaving the page.
                 </p>
-                <div className="rounded-2xl lg:rounded-3xl overflow-hidden border border-gray-200 shadow-xl bg-white">
+                <div className="w-full rounded-2xl lg:rounded-3xl overflow-hidden border border-gray-200 shadow-2xl bg-white transition-shadow duration-300 hover:shadow-3xl">
                   <div className="aspect-video bg-gray-900">
                     <video
                       className="w-full h-full object-cover"
@@ -81,32 +81,32 @@ export default function Home() {
               </div>
 
               {/* CTA Section - Right Side */}
-              <div className="order-1 lg:order-2 flex flex-col justify-center lg:pl-8">
-                <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-gray-900 mb-6 leading-tight">
+              <div className="order-1 lg:order-2 flex flex-col justify-center items-center lg:items-start text-center lg:text-left lg:pl-6">
+                <h2 className="text-3xl sm:text-4xl lg:text-5xl xl:text-6xl font-bold text-gray-900 mb-5 leading-tight max-w-xl">
                   Study tools in one calm workspace
                 </h2>
-                <p className="text-lg sm:text-xl text-gray-700 mb-8 leading-relaxed">
+                <p className="text-lg sm:text-xl text-gray-600 mb-10 leading-relaxed max-w-lg">
                   Upload once, get quizzes, flashcards, and essays in seconds—no extra tabs or jargon.
                 </p>
-                <div className="flex flex-col gap-4 mb-8">
-                  <Link href="/register">
-                    <Button variant="primary" size="lg" className="w-full sm:w-auto text-lg px-8 py-6 transition-transform duration-200 hover:scale-105 active:scale-95">
+                <div className="flex flex-col gap-4 mb-10 w-full sm:w-auto">
+                  <Link href="/register" className="w-full sm:w-auto">
+                    <Button variant="primary" size="lg" className="w-full sm:w-auto text-lg px-10 py-6 transition-transform duration-200 hover:scale-105 active:scale-95 shadow-lg hover:shadow-xl">
                       Get Started Free
                       <ArrowRight className="ml-2 w-5 h-5" />
                     </Button>
                   </Link>
-                  <Link href="/quizzes">
-                    <Button variant="outline" size="lg" className="w-full sm:w-auto text-lg px-8 py-6 transition-transform duration-200 hover:scale-105 active:scale-95">
+                  <Link href="/quizzes" className="w-full sm:w-auto">
+                    <Button variant="outline" size="lg" className="w-full sm:w-auto text-lg px-10 py-6 transition-transform duration-200 hover:scale-105 active:scale-95">
                       Try Demo
                     </Button>
                   </Link>
                 </div>
                 <div className="flex flex-col gap-3 text-sm text-gray-600">
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 justify-center lg:justify-start">
                     <CheckCircle2 className="w-5 h-5 text-green-500 flex-shrink-0" />
                     <span>Launch your first quiz in 60 seconds</span>
                   </div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 justify-center lg:justify-start">
                     <CheckCircle2 className="w-5 h-5 text-green-500 flex-shrink-0" />
                     <span>No credit card required</span>
                   </div>
