@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { BookOpen, FileText, GraduationCap, Home, BarChart3, LogOut, User, ChevronDown, CreditCard, Sparkles, Shield, MoreVertical, Crown, Settings } from 'lucide-react';
+import { BookOpen, FileText, GraduationCap, Home, BarChart3, LogOut, User, ChevronDown, CreditCard, Sparkles, Shield, MoreVertical, Crown, Settings, Menu, X } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 
 const studyTools = [
@@ -28,6 +28,7 @@ export function Navigation() {
   const { isAuthenticated, user, logout, isAdmin } = useAuth();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const userMenuRef = useRef<HTMLDivElement>(null);
 
@@ -60,6 +61,34 @@ export function Navigation() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
+  useEffect(() => {
+    setIsMobileMenuOpen(false);
+    setIsDropdownOpen(false);
+  }, [pathname]);
+
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth >= 768) {
+        setIsMobileMenuOpen(false);
+      }
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  useEffect(() => {
+    if (isMobileMenuOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [isMobileMenuOpen]);
+
   // Get user initials for avatar
   const getUserInitials = () => {
     if (!user) return '';
@@ -73,6 +102,11 @@ export function Navigation() {
       return user.email[0].toUpperCase();
     }
     return 'U';
+  };
+
+  const handleMobileNavigation = () => {
+    setIsMobileMenuOpen(false);
+    setIsDropdownOpen(false);
   };
 
   return (
@@ -188,7 +222,7 @@ export function Navigation() {
               </div>
 
           {/* Right Side - User Actions */}
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
               {isAuthenticated ? (
                 <>
                 {/* User Info - Desktop Only */}
@@ -361,211 +395,231 @@ export function Navigation() {
                   </Link>
                 </div>
               )}
+            <button
+              onClick={() => setIsMobileMenuOpen((prev) => !prev)}
+              className="md:hidden flex items-center justify-center w-10 h-10 rounded-lg text-[#0e1f47] hover:bg-[#e6e6e6] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#1e439d] transition-colors"
+              aria-label="Toggle navigation menu"
+              aria-expanded={isMobileMenuOpen}
+              aria-controls="mobile-navigation"
+            >
+              {isMobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+            </button>
           </div>
         </div>
       </div>
 
       {/* Mobile menu */}
-      <div className="md:hidden border-t border-gray-200">
-        <div className="px-2 pt-2 pb-3 space-y-1">
-          {/* Filter navigation items based on authentication */}
-          {navigation
-            .filter(item => {
-              // When not authenticated, only show Home and Pricing
-              if (!isAuthenticated) {
-                return item.href === '/' || item.href === '/pricing';
-              }
-              // When authenticated, show all items
-              return true;
-            })
-            .map((item) => {
-              const isActive = pathname === item.href || (item.href !== '/' && pathname.startsWith(item.href));
+      {isMobileMenuOpen && (
+        <div id="mobile-navigation" className="md:hidden border-t border-gray-200 bg-white shadow-inner">
+          <div className="px-2 pt-2 pb-3 space-y-1">
+            {/* Filter navigation items based on authentication */}
+            {navigation
+              .filter(item => {
+                if (!isAuthenticated) {
+                  return item.href === '/' || item.href === '/pricing';
+                }
+                return true;
+              })
+              .map((item) => {
+                const isActive = pathname === item.href || (item.href !== '/' && pathname.startsWith(item.href));
+                return (
+                  <Link
+                    key={item.name}
+                    href={item.href}
+                    onClick={handleMobileNavigation}
+                    className={`flex items-center px-3 py-2.5 rounded-lg text-base font-medium transition-colors ${
+                      isActive
+                        ? 'bg-indigo-50 text-indigo-700'
+                        : 'text-gray-700 hover:bg-gray-50'
+                    }`}
+                  >
+                    <item.icon className={`w-5 h-5 mr-3 ${isActive ? 'text-indigo-600' : 'text-gray-400'}`} />
+                    {item.name}
+                  </Link>
+                );
+              })}
+            
+            {/* Admin Link for Mobile */}
+            {isAuthenticated && isAdmin && adminNavigation.map((item) => {
+              const isActive = pathname === item.href || pathname.startsWith(item.href);
               return (
                 <Link
                   key={item.name}
                   href={item.href}
+                  onClick={handleMobileNavigation}
                   className={`flex items-center px-3 py-2.5 rounded-lg text-base font-medium transition-colors ${
                     isActive
-                      ? 'bg-indigo-50 text-indigo-700'
+                      ? 'bg-red-50 text-red-700'
                       : 'text-gray-700 hover:bg-gray-50'
                   }`}
                 >
-                  <item.icon className={`w-5 h-5 mr-3 ${isActive ? 'text-indigo-600' : 'text-gray-400'}`} />
+                  <item.icon className={`w-5 h-5 mr-3 ${isActive ? 'text-red-600' : 'text-gray-400'}`} />
                   {item.name}
                 </Link>
               );
             })}
-          
-          {/* Admin Link for Mobile */}
-          {isAuthenticated && isAdmin && adminNavigation.map((item) => {
-            const isActive = pathname === item.href || pathname.startsWith(item.href);
-            return (
-              <Link
-                key={item.name}
-                href={item.href}
-                className={`flex items-center px-3 py-2.5 rounded-lg text-base font-medium transition-colors ${
-                  isActive
-                    ? 'bg-red-50 text-red-700'
-                    : 'text-gray-700 hover:bg-gray-50'
-                }`}
-              >
-                <item.icon className={`w-5 h-5 mr-3 ${isActive ? 'text-red-600' : 'text-gray-400'}`} />
-                {item.name}
-              </Link>
-            );
-          })}
-          
-          {/* Study Tools Dropdown for Mobile - Only show if authenticated */}
-          {isAuthenticated && (
-            <div>
-              <button
-                onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                className={`flex items-center justify-between w-full px-3 py-2.5 rounded-lg text-base font-medium transition-colors ${
-                  isStudyToolActive
-                    ? 'bg-indigo-50 text-indigo-700'
-                    : 'text-gray-700 hover:bg-gray-50'
-                }`}
-              >
-                <span className="flex items-center">
-                  <GraduationCap className={`w-5 h-5 mr-3 ${isStudyToolActive ? 'text-indigo-600' : 'text-gray-400'}`} />
-                  Study Tools
-                </span>
-                <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${isDropdownOpen ? 'rotate-180' : ''}`} />
-              </button>
-              
-              {isDropdownOpen && (
-                <div className="pl-4 mt-1 space-y-1">
-                  {studyTools.map((tool) => {
-                    const isActive = pathname === tool.href || pathname.startsWith(tool.href + '/');
-                    return (
-                      <Link
-                        key={tool.name}
-                        href={tool.href}
-                        onClick={() => setIsDropdownOpen(false)}
-                        className={`flex items-center px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-                          isActive
-                            ? 'bg-indigo-50 text-indigo-700'
-                            : 'text-gray-600 hover:bg-gray-50'
-                        }`}
-                      >
-                        <tool.icon className={`w-4 h-4 mr-3 ${isActive ? 'text-indigo-600' : 'text-gray-400'}`} />
-                        {tool.name}
-                      </Link>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
-          )}
-          
-          {isAuthenticated ? (
-            <div className="pt-2 border-t border-gray-200 space-y-1">
-              {/* User Info */}
-              <div className="px-3 py-3 bg-gray-50 rounded-lg">
-                <div className="flex items-center gap-3">
-                  <div className={`flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center text-white text-sm font-semibold ${
-                    isPro 
-                      ? 'bg-gradient-to-br from-yellow-400 to-orange-500' 
-                      : 'bg-gradient-to-br from-indigo-500 to-purple-600'
-                  }`}>
-                    {isPro ? <Crown className="w-5 h-5" /> : getUserInitials()}
-                  </div>
-                  <div className="flex flex-col min-w-0 flex-1">
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm font-medium text-gray-900 truncate">
-                        {displayName}
-                      </span>
-                      {isPro && (
-                        <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-semibold bg-gradient-to-r from-yellow-400 to-orange-500 text-white">
-                          Pro
-                        </span>
-                      )}
-                    </div>
-                    {!isPro && remainingGenerations !== null && (
-                      <div className="flex items-center gap-1 mt-1 text-xs text-indigo-600">
-                        <Sparkles className="h-3 w-3" />
-                        <span>{remainingGenerations} free generation{remainingGenerations === 1 ? '' : 's'} left</span>
-                      </div>
-                    )}
-                    {isPro && subscription?.plan_type && (
-                      <div className="text-xs text-gray-500 mt-1 capitalize">
-                        {subscription.plan_type} Plan
-                        {typeof subscription.remaining_generations === 'number' ? ` (${subscription.remaining_generations} left)` : ''}
-                      </div>
-                    )}
-                  </div>
-                </div>
-                {isPro && subscription && (
-                  <div className="mt-2 px-2 py-1.5 rounded-md bg-gradient-to-r from-yellow-50 to-orange-50 border border-yellow-200">
-                    {subscription.cancel_at_period_end ? (
-                      <div className="text-xs text-orange-600">
-                        Subscription cancels on {subscription.current_period_end ? new Date(subscription.current_period_end).toLocaleDateString() : 'period end'}
-                      </div>
-                    ) : subscription.current_period_end && (
-                      <div className="text-xs text-gray-600">
-                        Renews {new Date(subscription.current_period_end).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-                      </div>
-                    )}
+            
+            {/* Study Tools Dropdown for Mobile - Only show if authenticated */}
+            {isAuthenticated && (
+              <div>
+                <button
+                  onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                  className={`flex items-center justify-between w-full px-3 py-2.5 rounded-lg text-base font-medium transition-colors ${
+                    isStudyToolActive
+                      ? 'bg-indigo-50 text-indigo-700'
+                      : 'text-gray-700 hover:bg-gray-50'
+                  }`}
+                  aria-expanded={isDropdownOpen}
+                >
+                  <span className="flex items-center">
+                    <GraduationCap className={`w-5 h-5 mr-3 ${isStudyToolActive ? 'text-indigo-600' : 'text-gray-400'}`} />
+                    Study Tools
+                  </span>
+                  <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${isDropdownOpen ? 'rotate-180' : ''}`} />
+                </button>
+                
+                {isDropdownOpen && (
+                  <div className="pl-4 mt-1 space-y-1">
+                    {studyTools.map((tool) => {
+                      const isActive = pathname === tool.href || pathname.startsWith(tool.href + '/');
+                      return (
+                        <Link
+                          key={tool.name}
+                          href={tool.href}
+                          onClick={handleMobileNavigation}
+                          className={`flex items-center px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                            isActive
+                              ? 'bg-indigo-50 text-indigo-700'
+                              : 'text-gray-600 hover:bg-gray-50'
+                          }`}
+                        >
+                          <tool.icon className={`w-4 h-4 mr-3 ${isActive ? 'text-indigo-600' : 'text-gray-400'}`} />
+                          {tool.name}
+                        </Link>
+                      );
+                    })}
                   </div>
                 )}
               </div>
-              
-              <Link
-                href="/profile"
-                className={`flex items-center px-3 py-2.5 rounded-lg text-base font-medium transition-colors ${
-                  pathname.startsWith('/profile')
-                    ? 'bg-indigo-50 text-indigo-700'
-                    : 'text-gray-700 hover:bg-gray-50'
-                }`}
-              >
-                <User className="w-5 h-5 mr-3 text-gray-400" />
-                Profile
-              </Link>
-              
-              {hasSubscription ? (
+            )}
+            
+            {isAuthenticated ? (
+              <div className="pt-2 border-t border-gray-200 space-y-1">
+                {/* User Info */}
+                <div className="px-3 py-3 bg-gray-50 rounded-lg">
+                  <div className="flex items-center gap-3">
+                    <div className={`flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center text-white text-sm font-semibold ${
+                      isPro 
+                        ? 'bg-gradient-to-br from-yellow-400 to-orange-500' 
+                        : 'bg-gradient-to-br from-indigo-500 to-purple-600'
+                    }`}>
+                      {isPro ? <Crown className="w-5 h-5" /> : getUserInitials()}
+                    </div>
+                    <div className="flex flex-col min-w-0 flex-1">
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-medium text-gray-900 truncate">
+                          {displayName}
+                        </span>
+                        {isPro && (
+                          <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-semibold bg-gradient-to-r from-yellow-400 to-orange-500 text-white">
+                            Pro
+                          </span>
+                        )}
+                      </div>
+                      {!isPro && remainingGenerations !== null && (
+                        <div className="flex items-center gap-1 mt-1 text-xs text-indigo-600">
+                          <Sparkles className="h-3 w-3" />
+                          <span>{remainingGenerations} free generation{remainingGenerations === 1 ? '' : 's'} left</span>
+                        </div>
+                      )}
+                      {isPro && subscription?.plan_type && (
+                        <div className="text-xs text-gray-500 mt-1 capitalize">
+                          {subscription.plan_type} Plan
+                          {typeof subscription.remaining_generations === 'number' ? ` (${subscription.remaining_generations} left)` : ''}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                  {isPro && subscription && (
+                    <div className="mt-2 px-2 py-1.5 rounded-md bg-gradient-to-r from-yellow-50 to-orange-50 border border-yellow-200">
+                      {subscription.cancel_at_period_end ? (
+                        <div className="text-xs text-orange-600">
+                          Subscription cancels on {subscription.current_period_end ? new Date(subscription.current_period_end).toLocaleDateString() : 'period end'}
+                        </div>
+                      ) : subscription.current_period_end && (
+                        <div className="text-xs text-gray-600">
+                          Renews {new Date(subscription.current_period_end).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+                
                 <Link
-                  href="/pricing?manage=true"
+                  href="/profile"
+                  onClick={handleMobileNavigation}
+                  className={`flex items-center px-3 py-2.5 rounded-lg text-base font-medium transition-colors ${
+                    pathname.startsWith('/profile')
+                      ? 'bg-indigo-50 text-indigo-700'
+                      : 'text-gray-700 hover:bg-gray-50'
+                  }`}
+                >
+                  <User className="w-5 h-5 mr-3 text-gray-400" />
+                  Profile
+                </Link>
+                
+                {hasSubscription ? (
+                  <Link
+                    href="/pricing?manage=true"
+                    onClick={handleMobileNavigation}
+                    className="flex items-center px-3 py-2.5 rounded-lg text-base font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+                  >
+                    <Settings className="w-5 h-5 mr-3 text-gray-400" />
+                    Manage Subscription
+                  </Link>
+                ) : (
+                  <Link
+                    href="/pricing"
+                    onClick={handleMobileNavigation}
+                    className="flex items-center px-3 py-2.5 rounded-lg text-base font-medium text-indigo-600 hover:bg-indigo-50 transition-colors"
+                  >
+                    <Crown className="w-5 h-5 mr-3" />
+                    Upgrade to Pro
+                  </Link>
+                )}
+                
+                <button
+                  onClick={() => {
+                    handleMobileNavigation();
+                    logout();
+                  }}
+                  className="flex items-center w-full px-3 py-2.5 rounded-lg text-base font-medium text-red-600 hover:bg-red-50 transition-colors"
+                >
+                  <LogOut className="w-5 h-5 mr-3" />
+                  Sign Out
+                </button>
+              </div>
+            ) : (
+              <div className="pt-2 border-t border-gray-200 space-y-1">
+                <Link
+                  href="/login"
+                  onClick={handleMobileNavigation}
                   className="flex items-center px-3 py-2.5 rounded-lg text-base font-medium text-gray-700 hover:bg-gray-50 transition-colors"
                 >
-                  <Settings className="w-5 h-5 mr-3 text-gray-400" />
-                  Manage Subscription
+                  Login
                 </Link>
-              ) : (
                 <Link
-                  href="/pricing"
-                  className="flex items-center px-3 py-2.5 rounded-lg text-base font-medium text-indigo-600 hover:bg-indigo-50 transition-colors"
+                  href="/register"
+                  onClick={handleMobileNavigation}
+                  className="flex items-center px-3 py-2.5 rounded-lg text-base font-medium text-white bg-indigo-600 hover:bg-indigo-700 transition-colors"
                 >
-                  <Crown className="w-5 h-5 mr-3" />
-                  Upgrade to Pro
+                  Sign Up
                 </Link>
-              )}
-              
-              <button
-                onClick={logout}
-                className="flex items-center w-full px-3 py-2.5 rounded-lg text-base font-medium text-red-600 hover:bg-red-50 transition-colors"
-              >
-                <LogOut className="w-5 h-5 mr-3" />
-                Sign Out
-              </button>
-            </div>
-          ) : (
-            <div className="pt-2 border-t border-gray-200 space-y-1">
-              <Link
-                href="/login"
-                className="flex items-center px-3 py-2.5 rounded-lg text-base font-medium text-gray-700 hover:bg-gray-50 transition-colors"
-              >
-                Login
-              </Link>
-              <Link
-                href="/register"
-                className="flex items-center px-3 py-2.5 rounded-lg text-base font-medium text-white bg-indigo-600 hover:bg-indigo-700 transition-colors"
-              >
-                Sign Up
-              </Link>
-            </div>
-          )}
+              </div>
+            )}
+          </div>
         </div>
-      </div>
+      )}
     </nav>
   );
 }
