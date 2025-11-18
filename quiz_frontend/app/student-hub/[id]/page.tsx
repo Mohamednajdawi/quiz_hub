@@ -177,22 +177,22 @@ function ContentItem({
     <Card className="hover:shadow-md transition-shadow">
       <div className="space-y-4">
         {/* PDF Header */}
-        <div className="flex items-start justify-between gap-4">
+        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
           <div className="flex items-start gap-3 flex-1 min-w-0">
             <div className="p-2 bg-red-100 rounded-lg flex-shrink-0">
               <FileText className="w-5 h-5 text-red-600" />
             </div>
             <div className="flex-1 min-w-0">
-              <h4 className="text-base font-semibold text-gray-900 mb-1 truncate">{content.name}</h4>
-              <div className="flex items-center gap-3 text-sm text-gray-600">
+              <h4 className="text-base font-semibold text-gray-900 mb-1 break-words">{content.name}</h4>
+              <div className="flex flex-wrap items-center gap-2 text-sm text-gray-600">
                 <span className="flex items-center gap-1">
                   <span className="font-medium">{content.content_type.toUpperCase()}</span>
                 </span>
-                <span>•</span>
+                <span className="hidden sm:inline">•</span>
                 <span>{Math.round((content.file_size || 0) / 1024)} KB</span>
                 {content.uploaded_at && (
                   <>
-                    <span>•</span>
+                    <span className="hidden sm:inline">•</span>
                     <span className="flex items-center gap-1">
                       <span>Uploaded {format(new Date(content.uploaded_at), 'MMM d')}</span>
                     </span>
@@ -201,7 +201,7 @@ function ContentItem({
               </div>
             </div>
           </div>
-          <div className="flex items-center gap-2 flex-shrink-0">
+          <div className="flex items-center gap-2 flex-shrink-0 flex-wrap sm:flex-nowrap">
             {/* Primary Action: View */}
             {content.content_type === 'pdf' && (
               <Button 
@@ -224,10 +224,10 @@ function ContentItem({
                     alert('Failed to load PDF. Please try again.');
                   }
                 }}
-                className="flex items-center gap-1.5"
+                className="flex items-center gap-1.5 whitespace-nowrap"
               >
                 <Eye className="w-4 h-4" />
-                View
+                <span className="hidden sm:inline">View</span>
               </Button>
             )}
 
@@ -237,10 +237,10 @@ function ContentItem({
                 variant="outline" 
                 size="sm"
                 onClick={() => setShowGenerateMenu(!showGenerateMenu)}
-                className="flex items-center gap-1.5"
+                className="flex items-center gap-1.5 whitespace-nowrap"
               >
                 <Sparkles className="w-4 h-4" />
-                Generate
+                <span className="hidden sm:inline">Generate</span>
                 <ChevronDown className={`w-3 h-3 transition-transform ${showGenerateMenu ? 'rotate-180' : ''}`} />
               </Button>
               {showGenerateMenu && (
