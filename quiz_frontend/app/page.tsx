@@ -47,24 +47,12 @@ export default function Home() {
         </section>
 
         {/* Hero Section with Video and CTA */}
-        <section className="relative bg-gradient-to-br from-white via-indigo-50/30 to-purple-50/20 text-gray-900 py-20 sm:py-24 lg:py-32 border-b border-gray-100 overflow-hidden">
-          {/* Subtle background pattern */}
-          <div className="absolute inset-0 opacity-[0.02] bg-[linear-gradient(to_right,#808080_1px,transparent_1px),linear-gradient(to_bottom,#808080_1px,transparent_1px)] bg-[size:4rem_4rem]"></div>
-          
-          <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-20 items-center">
+        <section className="relative bg-white text-gray-900 py-24 sm:py-32 lg:py-40 border-b border-gray-100">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 lg:gap-24 items-center">
               {/* Video Section - Left Side */}
-              <div className="order-2 lg:order-1 flex flex-col items-center lg:items-start text-center lg:text-left">
-                <p className="text-xs font-semibold uppercase tracking-[0.3em] text-indigo-600 mb-4">
-                  Product Walkthrough
-                </p>
-                <h1 className="text-3xl sm:text-4xl lg:text-5xl xl:text-6xl font-bold leading-tight text-gray-900 mb-5 max-w-xl">
-                  See QuizHub in action in under a minute
-                </h1>
-                <p className="text-base sm:text-lg text-gray-600 mb-8 max-w-lg leading-relaxed">
-                  Watch PDFs turn into quizzes, flashcards, and essays without leaving the page.
-                </p>
-                <div className="w-full rounded-2xl lg:rounded-3xl overflow-hidden border border-gray-200 shadow-2xl bg-white transition-shadow duration-300 hover:shadow-3xl">
+              <div className="order-2 lg:order-1">
+                <div className="w-full rounded-lg overflow-hidden border border-gray-200 bg-white">
                   <div className="aspect-video bg-gray-900">
                     <video
                       className="w-full h-full object-cover"
@@ -81,49 +69,32 @@ export default function Home() {
               </div>
 
               {/* CTA Section - Right Side */}
-              <div className="order-1 lg:order-2 flex flex-col justify-center items-center lg:items-start text-center lg:text-left lg:pl-6">
-                <h2 className="text-3xl sm:text-4xl lg:text-5xl xl:text-6xl font-bold text-gray-900 mb-5 leading-tight max-w-xl">
+              <div className="order-1 lg:order-2">
+                <h1 className="text-4xl sm:text-5xl lg:text-6xl font-normal text-gray-900 mb-6 leading-tight tracking-tight">
                   Study tools in one calm workspace
-                </h2>
-                <p className="text-lg sm:text-xl text-gray-600 mb-10 leading-relaxed max-w-lg">
+                </h1>
+                <p className="text-lg sm:text-xl text-gray-600 mb-8 leading-relaxed max-w-lg">
                   Upload once, get quizzes, flashcards, and essays in seconds—no extra tabs or jargon.
                 </p>
-                <div className="flex flex-col gap-4 mb-10 w-full sm:w-auto">
-                  <Link href="/register" className="w-full sm:w-auto">
-                    <Button variant="primary" size="lg" className="w-full sm:w-auto text-lg px-10 py-6 transition-transform duration-200 hover:scale-105 active:scale-95 shadow-lg hover:shadow-xl">
+                <div className="mb-8">
+                  <Link href="/register">
+                    <Button variant="primary" size="lg" className="text-base px-8 py-3 font-medium transition-all duration-200 hover:opacity-90">
                       Get Started Free
-                      <ArrowRight className="ml-2 w-5 h-5" />
-                    </Button>
-                  </Link>
-                  <Link href="/quizzes" className="w-full sm:w-auto">
-                    <Button variant="outline" size="lg" className="w-full sm:w-auto text-lg px-10 py-6 transition-transform duration-200 hover:scale-105 active:scale-95">
-                      Try Demo
+                      <ArrowRight className="ml-2 w-4 h-4" />
                     </Button>
                   </Link>
                 </div>
-                <div className="flex flex-col gap-3 text-sm text-gray-600">
-                  <div className="flex items-center gap-2 justify-center lg:justify-start">
-                    <CheckCircle2 className="w-5 h-5 text-green-500 flex-shrink-0" />
+                <div className="flex flex-col gap-2.5 text-sm text-gray-500">
+                  <div className="flex items-center gap-2">
+                    <CheckCircle2 className="w-4 h-4 text-gray-400 flex-shrink-0" />
                     <span>Launch your first quiz in 60 seconds</span>
                   </div>
-                  <div className="flex items-center gap-2 justify-center lg:justify-start">
-                    <CheckCircle2 className="w-5 h-5 text-green-500 flex-shrink-0" />
+                  <div className="flex items-center gap-2">
+                    <CheckCircle2 className="w-4 h-4 text-gray-400 flex-shrink-0" />
                     <span>No credit card required</span>
                   </div>
                 </div>
               </div>
-            </div>
-            
-            {/* Scroll Indicator */}
-            <div className="mt-16 lg:mt-20 flex flex-col items-center justify-center">
-              <p className="text-sm text-gray-600 mb-2 font-medium">Learn More</p>
-              <a 
-                href="#gallery" 
-                className="animate-bounce text-gray-400 hover:text-indigo-600 transition-colors duration-200"
-                aria-label="Scroll to learn more"
-              >
-                <ChevronDown className="w-6 h-6" />
-              </a>
             </div>
           </div>
         </section>
