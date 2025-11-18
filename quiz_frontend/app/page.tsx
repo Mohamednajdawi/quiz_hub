@@ -9,7 +9,8 @@ import {
   FileText, 
   ArrowRight, 
   CheckCircle2,
-  FolderOpen
+  FolderOpen,
+  ChevronDown
 } from 'lucide-react';
 
 export default function Home() {
@@ -34,9 +35,23 @@ export default function Home() {
   return (
     <Layout>
       <div className="min-h-screen">
+        {/* Trust Signal Banner */}
+        <section className="bg-gradient-to-r from-indigo-50 via-purple-50 to-pink-50 border-b border-gray-100">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
+            <div className="text-center">
+              <p className="text-sm sm:text-base text-gray-700 font-medium">
+                <span className="text-indigo-600 font-semibold">Trusted by students</span> at 50+ universities worldwide
+              </p>
+            </div>
+          </div>
+        </section>
+
         {/* Hero Section with Video and CTA */}
-        <section className="bg-white text-gray-900 py-16 sm:py-20 lg:py-24 border-b border-gray-100">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <section className="relative bg-gradient-to-br from-white via-indigo-50/30 to-purple-50/20 text-gray-900 py-20 sm:py-24 lg:py-32 border-b border-gray-100 overflow-hidden">
+          {/* Subtle background pattern */}
+          <div className="absolute inset-0 opacity-[0.02] bg-[linear-gradient(to_right,#808080_1px,transparent_1px),linear-gradient(to_bottom,#808080_1px,transparent_1px)] bg-[size:4rem_4rem]"></div>
+          
+          <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16 items-center">
               {/* Video Section - Left Side */}
               <div className="order-2 lg:order-1">
@@ -75,13 +90,13 @@ export default function Home() {
                 </p>
                 <div className="flex flex-col gap-4 mb-8">
                   <Link href="/register">
-                    <Button variant="primary" size="lg" className="w-full sm:w-auto text-lg px-8 py-6">
+                    <Button variant="primary" size="lg" className="w-full sm:w-auto text-lg px-8 py-6 transition-transform duration-200 hover:scale-105 active:scale-95">
                       Get Started Free
                       <ArrowRight className="ml-2 w-5 h-5" />
                     </Button>
                   </Link>
                   <Link href="/quizzes">
-                    <Button variant="outline" size="lg" className="w-full sm:w-auto text-lg px-8 py-6">
+                    <Button variant="outline" size="lg" className="w-full sm:w-auto text-lg px-8 py-6 transition-transform duration-200 hover:scale-105 active:scale-95">
                       Try Demo
                     </Button>
                   </Link>
@@ -98,11 +113,23 @@ export default function Home() {
                 </div>
               </div>
             </div>
+            
+            {/* Scroll Indicator */}
+            <div className="mt-16 lg:mt-20 flex flex-col items-center justify-center">
+              <p className="text-sm text-gray-600 mb-2 font-medium">Learn More</p>
+              <a 
+                href="#gallery" 
+                className="animate-bounce text-gray-400 hover:text-indigo-600 transition-colors duration-200"
+                aria-label="Scroll to learn more"
+              >
+                <ChevronDown className="w-6 h-6" />
+              </a>
+            </div>
           </div>
         </section>
 
         {/* Image Gallery */}
-        <section className="py-16 bg-white border-b border-gray-100">
+        <section id="gallery" className="py-20 sm:py-24 bg-white border-b border-gray-100">
           <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="text-center mb-12">
               <h3 className="text-3xl font-bold text-gray-900">Screens you will live in</h3>
@@ -132,7 +159,7 @@ export default function Home() {
         </section>
 
         {/* Features Section */}
-        <section className="py-20 bg-white border-b border-gray-100">
+        <section className="py-24 sm:py-28 bg-white border-b border-gray-100">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="text-center mb-16">
               <h2 className="text-4xl font-bold text-gray-900 mb-4">
@@ -166,7 +193,7 @@ export default function Home() {
                   </ul>
                   <div className="mt-auto">
                     <Link href="/quizzes">
-                      <Button variant="primary" className="w-full group-hover:bg-indigo-700">
+                      <Button variant="primary" className="w-full group-hover:bg-indigo-700 transition-transform duration-200 hover:scale-105 active:scale-95">
                         Create Quiz
                         <ArrowRight className="ml-2 w-4 h-4" />
                       </Button>
@@ -197,7 +224,7 @@ export default function Home() {
                   </ul>
                   <div className="mt-auto">
                     <Link href="/flashcards">
-                      <Button variant="primary" className="w-full group-hover:bg-indigo-700">
+                      <Button variant="primary" className="w-full group-hover:bg-indigo-700 transition-transform duration-200 hover:scale-105 active:scale-95">
                         Create Flashcards
                         <ArrowRight className="ml-2 w-4 h-4" />
                       </Button>
@@ -228,7 +255,7 @@ export default function Home() {
                   </ul>
                   <div className="mt-auto">
                     <Link href="/essays">
-                      <Button variant="primary" className="w-full group-hover:bg-indigo-700">
+                      <Button variant="primary" className="w-full group-hover:bg-indigo-700 transition-transform duration-200 hover:scale-105 active:scale-95">
                         Create Essay Q&A
                         <ArrowRight className="ml-2 w-4 h-4" />
                       </Button>
@@ -241,7 +268,7 @@ export default function Home() {
         </section>
 
         {/* Student Hub Feature */}
-        <section className="py-16 bg-white border-b border-gray-100">
+        <section className="py-20 sm:py-24 bg-white border-b border-gray-100">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
               <div>
@@ -262,7 +289,7 @@ export default function Home() {
                   </li>
                 </ul>
                 <Link href="/student-hub">
-                  <Button variant="primary" size="lg">
+                  <Button variant="primary" size="lg" className="transition-transform duration-200 hover:scale-105 active:scale-95">
                     Explore Student Hub
                     <ArrowRight className="ml-2 w-5 h-5" />
                   </Button>
@@ -300,7 +327,7 @@ export default function Home() {
         </section>
 
         {/* CTA Section */}
-        <section className="py-20 bg-indigo-600">
+        <section className="py-24 sm:py-28 bg-indigo-600">
           <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
             <h2 className="text-4xl font-bold text-white mb-6">
               Ready to Transform Your Study Habits?
@@ -310,13 +337,13 @@ export default function Home() {
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Link href="/register">
-                <Button variant="secondary" size="lg" className="text-lg px-8 py-6 bg-white text-indigo-600 hover:bg-gray-50">
+                <Button variant="secondary" size="lg" className="text-lg px-8 py-6 bg-white text-indigo-600 hover:bg-gray-50 transition-transform duration-200 hover:scale-105 active:scale-95">
                   Get Started Free
                   <ArrowRight className="ml-2 w-5 h-5" />
                 </Button>
               </Link>
               <Link href="/login">
-                <Button variant="outline" size="lg" className="text-lg px-8 py-6 border-2 border-white text-white hover:bg-white/10">
+                <Button variant="outline" size="lg" className="text-lg px-8 py-6 border-2 border-white text-white hover:bg-white/10 transition-transform duration-200 hover:scale-105 active:scale-95">
                   Sign In
                 </Button>
               </Link>
