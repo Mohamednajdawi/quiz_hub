@@ -17,6 +17,7 @@ import { apiClient } from '@/lib/api/client';
 import { format } from 'date-fns';
 import { flashcardApi } from '@/lib/api/flashcards';
 import { essayApi } from '@/lib/api/essay';
+import { useNotifications } from '@/contexts/NotificationsContext';
 
 export default function ProjectDetailPage() {
   return (
@@ -674,6 +675,7 @@ function ProjectDetailContent() {
   const [readyQuizzes, setReadyQuizzes] = useState<Array<{ jobId: number; quizId: number; topic: string; contentName: string }>>([]);
   const [readyEssays, setReadyEssays] = useState<Array<{ jobId: number; essayId: number; topic: string; contentName: string }>>([]);
   const activeJobsRef = useRef(activeJobs);
+  const { addNotification } = useNotifications();
 
   useEffect(() => {
     activeJobsRef.current = activeJobs;
@@ -865,6 +867,13 @@ function ProjectDetailContent() {
                 contentName: job.contentName,
               };
               setReadyQuizzes((prev) => [...prev, quizInfo]);
+              addNotification({
+                type: 'quiz',
+                title: 'Quiz generation completed',
+                description: `"${quizInfo.topic}" from ${job.contentName} is ready.`,
+                href: `/quizzes/${quizInfo.quizId}`,
+                meta: { jobId: job.jobId, contentId: job.contentId },
+              });
               
               // Show browser notification if permission granted
               if ('Notification' in window && Notification.permission === 'granted') {
@@ -885,6 +894,13 @@ function ProjectDetailContent() {
                 contentName: job.contentName,
               };
               setReadyEssays((prev) => [...prev, essayInfo]);
+              addNotification({
+                type: 'essay',
+                title: 'Essay Q&A generation completed',
+                description: `"${essayInfo.topic}" from ${job.contentName} is ready.`,
+                href: `/essays/${essayInfo.essayId}`,
+                meta: { jobId: job.jobId, contentId: job.contentId },
+              });
               
               // Show browser notification if permission granted
               if ('Notification' in window && Notification.permission === 'granted') {
@@ -922,7 +938,7 @@ function ProjectDetailContent() {
       isMounted = false;
       clearInterval(interval);
     };
-  }, [activeJobs.length, projectId, queryClient]);
+  }, [activeJobs.length, projectId, queryClient, addNotification]);
 
   const generateQuizMutation = useMutation({
     mutationFn: ({ contentId, contentName }: { contentId: number; contentName: string }) => {
@@ -953,12 +969,12 @@ function ProjectDetailContent() {
   });
 
   const generateFlashcardsMutation = useMutation({
-    mutationFn: (contentId: number) => {
+    mutationFn: ({ contentId, contentName }: { contentId: number; contentName: string }) => {
       setGenerationStatus({ type: 'flashcards', messageIndex: 0 });
       setPendingContentId(contentId);
       return studentProjectsApi.generateFlashcardsFromContent(projectId, contentId, numCards);
     },
-    onSuccess: (data) => {
+    onSuccess: (data, variables) => {
       setGenerationStatus({ type: null, messageIndex: 0 });
       setPendingContentId(null);
       setSuccess('Flashcards generated successfully!');
@@ -966,6 +982,13 @@ function ProjectDetailContent() {
       // Invalidate generated content queries for all contents
       contents?.forEach((c) => {
         queryClient.invalidateQueries({ queryKey: ['generated-content', projectId, c.id] });
+      });
+      addNotification({
+        type: 'flashcards',
+        title: 'Flashcards ready',
+        description: `${numCards} flashcards generated from ${variables?.contentName || 'your document'}.`,
+        href: `/student-hub/${projectId}`,
+        meta: { contentId: variables?.contentId },
       });
       router.push(`/flashcards/view?data=${encodeURIComponent(JSON.stringify(data))}`);
     },
@@ -1346,7 +1369,7 @@ function ProjectDetailContent() {
                           contentName: selectedContent.name,
                         })
                       }
-                      onGenerateFlashcards={() => generateFlashcardsMutation.mutate(c.id)}
+                      onGenerateFlashcards={() => generateFlashcardsMutation.mutate({ contentId: c.id, contentName: c.name })}
                       onGenerateEssays={() => generateEssaysMutation.mutate({
                         contentId: c.id,
                         contentName: c.name,

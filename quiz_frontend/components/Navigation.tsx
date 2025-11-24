@@ -2,9 +2,10 @@
 
 import { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { BookOpen, FileText, GraduationCap, Home, BarChart3, LogOut, User, ChevronDown, CreditCard, Sparkles, Shield, MoreVertical, Crown, Settings, Menu, X, Bell } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
+import { useNotifications, type AppNotificationType } from '@/contexts/NotificationsContext';
 
 const studyTools = [
   { name: 'Quizzes', href: '/quizzes', icon: GraduationCap },
@@ -23,52 +24,49 @@ const adminNavigation = [
   { name: 'Admin', href: '/admin', icon: Shield },
 ];
 
-type NotificationType = 'quiz' | 'flashcards' | 'essay' | 'info';
+const notificationTypeStyles: Record<AppNotificationType, { iconBg: string; iconColor: string }> = {
+  quiz: { iconBg: 'bg-indigo-50', iconColor: 'text-indigo-600' },
+  flashcards: { iconBg: 'bg-emerald-50', iconColor: 'text-emerald-600' },
+  essay: { iconBg: 'bg-amber-50', iconColor: 'text-amber-600' },
+  info: { iconBg: 'bg-slate-100', iconColor: 'text-slate-600' },
+};
 
-interface NotificationItem {
-  id: string;
-  title: string;
-  description: string;
-  timestamp: string;
-  read: boolean;
-  type: NotificationType;
-}
+const renderNotificationIcon = (type: AppNotificationType) => {
+  switch (type) {
+    case 'quiz':
+      return GraduationCap;
+    case 'flashcards':
+      return BookOpen;
+    case 'essay':
+      return FileText;
+    default:
+      return Sparkles;
+  }
+};
 
-const notificationSeed: NotificationItem[] = [
-  {
-    id: 'notif-quiz-ready',
-    type: 'quiz',
-    title: 'New quiz generation completed',
-    description: 'Your Biology Basics quiz is ready to review.',
-    timestamp: new Date(Date.now() - 5 * 60 * 1000).toISOString(),
-    read: false,
-  },
-  {
-    id: 'notif-flashcards-ready',
-    type: 'flashcards',
-    title: 'Flashcards created successfully',
-    description: '20 flashcards generated from “European History.pdf”.',
-    timestamp: new Date(Date.now() - 30 * 60 * 1000).toISOString(),
-    read: false,
-  },
-  {
-    id: 'notif-essay-ready',
-    type: 'essay',
-    title: 'Essay Q&A finished generating',
-    description: 'Essay helper for “Climate Change Notes” is now available.',
-    timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
-    read: true,
-  },
-];
+const formatNotificationTime = (timestamp: string) => {
+  try {
+    const date = new Date(timestamp);
+    return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  } catch {
+    return '';
+  }
+};
 
 export function Navigation() {
   const pathname = usePathname();
+  const router = useRouter();
   const { isAuthenticated, user, logout, isAdmin } = useAuth();
+  const {
+    notifications,
+    unreadCount,
+    markNotificationAsRead,
+    markAllNotificationsAsRead,
+  } = useNotifications();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isNotificationOpen, setIsNotificationOpen] = useState(false);
-  const [notifications, setNotifications] = useState<NotificationItem[]>([]);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const userMenuRef = useRef<HTMLDivElement>(null);
   const notificationRef = useRef<HTMLDivElement>(null);
@@ -86,7 +84,6 @@ export function Navigation() {
   // Show manage subscription if user has any subscription (active or canceled but still in period)
   // A subscription exists if it's present and has status 'active' (even if cancel_at_period_end is true)
   const hasSubscription = subscription && subscription.status === 'active';
-  const unreadNotifications = notifications.filter(notification => !notification.read).length;
 
   // Close dropdowns when clicking outside
   useEffect(() => {
@@ -135,16 +132,6 @@ export function Navigation() {
     };
   }, [isMobileMenuOpen]);
 
-  useEffect(() => {
-    if (!user) {
-      setNotifications([]);
-      setIsNotificationOpen(false);
-      return;
-    }
-
-    setNotifications(notificationSeed.map(notification => ({ ...notification, read: notification.read })));
-  }, [user?.id]);
-
   // Get user initials for avatar
   const getUserInitials = () => {
     if (!user) return '';
@@ -165,44 +152,11 @@ export function Navigation() {
     setIsDropdownOpen(false);
   };
 
-  const markNotificationAsRead = (id: string) => {
-    setNotifications(prev =>
-      prev.map(notification =>
-        notification.id === id ? { ...notification, read: true } : notification
-      )
-    );
-  };
-
-  const markAllNotificationsAsRead = () => {
-    setNotifications(prev => prev.map(notification => ({ ...notification, read: true })));
-  };
-
-  const notificationTypeStyles: Record<NotificationType, { iconBg: string; iconColor: string }> = {
-    quiz: { iconBg: 'bg-indigo-50', iconColor: 'text-indigo-600' },
-    flashcards: { iconBg: 'bg-emerald-50', iconColor: 'text-emerald-600' },
-    essay: { iconBg: 'bg-amber-50', iconColor: 'text-amber-600' },
-    info: { iconBg: 'bg-slate-100', iconColor: 'text-slate-600' },
-  };
-
-  const renderNotificationIcon = (type: NotificationType) => {
-    switch (type) {
-      case 'quiz':
-        return GraduationCap;
-      case 'flashcards':
-        return BookOpen;
-      case 'essay':
-        return FileText;
-      default:
-        return Sparkles;
-    }
-  };
-
-  const formatNotificationTime = (timestamp: string) => {
-    try {
-      const date = new Date(timestamp);
-      return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-    } catch {
-      return '';
+  const handleNotificationClick = (notificationId: string, href?: string) => {
+    markNotificationAsRead(notificationId);
+    setIsNotificationOpen(false);
+    if (href) {
+      router.push(href);
     }
   };
 
@@ -335,9 +289,9 @@ export function Navigation() {
                     aria-expanded={isNotificationOpen}
                   >
                     <Bell className="w-5 h-5" />
-                    {unreadNotifications > 0 && (
+                    {unreadCount > 0 && (
                       <span className="absolute top-1 right-1 inline-flex items-center justify-center px-1.5 py-0.5 rounded-full text-[10px] font-semibold bg-red-500 text-white leading-none">
-                        {unreadNotifications > 9 ? '9+' : unreadNotifications}
+                        {unreadCount > 9 ? '9+' : unreadCount}
                       </span>
                     )}
                   </button>
@@ -348,8 +302,8 @@ export function Navigation() {
                         <div className="flex flex-col">
                           <span className="text-sm font-semibold text-gray-900">Notifications</span>
                           <span className="text-xs text-gray-500">
-                            {unreadNotifications > 0
-                              ? `${unreadNotifications} new update${unreadNotifications === 1 ? '' : 's'}`
+                            {unreadCount > 0
+                              ? `${unreadCount} new update${unreadCount === 1 ? '' : 's'}`
                               : 'You are all caught up'}
                           </span>
                         </div>
@@ -376,7 +330,7 @@ export function Navigation() {
                               <button
                                 type="button"
                                 key={notification.id}
-                                onClick={() => markNotificationAsRead(notification.id)}
+                                onClick={() => handleNotificationClick(notification.id, notification.href)}
                                 className={`w-full flex items-start gap-3 px-4 py-3 transition-colors ${
                                   notification.read ? 'bg-white hover:bg-gray-50' : 'bg-indigo-50/60 hover:bg-indigo-50'
                                 }`}
@@ -392,7 +346,7 @@ export function Navigation() {
                                     {notification.description}
                                   </span>
                                   <span className="block text-[11px] text-gray-400 mt-1">
-                                    {formatNotificationTime(notification.timestamp)}
+                                    {formatNotificationTime(notification.createdAt)}
                                   </span>
                                 </span>
                                 {!notification.read && <span className="w-2 h-2 rounded-full bg-indigo-600 mt-1.5" />}
