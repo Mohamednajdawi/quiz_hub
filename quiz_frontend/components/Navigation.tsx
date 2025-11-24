@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { BookOpen, FileText, GraduationCap, Home, BarChart3, LogOut, User, ChevronDown, CreditCard, Sparkles, Shield, MoreVertical, Crown, Settings, Menu, X } from 'lucide-react';
+import { BookOpen, FileText, GraduationCap, Home, BarChart3, LogOut, User, ChevronDown, CreditCard, Sparkles, Shield, MoreVertical, Crown, Settings, Menu, X, Bell } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 
 const studyTools = [
@@ -23,14 +23,55 @@ const adminNavigation = [
   { name: 'Admin', href: '/admin', icon: Shield },
 ];
 
+type NotificationType = 'quiz' | 'flashcards' | 'essay' | 'info';
+
+interface NotificationItem {
+  id: string;
+  title: string;
+  description: string;
+  timestamp: string;
+  read: boolean;
+  type: NotificationType;
+}
+
+const notificationSeed: NotificationItem[] = [
+  {
+    id: 'notif-quiz-ready',
+    type: 'quiz',
+    title: 'New quiz generation completed',
+    description: 'Your Biology Basics quiz is ready to review.',
+    timestamp: new Date(Date.now() - 5 * 60 * 1000).toISOString(),
+    read: false,
+  },
+  {
+    id: 'notif-flashcards-ready',
+    type: 'flashcards',
+    title: 'Flashcards created successfully',
+    description: '20 flashcards generated from “European History.pdf”.',
+    timestamp: new Date(Date.now() - 30 * 60 * 1000).toISOString(),
+    read: false,
+  },
+  {
+    id: 'notif-essay-ready',
+    type: 'essay',
+    title: 'Essay Q&A finished generating',
+    description: 'Essay helper for “Climate Change Notes” is now available.',
+    timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
+    read: true,
+  },
+];
+
 export function Navigation() {
   const pathname = usePathname();
   const { isAuthenticated, user, logout, isAdmin } = useAuth();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isNotificationOpen, setIsNotificationOpen] = useState(false);
+  const [notifications, setNotifications] = useState<NotificationItem[]>([]);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const userMenuRef = useRef<HTMLDivElement>(null);
+  const notificationRef = useRef<HTMLDivElement>(null);
 
   // Check if any study tool is active
   const isStudyToolActive = studyTools.some(tool => pathname === tool.href || pathname.startsWith(tool.href + '/'));
@@ -45,6 +86,7 @@ export function Navigation() {
   // Show manage subscription if user has any subscription (active or canceled but still in period)
   // A subscription exists if it's present and has status 'active' (even if cancel_at_period_end is true)
   const hasSubscription = subscription && subscription.status === 'active';
+  const unreadNotifications = notifications.filter(notification => !notification.read).length;
 
   // Close dropdowns when clicking outside
   useEffect(() => {
@@ -55,6 +97,9 @@ export function Navigation() {
       if (userMenuRef.current && !userMenuRef.current.contains(event.target as Node)) {
         setIsUserMenuOpen(false);
       }
+      if (notificationRef.current && !notificationRef.current.contains(event.target as Node)) {
+        setIsNotificationOpen(false);
+      }
     };
 
     document.addEventListener('mousedown', handleClickOutside);
@@ -64,6 +109,7 @@ export function Navigation() {
   useEffect(() => {
     setIsMobileMenuOpen(false);
     setIsDropdownOpen(false);
+    setIsNotificationOpen(false);
   }, [pathname]);
 
   useEffect(() => {
@@ -89,6 +135,16 @@ export function Navigation() {
     };
   }, [isMobileMenuOpen]);
 
+  useEffect(() => {
+    if (!user) {
+      setNotifications([]);
+      setIsNotificationOpen(false);
+      return;
+    }
+
+    setNotifications(notificationSeed.map(notification => ({ ...notification, read: notification.read })));
+  }, [user?.id]);
+
   // Get user initials for avatar
   const getUserInitials = () => {
     if (!user) return '';
@@ -107,6 +163,47 @@ export function Navigation() {
   const handleMobileNavigation = () => {
     setIsMobileMenuOpen(false);
     setIsDropdownOpen(false);
+  };
+
+  const markNotificationAsRead = (id: string) => {
+    setNotifications(prev =>
+      prev.map(notification =>
+        notification.id === id ? { ...notification, read: true } : notification
+      )
+    );
+  };
+
+  const markAllNotificationsAsRead = () => {
+    setNotifications(prev => prev.map(notification => ({ ...notification, read: true })));
+  };
+
+  const notificationTypeStyles: Record<NotificationType, { iconBg: string; iconColor: string }> = {
+    quiz: { iconBg: 'bg-indigo-50', iconColor: 'text-indigo-600' },
+    flashcards: { iconBg: 'bg-emerald-50', iconColor: 'text-emerald-600' },
+    essay: { iconBg: 'bg-amber-50', iconColor: 'text-amber-600' },
+    info: { iconBg: 'bg-slate-100', iconColor: 'text-slate-600' },
+  };
+
+  const renderNotificationIcon = (type: NotificationType) => {
+    switch (type) {
+      case 'quiz':
+        return GraduationCap;
+      case 'flashcards':
+        return BookOpen;
+      case 'essay':
+        return FileText;
+      default:
+        return Sparkles;
+    }
+  };
+
+  const formatNotificationTime = (timestamp: string) => {
+    try {
+      const date = new Date(timestamp);
+      return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    } catch {
+      return '';
+    }
   };
 
   return (
@@ -225,6 +322,89 @@ export function Navigation() {
           <div className="flex items-center gap-2">
               {isAuthenticated ? (
                 <>
+                {/* Notifications */}
+                <div className="relative" ref={notificationRef}>
+                  <button
+                    type="button"
+                    onClick={() => setIsNotificationOpen(prev => !prev)}
+                    className={`flex items-center justify-center w-10 h-10 rounded-lg text-[#0e1f47] hover:bg-[#e6e6e6] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#1e439d] transition-colors ${
+                      isNotificationOpen ? 'bg-[#e6e6e6]' : ''
+                    }`}
+                    aria-label="Notifications"
+                    aria-haspopup="menu"
+                    aria-expanded={isNotificationOpen}
+                  >
+                    <Bell className="w-5 h-5" />
+                    {unreadNotifications > 0 && (
+                      <span className="absolute top-1 right-1 inline-flex items-center justify-center px-1.5 py-0.5 rounded-full text-[10px] font-semibold bg-red-500 text-white leading-none">
+                        {unreadNotifications > 9 ? '9+' : unreadNotifications}
+                      </span>
+                    )}
+                  </button>
+
+                  {isNotificationOpen && (
+                    <div className="absolute right-0 mt-2 w-80 max-w-[90vw] rounded-xl shadow-lg bg-white ring-1 ring-black/5 z-50 overflow-hidden">
+                      <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
+                        <div className="flex flex-col">
+                          <span className="text-sm font-semibold text-gray-900">Notifications</span>
+                          <span className="text-xs text-gray-500">
+                            {unreadNotifications > 0
+                              ? `${unreadNotifications} new update${unreadNotifications === 1 ? '' : 's'}`
+                              : 'You are all caught up'}
+                          </span>
+                        </div>
+                        {notifications.length > 0 && (
+                          <button
+                            type="button"
+                            onClick={markAllNotificationsAsRead}
+                            className="text-xs font-medium text-indigo-600 hover:text-indigo-700"
+                          >
+                            Mark all read
+                          </button>
+                        )}
+                      </div>
+                      <div className="max-h-80 overflow-y-auto">
+                        {notifications.length === 0 ? (
+                          <div className="px-4 py-6 text-center text-sm text-gray-500">
+                            No notifications yet.
+                          </div>
+                        ) : (
+                          notifications.map(notification => {
+                            const IconComponent = renderNotificationIcon(notification.type);
+                            const { iconBg, iconColor } = notificationTypeStyles[notification.type];
+                            return (
+                              <button
+                                type="button"
+                                key={notification.id}
+                                onClick={() => markNotificationAsRead(notification.id)}
+                                className={`w-full flex items-start gap-3 px-4 py-3 transition-colors ${
+                                  notification.read ? 'bg-white hover:bg-gray-50' : 'bg-indigo-50/60 hover:bg-indigo-50'
+                                }`}
+                              >
+                                <span className={`flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center ${iconBg}`}>
+                                  <IconComponent className={`w-5 h-5 ${iconColor}`} />
+                                </span>
+                                <span className="flex-1 min-w-0 text-left">
+                                  <span className="block text-sm font-semibold text-gray-900 truncate">
+                                    {notification.title}
+                                  </span>
+                                  <span className="block text-xs text-gray-600 truncate">
+                                    {notification.description}
+                                  </span>
+                                  <span className="block text-[11px] text-gray-400 mt-1">
+                                    {formatNotificationTime(notification.timestamp)}
+                                  </span>
+                                </span>
+                                {!notification.read && <span className="w-2 h-2 rounded-full bg-indigo-600 mt-1.5" />}
+                              </button>
+                            );
+                          })
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
+
                 {/* User Menu Dropdown */}
                 <div className="relative" ref={userMenuRef}>
                   <button
