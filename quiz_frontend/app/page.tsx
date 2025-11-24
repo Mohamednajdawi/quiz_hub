@@ -1,3 +1,5 @@
+ 'use client';
+
 import { Layout } from '@/components/Layout';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
@@ -10,10 +12,146 @@ import {
   ArrowRight, 
   CheckCircle2,
   FolderOpen,
-  ChevronDown
+  ChevronDown,
+  Sparkles,
+  BookOpenCheck,
+  ClipboardList,
+  PlusCircle
 } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
+
+function LoggedInHome() {
+  const { user } = useAuth();
+
+  const quickActions = [
+    {
+      title: 'Go to Student Hub',
+      description: 'Pick up where you left off with your PDFs and generators.',
+      href: '/student-hub',
+      icon: FolderOpen,
+      cta: 'Open Hub',
+    },
+    {
+      title: 'Create a New Project',
+      description: 'Upload a PDF or paste text to spin up quizzes and flashcards.',
+      href: '/student-hub',
+      icon: PlusCircle,
+      cta: 'New Project',
+    },
+    {
+      title: 'Review Recent Quizzes',
+      description: 'Jump straight into editing questions or checking feedback.',
+      href: '/quizzes',
+      icon: ClipboardList,
+      cta: 'Review Quizzes',
+    },
+  ];
+
+  return (
+    <Layout>
+      <div className="min-h-screen bg-gradient-to-b from-white via-indigo-50/40 to-white">
+        <section className="py-20 border-b border-gray-100">
+          <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
+              <div>
+                <p className="text-sm uppercase tracking-widest text-indigo-500 font-semibold mb-3 flex items-center gap-2">
+                  <Sparkles className="w-4 h-4" /> Welcome back
+                </p>
+                <h1 className="text-4xl sm:text-5xl font-bold text-gray-900 mb-4">
+                  Ready to keep building, {user?.first_name || 'friend'}?
+                </h1>
+                <p className="text-lg text-gray-600 max-w-2xl">
+                  Resume active generations, jump into Student Hub, or start something fresh—all from one place.
+                </p>
+              </div>
+              <div className="flex gap-3">
+                <Link href="/student-hub">
+                  <Button variant="primary" size="lg">
+                    Continue in Student Hub
+                    <ArrowRight className="w-4 h-4 ml-2" />
+                  </Button>
+                </Link>
+                <Link href="/dashboard">
+                  <Button variant="outline" size="lg">
+                    View Dashboard
+                  </Button>
+                </Link>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section className="py-16 border-b border-gray-100 bg-white">
+          <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {quickActions.map((action) => (
+                <Card key={action.title} className="p-6 border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
+                  <div className="flex items-center gap-3 mb-4">
+                    <action.icon className="w-6 h-6 text-indigo-600" />
+                    <h3 className="text-lg font-semibold text-gray-900">{action.title}</h3>
+                  </div>
+                  <p className="text-sm text-gray-600 mb-6">
+                    {action.description}
+                  </p>
+                  <Link href={action.href}>
+                    <Button variant="primary" className="w-full">
+                      {action.cta}
+                      <ArrowRight className="w-4 h-4 ml-2" />
+                    </Button>
+                  </Link>
+                </Card>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        <section className="py-16 bg-white">
+          <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+              <Card className="p-6 border border-gray-200 h-full flex">
+                <div className="space-y-4 flex-1">
+                  <div className="flex items-center gap-3 text-indigo-600 font-semibold text-sm uppercase tracking-wide">
+                    <BookOpenCheck className="w-5 h-5" />
+                    Quick reminders
+                  </div>
+                  <div className="space-y-3 text-sm text-gray-700">
+                    <p>• You can upload PDFs or text directly from Student Hub.</p>
+                    <p>• All generation progress now notifies you from anywhere in the app.</p>
+                    <p>• Revisit recent quizzes or essays to keep improving your sets.</p>
+                  </div>
+                </div>
+              </Card>
+              <Card className="p-6 border border-gray-200 h-full">
+                <div className="space-y-4">
+                  <h3 className="text-xl font-semibold text-gray-900">
+                    Need inspiration?
+                  </h3>
+                  <p className="text-gray-600">
+                    Check the latest release notes or reach out if you want a custom workflow set up for your class.
+                  </p>
+                  <div className="flex gap-3">
+                    <Link href="/student-hub">
+                      <Button variant="primary">Open Student Hub</Button>
+                    </Link>
+                    <Link href="/dashboard">
+                      <Button variant="secondary">View Updates</Button>
+                    </Link>
+                  </div>
+                </div>
+              </Card>
+            </div>
+          </div>
+        </section>
+      </div>
+    </Layout>
+  );
+}
 
 export default function Home() {
+  const { isAuthenticated } = useAuth();
+  if (isAuthenticated) {
+    return <LoggedInHome />;
+  }
   const previewImages = [
     {
       src: '/gallery-quiz.svg',
