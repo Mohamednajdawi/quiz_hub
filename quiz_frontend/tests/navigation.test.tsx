@@ -1,4 +1,5 @@
 import { render, screen } from '@testing-library/react';
+import { vi } from 'vitest';
 import { Navigation } from '@/components/Navigation';
 
 const mockUseAuth = vi.fn();

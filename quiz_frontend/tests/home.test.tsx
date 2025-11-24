@@ -1,4 +1,5 @@
 import { render, screen } from '@testing-library/react';
+import { vi } from 'vitest';
 import Home, { LoggedInHome } from '@/app/page';
 
 const mockUseAuth = vi.fn();

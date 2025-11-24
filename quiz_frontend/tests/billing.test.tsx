@@ -1,4 +1,5 @@
 import { render, screen, waitFor } from '@testing-library/react';
+import { vi } from 'vitest';
 import { BillingContent } from '@/app/dashboard/billing/page';
 import { renderWithQueryClient } from './utils';
 
