@@ -3,7 +3,7 @@
 import { useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import Link from 'next/link';
-import { format } from 'date-fns';
+import { format, formatDistanceToNow } from 'date-fns';
 import { ProtectedRoute } from '@/components/ProtectedRoute';
 import { Layout } from '@/components/Layout';
 import { Card } from '@/components/ui/Card';
@@ -22,7 +22,8 @@ function useSubscriptionDetails() {
 
 export function BillingContent() {
   const queryClient = useQueryClient();
-  const { data: subscription, isLoading, error } = useSubscriptionDetails();
+  const subscriptionQuery = useSubscriptionDetails();
+  const { data: subscription, isLoading, error, isFetching } = subscriptionQuery;
 
   const manageMutation = useMutation({
     mutationFn: (cancelAtPeriodEnd: boolean) => {
@@ -220,18 +221,28 @@ export function BillingContent() {
             </Card>
 
             <Card className="p-6 border border-gray-200 shadow-sm">
-              <div className="flex items-center gap-3 mb-6">
-                <CheckCircle2 className="w-6 h-6 text-indigo-600" />
-                <div>
-                  <p className="text-sm uppercase tracking-wide text-indigo-600 font-semibold">
-                    Usage this cycle
-                  </p>
-                  <h2 className="text-xl font-semibold text-gray-900">
-                    {usage
-                      ? `${usage.used}/${subscription?.monthly_generations}`
-                      : '—'}
-                  </h2>
+              <div className="flex items-center justify-between mb-6">
+                <div className="flex items-center gap-3">
+                  <CheckCircle2 className="w-6 h-6 text-indigo-600" />
+                  <div>
+                    <p className="text-sm uppercase tracking-wide text-indigo-600 font-semibold">
+                      Usage this cycle
+                    </p>
+                    <h2 className="text-xl font-semibold text-gray-900">
+                      {usage ? `${usage.used}/${usage.total}` : '—'}
+                    </h2>
+                  </div>
                 </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => subscriptionQuery.refetch()}
+                  disabled={isFetching}
+                  className="flex items-center gap-2"
+                >
+                  <RefreshCw className={`w-4 h-4 ${isFetching ? 'animate-spin' : ''}`} />
+                  {isFetching ? 'Refreshing…' : 'Refresh'}
+                </Button>
               </div>
               {usage ? (
                 <>
@@ -242,7 +253,7 @@ export function BillingContent() {
                     />
                   </div>
                   <p className="text-sm text-gray-600">
-                    {usage.remaining} / {usage.total} generations remaining before reset.
+                    {usage.remaining} remaining before reset
                   </p>
                 </>
               ) : (
@@ -252,6 +263,14 @@ export function BillingContent() {
               )}
 
               <div className="mt-6 space-y-3 text-sm text-gray-600">
+                {subscriptionQuery.dataUpdatedAt ? (
+                  <p className="text-xs text-gray-500">
+                    Updated{' '}
+                    {formatDistanceToNow(subscriptionQuery.dataUpdatedAt, {
+                      addSuffix: true,
+                    })}
+                  </p>
+                ) : null}
                 <p>
                   Need a higher limit or team plan?{' '}
                   <Link
