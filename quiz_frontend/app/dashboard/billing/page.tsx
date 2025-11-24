@@ -20,7 +20,7 @@ function useSubscriptionDetails() {
     staleTime: 30_000,
     refetchOnWindowFocus: false,
     retry: 1,
-    keepPreviousData: true,
+    placeholderData: (previousData) => previousData,
   });
 }
 
