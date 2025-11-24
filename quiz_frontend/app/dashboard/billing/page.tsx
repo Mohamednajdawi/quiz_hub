@@ -20,7 +20,7 @@ function useSubscriptionDetails() {
   });
 }
 
-function BillingContent() {
+export function BillingContent() {
   const queryClient = useQueryClient();
   const { data: subscription, isLoading, error } = useSubscriptionDetails();
 
@@ -49,20 +49,14 @@ function BillingContent() {
   }, [subscription?.current_period_end]);
 
   const usage = useMemo(() => {
-    if (
-      typeof subscription?.monthly_generations === 'number' &&
-      typeof subscription?.remaining_generations === 'number'
-    ) {
-      const used =
-        subscription.monthly_generations - subscription.remaining_generations;
-      const percent =
-        subscription.monthly_generations > 0
-          ? Math.min(
-              100,
-              Math.round((used / subscription.monthly_generations) * 100)
-            )
-          : 0;
-      return { used, percent };
+    const total = subscription?.monthly_generations;
+    const remaining = subscription?.remaining_generations;
+    if (typeof total === 'number' && typeof remaining === 'number' && total > 0) {
+      const rawUsed = total - remaining;
+      const used = Math.min(total, Math.max(0, rawUsed));
+      const clampRemaining = Math.min(total, Math.max(0, remaining));
+      const percent = Math.min(100, Math.max(0, Math.round((used / total) * 100)));
+      return { used, remaining: clampRemaining, total, percent };
     }
     return null;
   }, [subscription?.monthly_generations, subscription?.remaining_generations]);
@@ -248,8 +242,7 @@ function BillingContent() {
                     />
                   </div>
                   <p className="text-sm text-gray-600">
-                    {subscription?.remaining_generations ?? 0} generations
-                    remaining before reset.
+                    {usage.remaining} / {usage.total} generations remaining before reset.
                   </p>
                 </>
               ) : (

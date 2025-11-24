@@ -20,7 +20,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 
-function LoggedInHome() {
+export function LoggedInHome() {
   const { user } = useAuth();
 
   const quickActions = [
