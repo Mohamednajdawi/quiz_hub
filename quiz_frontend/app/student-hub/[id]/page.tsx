@@ -98,8 +98,7 @@ function ContentItem({
 
   const handleViewQuiz = async (quizId: number) => {
     try {
-      // Navigate directly to quiz detail page where editing is available
-      router.push(`/quizzes/${quizId}`);
+      router.push(`/quizzes/${quizId}?projectId=${projectId}`);
     } catch (error) {
       console.error('Failed to load quiz:', error);
     }
@@ -108,15 +107,15 @@ function ContentItem({
   const handleViewFlashcards = async (flashcardId: number) => {
     try {
       const flashcardData = await flashcardApi.getFlashcards(flashcardId);
-      router.push(`/flashcards/view?data=${encodeURIComponent(JSON.stringify(flashcardData))}`);
+      const serialized = encodeURIComponent(JSON.stringify(flashcardData));
+      router.push(`/flashcards/view?data=${serialized}&projectId=${projectId}`);
     } catch (error) {
       console.error('Failed to load flashcards:', error);
     }
   };
 
   const handleViewEssay = async (essayId: number) => {
-    // Navigate directly to the essay detail page where users can answer questions
-    router.push(`/essays/${essayId}`);
+    router.push(`/essays/${essayId}?projectId=${projectId}`);
   };
 
   const hasGeneratedContent = generatedContent && (
@@ -968,7 +967,8 @@ function ProjectDetailContent() {
       contents?.forEach((c) => {
         queryClient.invalidateQueries({ queryKey: ['generated-content', projectId, c.id] });
       });
-      router.push(`/flashcards/view?data=${encodeURIComponent(JSON.stringify(data))}`);
+      const serialized = encodeURIComponent(JSON.stringify(data));
+      router.push(`/flashcards/view?data=${serialized}&projectId=${projectId}`);
     },
     onError: (error: unknown) => {
       setGenerationStatus({ type: null, messageIndex: 0 });
@@ -1137,7 +1137,7 @@ function ProjectDetailContent() {
                 variant="primary"
                 onClick={() => {
                   setReadyQuizzes((prev) => prev.filter((item) => item.jobId !== entry.jobId));
-                  router.push(`/quizzes/${entry.quizId}`);
+                  router.push(`/quizzes/${entry.quizId}?projectId=${projectId}`);
                 }}
               >
                 Open Quiz
@@ -1159,7 +1159,7 @@ function ProjectDetailContent() {
                 variant="primary"
                 onClick={() => {
                   setReadyEssays((prev) => prev.filter((item) => item.jobId !== entry.jobId));
-                  router.push(`/essays/${entry.essayId}`);
+                  router.push(`/essays/${entry.essayId}?projectId=${projectId}`);
                 }}
               >
                 Open Essay Q&A

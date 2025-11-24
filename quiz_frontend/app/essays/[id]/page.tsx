@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { ProtectedRoute } from '@/components/ProtectedRoute';
 import { Layout } from '@/components/Layout';
 import { Card } from '@/components/ui/Card';
@@ -21,11 +21,13 @@ interface EssayFeedback {
 function EssayDetailPageContent() {
   const params = useParams();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { user } = useAuth();
   const essayId = parseInt(params.id as string);
   const [userAnswers, setUserAnswers] = useState<Record<number, string>>({});
   const [combinedFeedback, setCombinedFeedback] = useState<EssayFeedback | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const projectId = searchParams.get('projectId');
 
   const { data: essay, isLoading, error } = useQuery({
     queryKey: ['essay', essayId],
@@ -115,6 +117,18 @@ function EssayDetailPageContent() {
     <Layout>
       <div className="px-4 sm:px-6 lg:px-8 max-w-4xl mx-auto">
         <Card>
+          {projectId && (
+            <div className="mb-4">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => router.push(`/student-hub/${projectId}`)}
+                className="inline-flex items-center gap-2 text-indigo-700 hover:text-indigo-900"
+              >
+                Back to Project
+              </Button>
+            </div>
+          )}
           <div className="mb-6">
             <h1 className="text-3xl font-bold text-gray-900 mb-2">{essay.topic}</h1>
             <div className="text-sm text-gray-700 mb-4">

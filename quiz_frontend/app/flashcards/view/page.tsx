@@ -51,6 +51,7 @@ function ViewFlashcardsContent() {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isFlipped, setIsFlipped] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const projectId = searchParams.get('projectId');
 
   useEffect(() => {
     const dataParam = searchParams.get('data');
@@ -131,6 +132,19 @@ function ViewFlashcardsContent() {
     <Layout>
       <div className="px-4 sm:px-6 lg:px-8 max-w-6xl mx-auto w-full">
         <Card>
+          {projectId && (
+            <div className="mb-4">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => router.push(`/student-hub/${projectId}`)}
+                className="inline-flex items-center gap-2 text-indigo-700 hover:text-indigo-900"
+              >
+                <ChevronLeft className="w-4 h-4" />
+                Back to Project
+              </Button>
+            </div>
+          )}
           <div className="mb-6">
             <h1 className="text-2xl font-bold text-gray-900 mb-2">{flashcardData.topic}</h1>
             <div className="text-sm text-gray-700 mb-4">
