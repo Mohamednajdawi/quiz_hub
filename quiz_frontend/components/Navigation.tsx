@@ -20,10 +20,6 @@ const navigation = [
   { name: 'Pricing', href: '/pricing', icon: CreditCard },
 ];
 
-const adminNavigation = [
-  { name: 'Admin', href: '/admin', icon: Shield },
-];
-
 const notificationTypeStyles: Record<AppNotificationType, { iconBg: string; iconColor: string }> = {
   quiz: { iconBg: 'bg-indigo-50', iconColor: 'text-indigo-600' },
   flashcards: { iconBg: 'bg-emerald-50', iconColor: 'text-emerald-600' },
@@ -206,28 +202,6 @@ export function Navigation() {
                 );
               })}
             
-            {/* Admin Link - Only show if authenticated AND is admin */}
-            {isAuthenticated && isAdmin && adminNavigation.map((item) => {
-              const isActive = pathname === item.href || pathname.startsWith(item.href);
-                  return (
-                    <Link
-                      key={item.name}
-                      href={item.href}
-                  className={`group relative flex items-center px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
-                        isActive
-                      ? 'bg-[#e6e6e6] text-[#163172]'
-                      : 'text-[#0e1f47] hover:bg-[#f2f2f2]'
-                  }`}
-                >
-                  <item.icon className={`w-4 h-4 mr-2 transition-colors ${isActive ? 'text-[#163172]' : 'text-[#596078] group-hover:text-[#0e1f47]'}`} />
-                  <span>{item.name}</span>
-                  {isActive && (
-                    <span className="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-1 h-1 bg-[#163172] rounded-full" />
-                  )}
-                    </Link>
-                  );
-                })}
-                
                 {/* Study Tools Dropdown - Only show if authenticated */}
                 {isAuthenticated && (
                   <div className="relative" ref={dropdownRef}>
@@ -484,6 +458,16 @@ export function Navigation() {
                           <User className="w-4 h-4 mr-3 text-gray-400" />
                           Profile Settings
                         </Link>
+                        {isAdmin && (
+                          <Link
+                            href="/admin"
+                            onClick={() => setIsUserMenuOpen(false)}
+                            className="flex items-center px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                          >
+                            <Shield className="w-4 h-4 mr-3 text-gray-400" />
+                            Admin Dashboard
+                          </Link>
+                        )}
                         
                         {hasSubscription ? (
                           <Link
@@ -581,26 +565,6 @@ export function Navigation() {
                   </Link>
                 );
               })}
-            
-            {/* Admin Link for Mobile */}
-            {isAuthenticated && isAdmin && adminNavigation.map((item) => {
-              const isActive = pathname === item.href || pathname.startsWith(item.href);
-              return (
-                <Link
-                  key={item.name}
-                  href={item.href}
-                  onClick={handleMobileNavigation}
-                  className={`flex items-center px-3 py-2.5 rounded-lg text-base font-medium transition-colors ${
-                    isActive
-                      ? 'bg-red-50 text-red-700'
-                      : 'text-gray-700 hover:bg-gray-50'
-                  }`}
-                >
-                  <item.icon className={`w-5 h-5 mr-3 ${isActive ? 'text-red-600' : 'text-gray-400'}`} />
-                  {item.name}
-                </Link>
-              );
-            })}
             
             {/* Study Tools Dropdown for Mobile - Only show if authenticated */}
             {isAuthenticated && (
@@ -710,6 +674,16 @@ export function Navigation() {
                   <User className="w-5 h-5 mr-3 text-gray-400" />
                   Profile
                 </Link>
+                {isAdmin && (
+                  <Link
+                    href="/admin"
+                    onClick={handleMobileNavigation}
+                    className="flex items-center px-3 py-2.5 rounded-lg text-base font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+                  >
+                    <Shield className="w-5 h-5 mr-3 text-gray-400" />
+                    Admin Dashboard
+                  </Link>
+                )}
                 
                 {hasSubscription ? (
                   <Link
