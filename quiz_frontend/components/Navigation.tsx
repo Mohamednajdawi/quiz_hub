@@ -470,7 +470,7 @@ export function Navigation() {
                         
                         {hasSubscription ? (
                           <Link
-                            href="/pricing?manage=true"
+                            href="/dashboard/billing"
                             onClick={() => setIsUserMenuOpen(false)}
                             className="flex items-center px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
                           >
@@ -686,7 +686,7 @@ export function Navigation() {
                 
                 {hasSubscription ? (
                   <Link
-                    href="/pricing?manage=true"
+                    href="/dashboard/billing"
                     onClick={handleMobileNavigation}
                     className="flex items-center px-3 py-2.5 rounded-lg text-base font-medium text-gray-700 hover:bg-gray-50 transition-colors"
                   >
