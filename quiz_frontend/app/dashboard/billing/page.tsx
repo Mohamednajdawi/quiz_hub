@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import Link from 'next/link';
 import { format, formatDistanceToNow } from 'date-fns';
@@ -9,7 +9,7 @@ import { Layout } from '@/components/Layout';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Alert } from '@/components/ui/Alert';
-import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
+import { Skeleton } from '@/components/ui/Skeleton';
 import { subscriptionApi } from '@/lib/api/subscription';
 import { Crown, RefreshCw, ShieldCheck, CheckCircle2, Info, AlertTriangle } from 'lucide-react';
 
@@ -17,6 +17,10 @@ function useSubscriptionDetails() {
   return useQuery({
     queryKey: ['billing', 'subscription'],
     queryFn: subscriptionApi.getCurrentUserSubscription,
+    staleTime: 30_000,
+    refetchOnWindowFocus: false,
+    retry: 1,
+    keepPreviousData: true,
   });
 }
 
@@ -24,6 +28,7 @@ export function BillingContent() {
   const queryClient = useQueryClient();
   const subscriptionQuery = useSubscriptionDetails();
   const { data: subscription, isLoading, error, isFetching } = subscriptionQuery;
+  const [banner, setBanner] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
 
   const manageMutation = useMutation({
     mutationFn: (cancelAtPeriodEnd: boolean) => {
@@ -35,8 +40,23 @@ export function BillingContent() {
         cancelAtPeriodEnd
       );
     },
-    onSuccess: () => {
+    onSuccess: (_data: unknown, cancelAtPeriodEnd: boolean) => {
       queryClient.invalidateQueries({ queryKey: ['billing', 'subscription'] });
+      setBanner({
+        type: 'success',
+        message: cancelAtPeriodEnd
+          ? 'Cancellation scheduled. Your plan stays active until the end of this cycle.'
+          : 'Subscription resumed. We’ll keep your plan active next billing cycle.',
+      });
+    },
+    onError: (mutationError: unknown) => {
+      setBanner({
+        type: 'error',
+        message:
+          mutationError instanceof Error
+            ? mutationError.message
+            : 'We could not update your subscription. Please try again.',
+      });
     },
   });
 
@@ -65,20 +85,45 @@ export function BillingContent() {
   const hasSubscription = !!subscription?.has_subscription;
   const isCanceled = Boolean(subscription?.cancel_at_period_end);
 
-  const handleCancel = () => manageMutation.mutate(true);
+  const handleCancel = () => {
+    const confirmed = window.confirm(
+      'Your plan will remain active until the end of the billing cycle. Continue?'
+    );
+    if (confirmed) {
+      manageMutation.mutate(true);
+    }
+  };
   const handleResume = () => manageMutation.mutate(false);
 
   if (isLoading) {
     return (
       <Layout>
-        <div className="flex items-center justify-center py-32">
-          <LoadingSpinner size="lg" />
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-6">
+          <div className="space-y-3">
+            <Skeleton className="h-4 w-32" />
+            <Skeleton className="h-10 w-2/3" />
+            <Skeleton className="h-4 w-1/2" />
+          </div>
+          <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+            <Card className="p-6 space-y-4">
+              <Skeleton className="h-6 w-1/3" />
+              <Skeleton className="h-4 w-1/2" />
+              <Skeleton className="h-12 w-full" />
+              <Skeleton className="h-10 w-full" />
+            </Card>
+            <Card className="p-6 space-y-4">
+              <Skeleton className="h-6 w-1/3" />
+              <Skeleton className="h-3 w-full" />
+              <Skeleton className="h-3 w-5/6" />
+              <Skeleton className="h-10 w-1/3" />
+            </Card>
+          </div>
         </div>
       </Layout>
     );
   }
 
-  if (error) {
+  if (error && !subscription) {
     return (
       <Layout>
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
@@ -93,6 +138,26 @@ export function BillingContent() {
   return (
     <Layout>
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-8">
+        {banner && (
+          <Alert
+            type={banner.type}
+            className="flex items-start justify-between gap-4"
+          >
+            <span>{banner.message}</span>
+            <button
+              type="button"
+              onClick={() => setBanner(null)}
+              className="text-sm underline text-current"
+            >
+              Dismiss
+            </button>
+          </Alert>
+        )}
+        {error && subscription && (
+          <Alert type="error">
+            We couldn’t refresh billing data right now. Showing the last known values.
+          </Alert>
+        )}
         <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div>
             <p className="text-sm font-semibold text-indigo-600 uppercase tracking-wide">
@@ -229,14 +294,23 @@ export function BillingContent() {
                       Usage this cycle
                     </p>
                     <h2 className="text-xl font-semibold text-gray-900">
-                      {usage ? `${usage.used}/${usage.total}` : '—'}
+                      {usage ? `${usage.total}/${usage.used}` : '—'}
                     </h2>
                   </div>
                 </div>
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => subscriptionQuery.refetch()}
+                  onClick={async () => {
+                    try {
+                      await subscriptionQuery.refetch();
+                    } catch {
+                      setBanner({
+                        type: 'error',
+                        message: 'We could not refresh usage right now. Please try again.',
+                      });
+                    }
+                  }}
                   disabled={isFetching}
                   className="flex items-center gap-2"
                 >
@@ -253,7 +327,7 @@ export function BillingContent() {
                     />
                   </div>
                   <p className="text-sm text-gray-600">
-                    {usage.remaining} remaining before reset
+                    {usage.used} used • {usage.remaining} remaining
                   </p>
                 </>
               ) : (
