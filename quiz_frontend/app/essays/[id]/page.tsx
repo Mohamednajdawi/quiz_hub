@@ -120,7 +120,7 @@ function EssayDetailPageContent() {
           {projectId && (
             <div className="mb-4">
               <Button
-                variant="ghost"
+                variant="outline"
                 size="sm"
                 onClick={() => router.push(`/student-hub/${projectId}`)}
                 className="inline-flex items-center gap-2 text-indigo-700 hover:text-indigo-900"

@@ -17,7 +17,6 @@ const navigation = [
   { name: 'Home', href: '/', icon: Home },
   { name: 'Dashboard', href: '/dashboard', icon: BarChart3 },
   { name: 'Student Hub', href: '/student-hub', icon: FileText },
-  { name: 'Pricing', href: '/pricing', icon: CreditCard },
 ];
 
 const notificationTypeStyles: Record<AppNotificationType, { iconBg: string; iconColor: string }> = {
@@ -176,7 +175,7 @@ export function Navigation() {
               .filter(item => {
                 // When not authenticated, only show Home and Pricing
                 if (!isAuthenticated) {
-                  return item.href === '/' || item.href === '/pricing';
+                  return item.href === '/';
                 }
                 // When authenticated, show all items
                 return true;
@@ -471,7 +470,7 @@ export function Navigation() {
                         
                         {hasSubscription ? (
                           <Link
-                            href="/pricing?manage=true"
+                            href="/dashboard/billing"
                             onClick={() => setIsUserMenuOpen(false)}
                             className="flex items-center px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
                           >
@@ -480,7 +479,7 @@ export function Navigation() {
                           </Link>
                         ) : (
                           <Link
-                            href="/pricing"
+                            href="/dashboard/billing"
                             onClick={() => setIsUserMenuOpen(false)}
                             className="flex items-center px-4 py-2.5 text-sm text-indigo-600 hover:bg-indigo-50 transition-colors font-medium"
                           >
@@ -543,7 +542,7 @@ export function Navigation() {
             {navigation
               .filter(item => {
                 if (!isAuthenticated) {
-                  return item.href === '/' || item.href === '/pricing';
+                  return item.href === '/';
                 }
                 return true;
               })
@@ -687,7 +686,7 @@ export function Navigation() {
                 
                 {hasSubscription ? (
                   <Link
-                    href="/pricing?manage=true"
+                    href="/dashboard/billing"
                     onClick={handleMobileNavigation}
                     className="flex items-center px-3 py-2.5 rounded-lg text-base font-medium text-gray-700 hover:bg-gray-50 transition-colors"
                   >
@@ -696,7 +695,7 @@ export function Navigation() {
                   </Link>
                 ) : (
                   <Link
-                    href="/pricing"
+                    href="/dashboard/billing"
                     onClick={handleMobileNavigation}
                     className="flex items-center px-3 py-2.5 rounded-lg text-base font-medium text-indigo-600 hover:bg-indigo-50 transition-colors"
                   >
