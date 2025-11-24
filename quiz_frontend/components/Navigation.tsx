@@ -225,48 +225,57 @@ export function Navigation() {
           <div className="flex items-center gap-2">
               {isAuthenticated ? (
                 <>
-                {/* User Info - Desktop Only */}
-                <div className="hidden lg:flex items-center gap-3 px-3 py-1.5 rounded-lg bg-brand-surface">
-                  {/* Avatar */}
-                  <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-semibold ${
-                    isPro 
-                      ? 'bg-gradient-to-br from-yellow-400 to-orange-500' 
-                      : 'bg-gradient-to-r from-[#163172] to-[#2756c7]'
-                  }`}>
-                    {isPro ? <Crown className="w-4 h-4" /> : getUserInitials()}
-                  </div>
-                  <div className="flex flex-col min-w-0">
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm font-medium text-brand truncate max-w-[120px]">
-                        {displayName}
-                      </span>
-                      {isPro && (
-                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-gradient-to-r from-yellow-400 to-orange-500 text-white">
-                          Pro
-                        </span>
-                      )}
-                    </div>
-                    {!isPro && remainingGenerations !== null && (
-                      <div className="flex items-center gap-1 text-xs text-[#163172]">
-                        <Sparkles className="h-3 w-3" />
-                        <span>{remainingGenerations} left</span>
-                      </div>
-                    )}
-                    {isPro && subscription?.plan_type && (
-                      <div className="text-xs text-gray-500 capitalize">
-                        {subscription.plan_type} Plan
-                        {typeof subscription.remaining_generations === 'number' ? ` (${subscription.remaining_generations} left)` : ''}
-                      </div>
-                    )}
-                  </div>
-                </div>
-
                 {/* User Menu Dropdown */}
                 <div className="relative" ref={userMenuRef}>
                   <button
+                    type="button"
                     onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
-                    className="flex items-center justify-center w-10 h-10 rounded-lg text-[#0e1f47] hover:bg-[#e6e6e6] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#1e439d] transition-colors"
+                    className={`hidden lg:flex items-center gap-3 px-3 py-1.5 rounded-lg bg-brand-surface hover:bg-[#eef0fb] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#1e439d] transition-colors ${
+                      isUserMenuOpen ? 'ring-2 ring-offset-2 ring-[#1e439d]' : ''
+                    }`}
+                    aria-haspopup="menu"
+                    aria-expanded={isUserMenuOpen}
+                  >
+                    <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-semibold ${
+                      isPro 
+                        ? 'bg-gradient-to-br from-yellow-400 to-orange-500' 
+                        : 'bg-gradient-to-r from-[#163172] to-[#2756c7]'
+                    }`}>
+                      {isPro ? <Crown className="w-4 h-4" /> : getUserInitials()}
+                    </div>
+                    <div className="flex flex-col min-w-0 text-left">
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-medium text-brand truncate max-w-[120px]">
+                          {displayName}
+                        </span>
+                        {isPro && (
+                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-gradient-to-r from-yellow-400 to-orange-500 text-white">
+                            Pro
+                          </span>
+                        )}
+                      </div>
+                      {!isPro && remainingGenerations !== null && (
+                        <div className="flex items-center gap-1 text-xs text-[#163172]">
+                          <Sparkles className="h-3 w-3" />
+                          <span>{remainingGenerations} left</span>
+                        </div>
+                      )}
+                      {isPro && subscription?.plan_type && (
+                        <div className="text-xs text-gray-500 capitalize">
+                          {subscription.plan_type} Plan
+                          {typeof subscription.remaining_generations === 'number' ? ` (${subscription.remaining_generations} left)` : ''}
+                        </div>
+                      )}
+                    </div>
+                    <MoreVertical className="w-5 h-5 text-[#596078]" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
+                    className="flex lg:hidden items-center justify-center w-10 h-10 rounded-lg text-[#0e1f47] hover:bg-[#e6e6e6] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#1e439d] transition-colors"
                     aria-label="User menu"
+                    aria-haspopup="menu"
+                    aria-expanded={isUserMenuOpen}
                   >
                     <MoreVertical className="w-5 h-5" />
                   </button>
