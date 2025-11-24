@@ -17,7 +17,7 @@ import { apiClient } from '@/lib/api/client';
 import { format } from 'date-fns';
 import { flashcardApi } from '@/lib/api/flashcards';
 import { essayApi } from '@/lib/api/essay';
-import { useNotifications } from '@/contexts/NotificationsContext';
+import { useGenerationJobs } from '@/contexts/GenerationJobsContext';
 
 export default function ProjectDetailPage() {
   return (
@@ -675,7 +675,7 @@ function ProjectDetailContent() {
   const [readyQuizzes, setReadyQuizzes] = useState<Array<{ jobId: number; quizId: number; topic: string; contentName: string }>>([]);
   const [readyEssays, setReadyEssays] = useState<Array<{ jobId: number; essayId: number; topic: string; contentName: string }>>([]);
   const activeJobsRef = useRef(activeJobs);
-  const { addNotification } = useNotifications();
+  const { registerJob } = useGenerationJobs();
 
   useEffect(() => {
     activeJobsRef.current = activeJobs;
@@ -867,14 +867,6 @@ function ProjectDetailContent() {
                 contentName: job.contentName,
               };
               setReadyQuizzes((prev) => [...prev, quizInfo]);
-              addNotification({
-                type: 'quiz',
-                title: 'Quiz generation completed',
-                description: `"${quizInfo.topic}" from ${job.contentName} is ready.`,
-                href: `/quizzes/${quizInfo.quizId}`,
-                meta: { jobId: job.jobId, contentId: job.contentId },
-              });
-              
               // Show browser notification if permission granted
               if ('Notification' in window && Notification.permission === 'granted') {
                 new Notification('Quiz Ready!', {
@@ -894,14 +886,6 @@ function ProjectDetailContent() {
                 contentName: job.contentName,
               };
               setReadyEssays((prev) => [...prev, essayInfo]);
-              addNotification({
-                type: 'essay',
-                title: 'Essay Q&A generation completed',
-                description: `"${essayInfo.topic}" from ${job.contentName} is ready.`,
-                href: `/essays/${essayInfo.essayId}`,
-                meta: { jobId: job.jobId, contentId: job.contentId },
-              });
-              
               // Show browser notification if permission granted
               if ('Notification' in window && Notification.permission === 'granted') {
                 new Notification('Essay Q&A Ready!', {
@@ -938,7 +922,7 @@ function ProjectDetailContent() {
       isMounted = false;
       clearInterval(interval);
     };
-  }, [activeJobs.length, projectId, queryClient, addNotification]);
+  }, [activeJobs.length, projectId, queryClient]);
 
   const generateQuizMutation = useMutation({
     mutationFn: ({ contentId, contentName }: { contentId: number; contentName: string }) => {
@@ -951,12 +935,13 @@ function ProjectDetailContent() {
       }).then((response) => ({ response, contentId, contentName }));
     },
     onSuccess: ({ response, contentId, contentName }) => {
-      setSuccess('Quiz generation started! We will notify you when it is ready.');
       setError(null);
+      const jobMeta = { jobId: response.job_id, contentId, contentName, jobType: 'quiz' as const };
       setActiveJobs((prev) => [
         ...prev,
-        { jobId: response.job_id, contentId, contentName, jobType: 'quiz' },
+        jobMeta,
       ]);
+      registerJob({ ...jobMeta, projectId });
     },
     onError: (error: unknown) => {
       setError(error instanceof Error ? error.message : 'Failed to start quiz generation');
@@ -983,13 +968,6 @@ function ProjectDetailContent() {
       contents?.forEach((c) => {
         queryClient.invalidateQueries({ queryKey: ['generated-content', projectId, c.id] });
       });
-      addNotification({
-        type: 'flashcards',
-        title: 'Flashcards ready',
-        description: `${numCards} flashcards generated from ${variables?.contentName || 'your document'}.`,
-        href: `/student-hub/${projectId}`,
-        meta: { contentId: variables?.contentId },
-      });
       router.push(`/flashcards/view?data=${encodeURIComponent(JSON.stringify(data))}`);
     },
     onError: (error: unknown) => {
@@ -1013,12 +991,13 @@ function ProjectDetailContent() {
       }).then((response) => ({ response, contentId, contentName }));
     },
     onSuccess: ({ response, contentId, contentName }) => {
-      setSuccess('Essay generation started! We will notify you when it is ready.');
       setError(null);
+      const jobMeta = { jobId: response.job_id, contentId, contentName, jobType: 'essay' as const };
       setActiveJobs((prev) => [
         ...prev,
-        { jobId: response.job_id, contentId, contentName, jobType: 'essay' },
+        jobMeta,
       ]);
+      registerJob({ ...jobMeta, projectId });
     },
     onError: (error: unknown) => {
       setError(error instanceof Error ? error.message : 'Failed to start essay generation');
