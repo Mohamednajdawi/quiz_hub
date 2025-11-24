@@ -25,6 +25,11 @@ export const metadata: Metadata = {
   authors: [{ name: siteConfig.seo.author }],
   creator: siteConfig.seo.author,
   publisher: siteConfig.name,
+  icons: {
+    icon: "/favicon.png",
+    shortcut: "/favicon.png",
+    apple: "/favicon.png",
+  },
   
   // Open Graph / Facebook
   openGraph: {
