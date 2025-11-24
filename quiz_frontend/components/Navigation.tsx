@@ -470,7 +470,7 @@ export function Navigation() {
                         
                         {hasSubscription ? (
                           <Link
-                            href="/dashboard/billing"
+                            href="/pricing?manage=true"
                             onClick={() => setIsUserMenuOpen(false)}
                             className="flex items-center px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
                           >
@@ -479,7 +479,7 @@ export function Navigation() {
                           </Link>
                         ) : (
                           <Link
-                            href="/dashboard/billing"
+                            href="/pricing"
                             onClick={() => setIsUserMenuOpen(false)}
                             className="flex items-center px-4 py-2.5 text-sm text-indigo-600 hover:bg-indigo-50 transition-colors font-medium"
                           >
@@ -686,7 +686,7 @@ export function Navigation() {
                 
                 {hasSubscription ? (
                   <Link
-                    href="/dashboard/billing"
+                    href="/pricing?manage=true"
                     onClick={handleMobileNavigation}
                     className="flex items-center px-3 py-2.5 rounded-lg text-base font-medium text-gray-700 hover:bg-gray-50 transition-colors"
                   >
@@ -695,7 +695,7 @@ export function Navigation() {
                   </Link>
                 ) : (
                   <Link
-                    href="/dashboard/billing"
+                    href="/pricing"
                     onClick={handleMobileNavigation}
                     className="flex items-center px-3 py-2.5 rounded-lg text-base font-medium text-indigo-600 hover:bg-indigo-50 transition-colors"
                   >
