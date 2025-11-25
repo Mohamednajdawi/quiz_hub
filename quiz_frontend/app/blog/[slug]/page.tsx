@@ -16,6 +16,8 @@ export function generateStaticParams() {
   return getAllPosts().map((post) => ({ slug: post.slug }));
 }
 
+export const dynamicParams = true;
+
 export function generateMetadata({ params }: BlogPostPageProps): Metadata {
   const post = getPostBySlug(params.slug);
   if (!post) {
