@@ -7,7 +7,15 @@ import datetime
 
 from backend.api_routers.schemas import QuizAttemptRequest, QuizAttemptResultRequest
 from backend.database.db import get_db
-from backend.database.sqlite_dal import QuizAttempt, QuizQuestion, QuizTopic, User
+from backend.database.sqlite_dal import (
+    FlashcardTopic,
+    QuizAttempt,
+    QuizQuestion,
+    QuizTopic,
+    StudentProject,
+    StudentProjectContent,
+    User,
+)
 from backend.utils.feedback import generate_quiz_feedback
 
 router = APIRouter()
@@ -469,6 +477,30 @@ async def get_user_analytics(user_id: str, db: Session = Depends(get_db)) -> JSO
         db.commit()
         db.refresh(user)
     
+    # Gather resource usage stats regardless of attempts
+    total_projects = (
+        db.query(StudentProject)
+        .filter(StudentProject.user_id == user_id)
+        .count()
+    )
+    total_uploaded_pdfs = (
+        db.query(StudentProjectContent)
+        .join(
+            StudentProject,
+            StudentProjectContent.project_id == StudentProject.id,
+        )
+        .filter(
+            StudentProject.user_id == user_id,
+            StudentProjectContent.content_type == "pdf",
+        )
+        .count()
+    )
+    total_flashcard_topics = (
+        db.query(FlashcardTopic)
+        .filter(FlashcardTopic.created_by_user_id == user_id)
+        .count()
+    )
+
     # Get all attempts for the user
     attempts = db.query(QuizAttempt).filter(QuizAttempt.user_id == user_id).order_by(QuizAttempt.timestamp.desc()).all()
     logging.warning(f"[ANALYTICS] Found {len(attempts)} attempts for user_id: {user_id}")
@@ -487,7 +519,10 @@ async def get_user_analytics(user_id: str, db: Session = Depends(get_db)) -> JSO
                 "recent_history": [],
                 "improvement_trend": "N/A",
                 "strengths": [],
-                "weaknesses": []
+                "weaknesses": [],
+                "total_projects": total_projects,
+                "total_uploaded_pdfs": total_uploaded_pdfs,
+                "total_flashcard_topics": total_flashcard_topics,
             }
         )
     
@@ -620,6 +655,9 @@ async def get_user_analytics(user_id: str, db: Session = Depends(get_db)) -> JSO
             "recent_history": recent_history,
             "improvement_trend": improvement_trend,
             "strengths": strengths,
-            "weaknesses": weaknesses
+            "weaknesses": weaknesses,
+            "total_projects": total_projects,
+            "total_uploaded_pdfs": total_uploaded_pdfs,
+            "total_flashcard_topics": total_flashcard_topics,
         }
     ) 

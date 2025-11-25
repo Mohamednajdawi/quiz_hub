@@ -125,5 +125,8 @@ export interface UserAnalytics {
   improvement_trend: string;
   strengths: string[];
   weaknesses: string[];
+  total_projects: number;
+  total_uploaded_pdfs: number;
+  total_flashcard_topics: number;
 }
 
