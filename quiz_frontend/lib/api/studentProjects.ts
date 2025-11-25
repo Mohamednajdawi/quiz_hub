@@ -144,7 +144,6 @@ export const studentProjectsApi = {
     contentId: number,
     numCards: number
   ) => {
-    // When using content_id, we don't need to send a file
     const form = new FormData();
     form.append('num_cards', String(numCards));
     form.append('project_id', String(projectId));
@@ -152,7 +151,7 @@ export const studentProjectsApi = {
 
     const { data } = await apiClient.post(`/generate-flashcards-from-pdf`, form, {
       headers: {
-        // Don't set Content-Type - let axios/browser set it with boundary for multipart/form-data
+        // Browser sets correct boundary for multipart/form-data
       },
     });
     return data;

@@ -8,6 +8,13 @@ import { studentProjectsApi, type GenerationJobStatus } from '@/lib/api/studentP
 
 type TrackedJobType = 'quiz' | 'essay';
 
+interface FlashcardTaskInput {
+  projectId: number;
+  contentId: number;
+  contentName: string;
+  numCards: number;
+}
+
 interface TrackedJob {
   jobId: number;
   projectId: number;
@@ -19,11 +26,21 @@ interface TrackedJob {
 
 interface GenerationJobsContextValue {
   registerJob: (job: Omit<TrackedJob, 'createdAt'>) => void;
+  startFlashcardGeneration: (task: FlashcardTaskInput) => Promise<string>;
 }
 
 const GenerationJobsContext = createContext<GenerationJobsContextValue | undefined>(undefined);
 
 const MAX_JOB_HISTORY = 25;
+const FLASHCARD_CACHE_PREFIX = 'quizhub_flashcard_payload_';
+const FLASHCARD_CACHE_INDEX_PREFIX = 'quizhub_flashcard_payload_index_';
+
+const generateCacheId = () => {
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+    return crypto.randomUUID();
+  }
+  return `flashcard-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+};
 
 export function GenerationJobsProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth();
@@ -31,6 +48,7 @@ export function GenerationJobsProvider({ children }: { children: ReactNode }) {
   const queryClient = useQueryClient();
   const [trackedJobs, setTrackedJobs] = useState<TrackedJob[]>([]);
   const jobsRef = useRef<TrackedJob[]>([]);
+  const flashcardTasksRef = useRef<Record<string, FlashcardTaskInput>>({});
 
   const storageKey = useMemo(
     () => (user?.id ? `quizhub_generation_jobs_${user.id}` : null),
@@ -155,8 +173,101 @@ export function GenerationJobsProvider({ children }: { children: ReactNode }) {
     return () => clearInterval(interval);
   }, [trackedJobs.length, addNotification, queryClient]);
 
+  const userCachePrefix = useMemo(
+    () => (user?.id ? `${FLASHCARD_CACHE_PREFIX}${user.id}_` : null),
+    [user?.id]
+  );
+
+  const userCacheIndexKey = useMemo(
+    () => (user?.id ? `${FLASHCARD_CACHE_INDEX_PREFIX}${user.id}` : null),
+    [user?.id]
+  );
+
+  const persistFlashcardPayload = useCallback(
+    (cacheId: string, payload: unknown) => {
+      if (!userCachePrefix || !userCacheIndexKey) return;
+      try {
+        const key = `${userCachePrefix}${cacheId}`;
+        localStorage.setItem(
+          key,
+          JSON.stringify({
+            storedAt: new Date().toISOString(),
+            payload,
+          })
+        );
+
+        const indexRaw = localStorage.getItem(userCacheIndexKey);
+        const previous = indexRaw ? (JSON.parse(indexRaw) as string[]) : [];
+        const merged = [cacheId, ...previous.filter((existing) => existing !== cacheId)];
+        const next = merged.slice(0, 5);
+        localStorage.setItem(userCacheIndexKey, JSON.stringify(next));
+
+        const stale = merged.slice(5);
+        stale.forEach((staleId) => {
+          const staleKey = `${userCachePrefix}${staleId}`;
+          localStorage.removeItem(staleKey);
+        });
+      } catch (error) {
+        console.warn('Failed to persist flashcard payload', error);
+      }
+    },
+    [userCacheIndexKey, userCachePrefix]
+  );
+
+  const startFlashcardGeneration = useCallback(
+    async ({ projectId, contentId, contentName, numCards }: FlashcardTaskInput) => {
+      if (!user?.id) {
+        throw new Error('You must be signed in to generate flashcards.');
+      }
+      const cacheId = generateCacheId();
+      flashcardTasksRef.current[cacheId] = { projectId, contentId, contentName, numCards };
+
+      const run = async () => {
+        try {
+          const data = await studentProjectsApi.generateFlashcardsFromContent(
+            projectId,
+            contentId,
+            numCards
+          );
+          persistFlashcardPayload(cacheId, {
+            data,
+            projectId,
+            contentId,
+            contentName,
+            numCards,
+          });
+          addNotification({
+            type: 'flashcards',
+            title: 'Flashcards ready',
+            description: `"${contentName}" flashcards are ready.`,
+            href: `/flashcards/view?cacheId=${encodeURIComponent(cacheId)}&projectId=${projectId}`,
+            meta: { cacheId, projectId, contentId },
+          });
+        } catch (error: unknown) {
+          console.warn('Flashcard generation failed', error);
+          const message =
+            (error as any)?.response?.data?.detail ??
+            (error instanceof Error ? error.message : 'Failed to generate flashcards');
+          addNotification({
+            type: 'info',
+            title: 'Flashcard generation failed',
+            description: message,
+            meta: { cacheId, projectId, contentId },
+          });
+        } finally {
+          delete flashcardTasksRef.current[cacheId];
+        }
+      };
+
+      run();
+      return cacheId;
+    },
+    [addNotification, persistFlashcardPayload, user?.id]
+  );
+
   const value: GenerationJobsContextValue = {
     registerJob,
+    startFlashcardGeneration,
   };
 
   return (

@@ -674,7 +674,7 @@ function ProjectDetailContent() {
   const [readyQuizzes, setReadyQuizzes] = useState<Array<{ jobId: number; quizId: number; topic: string; contentName: string }>>([]);
   const [readyEssays, setReadyEssays] = useState<Array<{ jobId: number; essayId: number; topic: string; contentName: string }>>([]);
   const activeJobsRef = useRef(activeJobs);
-  const { registerJob } = useGenerationJobs();
+  const { registerJob, startFlashcardGeneration } = useGenerationJobs();
 
   useEffect(() => {
     activeJobsRef.current = activeJobs;
@@ -962,25 +962,24 @@ function ProjectDetailContent() {
     mutationFn: ({ contentId, contentName }: { contentId: number; contentName: string }) => {
       setGenerationStatus({ type: 'flashcards', messageIndex: 0 });
       setPendingContentId(contentId);
-      return studentProjectsApi.generateFlashcardsFromContent(projectId, contentId, numCards);
+      return startFlashcardGeneration({
+        projectId,
+        contentId,
+        contentName,
+        numCards,
+      });
     },
-    onSuccess: (data, variables) => {
+    onSuccess: () => {
       setGenerationStatus({ type: null, messageIndex: 0 });
       setPendingContentId(null);
-      setSuccess('Flashcards generated successfully!');
+      setSuccess('Flashcard generation started! We will notify you when it is ready.');
       setError(null);
-      // Invalidate generated content queries for all contents
-      contents?.forEach((c) => {
-        queryClient.invalidateQueries({ queryKey: ['generated-content', projectId, c.id] });
-      });
-      const serialized = encodeURIComponent(JSON.stringify(data));
-      router.push(`/flashcards/view?data=${serialized}&projectId=${projectId}`);
     },
     onError: (error: unknown) => {
       setGenerationStatus({ type: null, messageIndex: 0 });
       setPendingContentId(null);
       setError(
-        error instanceof Error ? error.message : 'Failed to generate flashcards'
+        error instanceof Error ? error.message : 'Failed to start flashcard generation'
       );
       setSuccess(null);
     },
