@@ -1,5 +1,6 @@
 import logging
 import os
+from collections import Counter, defaultdict
 from typing import Iterable, Optional
 
 from openai import OpenAI
@@ -88,6 +89,28 @@ def generate_quiz_feedback(
     else:
         question_context = "No question-level details were available."
 
+    # Identify weak topics (most frequently missed concepts/questions)
+    weak_topic_counter: Counter[str] = Counter()
+    weak_topic_examples: dict[str, list[str]] = defaultdict(list)
+    for entry in incorrect:
+        topic_key = entry["concept"] or entry["question"] or f"Question {entry['number']}"
+        weak_topic_counter[topic_key] += 1
+        if len(weak_topic_examples[topic_key]) < 2:
+            weak_topic_examples[topic_key].append(
+                f"Q{entry['number']}: {entry['question']}"
+            )
+
+    top_weak_topics = weak_topic_counter.most_common(3)
+    weak_topic_summary_lines = []
+    for topic_key, misses in top_weak_topics:
+        examples = "; ".join(weak_topic_examples.get(topic_key, []))
+        weak_topic_summary_lines.append(
+            f"- {topic_key} | missed {misses} time(s). Examples: {examples}"
+        )
+    weak_topic_summary = (
+        "\n".join(weak_topic_summary_lines) if weak_topic_summary_lines else "No weak topics detected."
+    )
+
     # Identify focus topics (up to 2 most recent incorrect answers)
     focus_topics = []
     for entry in incorrect[:2]:
@@ -97,14 +120,39 @@ def generate_quiz_feedback(
             focus_topics.append(entry["question"])
     focus_text = "; ".join(focus_topics) if focus_topics else "No particular gaps detected"
 
+    def _recommend_adaptive_difficulty() -> tuple[str, str]:
+        if percentage >= 85:
+            return "hard", "Performance is excellent; increase challenge to push mastery."
+        if percentage >= 60:
+            return (
+                "medium",
+                "Core understanding is forming; maintain medium difficulty while shoring up weak areas.",
+            )
+        return "easy", "Focus on rebuilding confidence and fundamentals before moving up."
+
+    recommended_difficulty_level, recommended_difficulty_reason = _recommend_adaptive_difficulty()
     time_taken_text = _format_time(time_taken_seconds)
-    summary_text = (
-        f"Quiz topic: {topic_name}\n"
-        f"Score: {score}/{total_questions} ({percentage:.1f}%)\n"
-        f"Time taken: {time_taken_text}\n"
-        f"Primary focus areas: {focus_text}\n"
-        f"Question insights:\n{question_context}\n"
+    avg_seconds_per_question = (
+        time_taken_seconds / total_questions if total_questions > 0 else time_taken_seconds
     )
+    study_seed_lines = [
+        f"- Flashcards focus: {', '.join(t for t, _ in top_weak_topics) or topic_name}",
+        f"- Targeted quizzes focus: {focus_text}",
+        "- Deep reading focus: revisit the source material sections tied to the above weak topics.",
+    ]
+
+    summary_text_lines = [
+        f"Quiz topic: {topic_name}",
+        f"Score: {score}/{total_questions} ({percentage:.1f}%)",
+        f"Time taken: {time_taken_text} (≈{avg_seconds_per_question:.1f}s/question)",
+        f"Primary focus areas: {focus_text}",
+        f"Weak topic stats:\n{weak_topic_summary}",
+        "Study plan seeds:",
+        *study_seed_lines,
+        f"Adaptive difficulty recommendation: {recommended_difficulty_level.upper()} — {recommended_difficulty_reason}",
+        f"Question insights:\n{question_context}",
+    ]
+    summary_text = "\n".join(summary_text_lines)
 
     try:
         response = client.chat.completions.create(
@@ -114,15 +162,22 @@ def generate_quiz_feedback(
                     "role": "system",
                     "content": (
                         "You are an encouraging study coach. "
-                        "Given quiz performance data, provide constructive feedback in ONE paragraph (3-5 sentences). "
-                        "Always include a sentence that starts with 'Focus on' that references the weak topics. "
-                        "Bold key skills, topics, or action verbs using **double asterisks**. "
-                        "Acknowledge strengths briefly, then emphasize what to improve and close with a motivating action step. "
-                        "Do not use bullet points or numbered lists."
-                        "Example"
-                        "Example: Focus on the concept of 'The French Revolution' in history. since you got the question wrong."
-                        "Example: Focus on the concept of 'Artificial Intelligence Ethics' in science. since you got the question wrong."
-                        "Example: Focus on the concept of 'The French Revolution' in history. since you got the question wrong."
+                        "Given quiz performance data, respond using the EXACT template:\n"
+                        "Mistake Analysis: <2 sentences about the biggest mistakes referencing provided insights.>\n"
+                        "Weak Topics:\n"
+                        "- <Topic 1 and what went wrong>\n"
+                        "- <Topic 2>\n"
+                        "Study Plan:\n"
+                        "- Flashcards: <Personalized card practice tied to weak topics>\n"
+                        "- Targeted Quizzes: <Specific quiz actions tied to weak topics>\n"
+                        "- Deep Reading: <Specific reading/review guidance>\n"
+                        "Adaptive Difficulty: <State the recommended difficulty level provided in the context and why.>\n"
+                        "Requirements:\n"
+                        "- Bold key skills, topics, or action verbs using **double asterisks**.\n"
+                        "- Mention that the plan is automatically generated for the learner.\n"
+                        "- Keep total length under 1200 characters.\n"
+                        "- Do not add extra sections or bullet groups beyond the template.\n"
+                        "- Work the provided study plan seeds into your guidance naturally.\n"
                     ),
                 },
                 {
@@ -195,11 +250,23 @@ Please evaluate the student's answer and provide:
    - Clarity and organization
    - Depth of understanding demonstrated
    
-2. Constructive feedback (2-4 sentences) that:
+2. Constructive feedback that:
    - Acknowledges what the student did well
    - Points out what's missing or incorrect
    - Provides specific guidance on how to improve
    - Uses **bold** formatting for key concepts or action items
+   - States that the personalized plan below is automatically generated
+   - Follows this exact template (keep each bullet to 1-2 sentences):
+     Mistake Analysis: ...
+     Weak Topics:
+     - ...
+     - ...
+     Study Plan:
+     - Flashcards: ...
+     - Targeted Quizzes: ...
+     - Deep Reading: ...
+     Adaptive Difficulty: ...
+   - For Adaptive Difficulty, infer the level (easy/medium/hard) using the score you assign (>=85 = hard, 60-84 = medium, else easy) and explain the adjustment.
    
 Format your response as JSON:
 {{
@@ -217,7 +284,8 @@ Format your response as JSON:
                         "You are an encouraging and constructive educator. "
                         "Evaluate essay answers fairly and provide helpful feedback. "
                         "Always return valid JSON with 'score' (0-100) and 'feedback' (string) fields. "
-                        "Use **bold** formatting in feedback for emphasis on key concepts or action items."
+                        "Ensure the feedback text strictly follows the requested template so the learner sees: "
+                        "Mistake Analysis, Weak Topics (bullets), Study Plan (Flashcards/Targeted Quizzes/Deep Reading), and Adaptive Difficulty."
                     ),
                 },
                 {
@@ -316,12 +384,24 @@ Please evaluate ALL answers together and provide:
    - Clarity and organization throughout
    - Depth of understanding demonstrated overall
    
-2. Comprehensive feedback (3-5 sentences) that:
+2. Comprehensive feedback that:
    - Acknowledges what the student did well across all answers
    - Points out what's missing or incorrect across the responses
    - Provides specific guidance on how to improve overall
    - Uses **bold** formatting for key concepts or action items
    - Addresses the complete set of answers, not individual questions
+   - States that the personalized plan below is automatically generated
+   - Follows this exact template (keep each bullet to 1-2 sentences):
+     Mistake Analysis: ...
+     Weak Topics:
+     - ...
+     - ...
+     Study Plan:
+     - Flashcards: ...
+     - Targeted Quizzes: ...
+     - Deep Reading: ...
+     Adaptive Difficulty: ...
+   - For Adaptive Difficulty, infer the level (easy/medium/hard) using the score you assign (>=85 = hard, 60-84 = medium, else easy) and explain the adjustment.
    
 Format your response as JSON:
 {{
@@ -339,7 +419,7 @@ Format your response as JSON:
                         "You are an encouraging and constructive educator. "
                         "Evaluate the complete set of essay answers together and provide overall feedback. "
                         "Always return valid JSON with 'score' (0-100) and 'feedback' (string) fields. "
-                        "Use **bold** formatting in feedback for emphasis on key concepts or action items. "
+                        "Ensure the feedback string follows the required template exactly so the learner always sees Mistake Analysis, Weak Topics (bullets), Study Plan (Flashcards/Targeted Quizzes/Deep Reading), and Adaptive Difficulty. "
                         "Provide one overall assessment, not per-question feedback."
                     ),
                 },
