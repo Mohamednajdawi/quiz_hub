@@ -16,7 +16,10 @@ import {
   Sparkles,
   BookOpenCheck,
   ClipboardList,
-  PlusCircle
+  PlusCircle,
+  RefreshCw,
+  Brain,
+  Target
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -170,6 +173,24 @@ export default function Home() {
     },
   ];
 
+  const feedbackLoopSteps = [
+    {
+      title: '1. Take a quiz or essay',
+      description: 'Run a fast attempt and let QuizHub capture every mistake automatically.',
+      icon: ClipboardList,
+    },
+    {
+      title: '2. Get AI feedback',
+      description: 'Personalized coaching highlights weak topics, timing issues, and study focus areas.',
+      icon: Brain,
+    },
+    {
+      title: '3. Regenerate smarter content',
+      description: 'New quizzes, flashcards, and readings automatically target those weak spots.',
+      icon: Target,
+    },
+  ];
+
   return (
     <Layout>
       <div className="min-h-screen">
@@ -263,6 +284,39 @@ export default function Home() {
                   <p className="text-sm text-gray-600">{image.description}</p>
                 </div>
               ))}
+            </div>
+          </div>
+        </section>
+
+        {/* Feedback Loop Visual */}
+        <section className="py-24 sm:py-28 bg-gradient-to-b from-indigo-50/40 via-white to-white border-b border-gray-100">
+          <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="text-center mb-14">
+              <p className="text-sm font-semibold text-indigo-600 uppercase tracking-[0.2em] mb-3">
+                Feedback Loop
+              </p>
+              <h2 className="text-4xl font-bold text-gray-900 mb-4">
+                Every generation learns from the last
+              </h2>
+              <p className="text-lg text-gray-600 max-w-3xl mx-auto">
+                QuizHub feeds your latest AI feedback directly into new quizzes, flashcards, and essays so practice always targets the exact topics you missed.
+              </p>
+            </div>
+            <div className="relative">
+              <div className="hidden lg:block absolute top-1/2 left-0 right-0 h-px bg-gradient-to-r from-transparent via-indigo-200 to-transparent -translate-y-1/2" />
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 relative">
+                {feedbackLoopSteps.map((step) => (
+                  <Card key={step.title} className="p-6 border-2 border-white shadow-lg hover:shadow-xl transition-shadow bg-white/80 backdrop-blur rounded-2xl">
+                    <div className="w-14 h-14 rounded-2xl bg-indigo-600/10 text-indigo-600 flex items-center justify-center mb-5">
+                      <step.icon className="w-7 h-7" />
+                    </div>
+                    <h3 className="text-xl font-semibold text-gray-900 mb-3">{step.title}</h3>
+                    <p className="text-gray-600 leading-relaxed text-base">
+                      {step.description}
+                    </p>
+                  </Card>
+                ))}
+              </div>
             </div>
           </div>
         </section>

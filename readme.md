@@ -84,14 +84,14 @@
 
 ### 🎨 Brand Color Palette
 
-| Token | Hex | Usage |
-| --- | --- | --- |
-| Deep Navy | `#0e1f47` | Primary text, dark accents |
-| Core Blue | `#163172` | Navigation, headings, emphasis |
-| Secondary Blue | `#1e439d` | Focus rings, hover states |
-| Bright Blue | `#2756c7` | Primary buttons, CTAs |
-| Cloud White | `#ffffff` | Surfaces, cards |
-| Soft Gray | `#e6e6e6` | Backgrounds, dividers |
+| Token          | Hex       | Usage                          |
+| -------------- | --------- | ------------------------------ |
+| Deep Navy      | `#0e1f47` | Primary text, dark accents     |
+| Core Blue      | `#163172` | Navigation, headings, emphasis |
+| Secondary Blue | `#1e439d` | Focus rings, hover states      |
+| Bright Blue    | `#2756c7` | Primary buttons, CTAs          |
+| Cloud White    | `#ffffff` | Surfaces, cards                |
+| Soft Gray      | `#e6e6e6` | Backgrounds, dividers          |
 
 These shades are defined as CSS variables in `quiz_frontend/app/globals.css` and applied across shared components (layout, navigation, buttons, and footer) so the entire frontend stays consistent with the logo palette.
 
@@ -498,6 +498,7 @@ railway up
 - **Quizzes**: Generate multiple-choice questions from PDFs or URLs with customizable difficulty (easy/medium/hard)
 - **Flashcards**: Create interactive flashcard sets for memorization
 - **Essay Q&A**: Generate essay questions with detailed answers and key information points
+- **Feedback-Aware Generation**: Automatically reuses the learner's latest quiz/essay feedback so newly generated quizzes, flashcards, and essays target the exact weak topics that were previously missed
 - **AI Chat**: Interactive chat with uploaded PDFs for Q&A sessions
 
 ### Student Hub
@@ -653,4 +654,4 @@ alembic downgrade -1
 
 ---
 
-**Last Updated**: 2025-01-11
+**Last Updated**: 2025-11-25
