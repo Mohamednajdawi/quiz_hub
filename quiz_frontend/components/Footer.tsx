@@ -44,6 +44,11 @@ export function Footer() {
                   Dashboard
                 </Link>
               </li>
+              <li>
+                <Link href="/blog" className="text-sm text-[#596078] hover:text-brand">
+                  Blog
+                </Link>
+              </li>
             </ul>
           </div>
 
