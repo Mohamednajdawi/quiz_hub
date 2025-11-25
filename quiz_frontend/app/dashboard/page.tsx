@@ -269,7 +269,7 @@ function DashboardPageContent() {
             </div>
           </Card>
 
-          <Card onClick={() => router.push('/projects')}>
+          <Card onClick={() => router.push('/student-hub')}>
             <div className="flex items-center gap-4">
               <div className="bg-green-100 rounded-lg p-3">
                 <BookOpen className="h-6 w-6 text-green-600" />

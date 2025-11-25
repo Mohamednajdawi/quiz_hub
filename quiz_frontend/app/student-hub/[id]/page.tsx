@@ -924,23 +924,29 @@ function ProjectDetailContent() {
   }, [activeJobs.length, projectId, queryClient]);
 
   const generateQuizMutation = useMutation({
-    mutationFn: ({ contentId, contentName }: { contentId: number; contentName: string }) => {
+    mutationFn: async ({ contentId, contentName }: { contentId: number; contentName: string }) => {
       setGenerationStatus({ type: 'quiz', messageIndex: 0 });
       setPendingContentId(contentId);
       const desiredQuestions = questionMode === 'custom' ? numQuestions : undefined;
-      return studentProjectsApi.startQuizGenerationJob(projectId, contentId, {
+      const response = await studentProjectsApi.startQuizGenerationJob(projectId, contentId, {
         num_questions: desiredQuestions,
         difficulty,
-      }).then((response) => ({ response, contentId, contentName }));
+      });
+      registerJob({
+        jobId: response.job_id,
+        contentId,
+        contentName,
+        jobType: 'quiz',
+        projectId,
+      });
+      return { response, contentId, contentName };
     },
     onSuccess: ({ response, contentId, contentName }) => {
       setError(null);
-      const jobMeta = { jobId: response.job_id, contentId, contentName, jobType: 'quiz' as const };
       setActiveJobs((prev) => [
         ...prev,
-        jobMeta,
+        { jobId: response.job_id, contentId, contentName, jobType: 'quiz' as const },
       ]);
-      registerJob({ ...jobMeta, projectId });
     },
     onError: (error: unknown) => {
       setError(error instanceof Error ? error.message : 'Failed to start quiz generation');
@@ -981,23 +987,29 @@ function ProjectDetailContent() {
   });
 
   const generateEssaysMutation = useMutation({
-    mutationFn: ({ contentId, contentName }: { contentId: number; contentName: string }) => {
+    mutationFn: async ({ contentId, contentName }: { contentId: number; contentName: string }) => {
       setGenerationStatus({ type: 'essays', messageIndex: 0 });
       setPendingContentId(contentId);
       const desiredQuestions = questionMode === 'custom' ? numQuestions : undefined;
-      return studentProjectsApi.startEssayGenerationJob(projectId, contentId, {
+      const response = await studentProjectsApi.startEssayGenerationJob(projectId, contentId, {
         num_questions: desiredQuestions,
         difficulty,
-      }).then((response) => ({ response, contentId, contentName }));
+      });
+      registerJob({
+        jobId: response.job_id,
+        contentId,
+        contentName,
+        jobType: 'essay',
+        projectId,
+      });
+      return { response, contentId, contentName };
     },
     onSuccess: ({ response, contentId, contentName }) => {
       setError(null);
-      const jobMeta = { jobId: response.job_id, contentId, contentName, jobType: 'essay' as const };
       setActiveJobs((prev) => [
         ...prev,
-        jobMeta,
+        { jobId: response.job_id, contentId, contentName, jobType: 'essay' as const },
       ]);
-      registerJob({ ...jobMeta, projectId });
     },
     onError: (error: unknown) => {
       setError(error instanceof Error ? error.message : 'Failed to start essay generation');
