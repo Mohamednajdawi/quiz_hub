@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
+import Link from 'next/link';
 import { ProtectedRoute } from '@/components/ProtectedRoute';
 import { Layout } from '@/components/Layout';
 import { Card, CardHeader } from '@/components/ui/Card';
@@ -11,9 +12,6 @@ import { Select } from '@/components/ui/Select';
 import { useAuth } from '@/contexts/AuthContext';
 import type { GenderOption, UpdateProfileRequest } from '@/lib/api/auth';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
-import { subscriptionApi } from '@/lib/api/subscription';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Crown, Calendar, XCircle } from 'lucide-react';
 
 interface ProfileFormState {
   first_name: string;
@@ -32,38 +30,12 @@ const genderOptions: { value: GenderOption; label: string }[] = [
 
 function ProfileContent() {
   const { user, updateProfile, isLoading } = useAuth();
-  const queryClient = useQueryClient();
   const [formState, setFormState] = useState<ProfileFormState | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
-  const [cancelError, setCancelError] = useState<string | null>(null);
-  const [cancelSuccess, setCancelSuccess] = useState<string | null>(null);
-  
+
   const isPro = user?.account_type === 'pro' || user?.subscription?.status === 'active';
-  
-  // Fetch subscription details
-  const { data: subscription } = useQuery({
-    queryKey: ['subscription'],
-    queryFn: subscriptionApi.getCurrentUserSubscription,
-    enabled: isPro,
-    retry: 1,
-  });
-  
-  const cancelMutation = useMutation({
-    mutationFn: (subscriptionId: string) => subscriptionApi.cancelSubscription(subscriptionId, true),
-    onSuccess: () => {
-      setCancelSuccess('Subscription will be canceled at the end of the current billing period.');
-      setCancelError(null);
-      queryClient.invalidateQueries({ queryKey: ['subscription'] });
-      // Refresh user data
-      window.location.reload();
-    },
-    onError: (err: any) => {
-      setCancelError(err?.response?.data?.detail || err?.message || 'Failed to cancel subscription');
-      setCancelSuccess(null);
-    },
-  });
 
   const maxBirthDate = useMemo(() => {
     const today = new Date();
@@ -188,90 +160,20 @@ function ProfileContent() {
                   <Input label="Email" value={user.email} readOnly disabled className="bg-gray-100" />
                 </div>
                 
-                {/* Subscription Info */}
-                {isPro && subscription?.has_subscription && (
-                  <div className="mt-4 space-y-4">
-                    <div className="bg-gradient-to-r from-yellow-50 to-orange-50 border border-yellow-200 rounded-lg px-4 py-4">
-                      <div className="flex items-center gap-2 mb-3">
-                        <Crown className="w-5 h-5 text-yellow-600" />
-                        <h3 className="font-semibold text-gray-900">Pro Subscription Active</h3>
-                      </div>
-                      <div className="space-y-2 text-sm">
-                        {subscription.remaining_generations !== undefined && subscription.monthly_limit !== undefined ? (
-                          <div className="flex items-center gap-2 text-gray-700">
-                            <span className="font-medium">Generations:</span>
-                            <span className="text-indigo-600 font-semibold">
-                              {subscription.remaining_generations} remaining ({subscription.monthly_limit} per month)
-                            </span>
-                          </div>
-                        ) : (
-                          <div className="flex items-center gap-2 text-gray-700">
-                            <span className="font-medium">Generations:</span>
-                            <span className="text-indigo-600 font-semibold">
-                              {subscription.monthly_limit ?? '—'} per month
-                            </span>
-                          </div>
-                        )}
-                        {subscription.plan_type && (
-                          <div className="flex items-center gap-2 text-gray-700">
-                            <span className="font-medium">Plan:</span>
-                            <span className="text-indigo-600 font-semibold capitalize">
-                              {subscription.plan_type}
-                              {typeof subscription.remaining_generations === 'number' ? ` (${subscription.remaining_generations} left)` : ''}
-                            </span>
-                          </div>
-                        )}
-                        {subscription.current_period_end && (
-                          <div className="flex items-center gap-2 text-gray-700">
-                            <Calendar className="w-4 h-4 text-gray-500" />
-                            <span className="font-medium">Next payment:</span>
-                            <span>{new Date(subscription.current_period_end).toLocaleDateString('en-US', { 
-                              month: 'long', 
-                              day: 'numeric', 
-                              year: 'numeric' 
-                            })}</span>
-                          </div>
-                        )}
-                        {subscription.cancel_at_period_end && (
-                          <div className="flex items-center gap-2 text-amber-700 bg-amber-50 rounded px-2 py-1 mt-2">
-                            <XCircle className="w-4 h-4" />
-                            <span className="text-xs">Subscription will cancel at period end</span>
-                          </div>
-                        )}
-                      </div>
-                      {!subscription.cancel_at_period_end && subscription.stripe_subscription_id && (
-                        <div className="mt-4">
-                          <Button
-                            variant="secondary"
-                            size="sm"
-                            onClick={() => {
-                              if (confirm('Are you sure you want to cancel your subscription? You will continue to have access until the end of your billing period.')) {
-                                cancelMutation.mutate(subscription.stripe_subscription_id!);
-                              }
-                            }}
-                            isLoading={cancelMutation.isPending}
-                            disabled={cancelMutation.isPending}
-                            className="w-full sm:w-auto"
-                          >
-                            <XCircle className="w-4 h-4 mr-2" />
-                            Cancel Subscription
-                          </Button>
-                        </div>
-                      )}
-                      {cancelError && (
-                        <Alert type="error" className="mt-3">
-                          {cancelError}
-                        </Alert>
-                      )}
-                      {cancelSuccess && (
-                        <Alert type="success" className="mt-3">
-                          {cancelSuccess}
-                        </Alert>
-                      )}
-                    </div>
+                <div className="mt-4 space-y-3">
+                  <h3 className="text-sm font-semibold text-gray-900">Subscription</h3>
+                  <p className="text-sm text-gray-600">
+                    Manage billing, review usage, or change plans from the billing dashboard.
+                  </p>
+                  <div>
+                    <Link href={isPro ? '/dashboard/billing' : '/pricing'}>
+                      <Button variant="primary" className="w-full sm:w-auto">
+                        {isPro ? 'Manage Subscription' : 'View Plans'}
+                      </Button>
+                    </Link>
                   </div>
-                )}
-                
+                </div>
+
                 {!isPro && typeof user.free_tokens === 'number' && (
                   <div className="mt-3 text-sm text-indigo-700 bg-indigo-50 border border-indigo-100 rounded-md px-4 py-3">
                     <span className="font-semibold">Free plan status:</span> {user.free_tokens} generation{user.free_tokens === 1 ? '' : 's'} remaining.
