@@ -1,5 +1,11 @@
 Essay_QA_PROMPT = """Given the following text, create {{ num_questions }} essay-type questions with detailed answers in JSON format. In the same language as the text.
 
+{% if feedback %}
+LEARNER PERFORMANCE CONTEXT:
+{{ feedback }}
+Emphasize questions and answers that shore up these weak areas while staying faithful to the provided text.
+{% endif %}
+
 Each question should:
 1. Challenge understanding of key concepts from the text
 2. Require explanatory answers (not simple yes/no or one-word answers)

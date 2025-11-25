@@ -4,6 +4,12 @@ Given the following text, create a well-balanced set of multiple choice quizzes 
 Given the following text, create {{ num_questions }} multiple choice quizzes in JSON format with {{ difficulty }} difficulty level in the same language as the text.
 {% endif %}
 
+{% if feedback %}
+LEARNER WEAKNESSES TO TARGET:
+{{ feedback }}
+Prioritize generating questions that revisit these weak areas while still covering the breadth of the provided text.
+{% endif %}
+
 CRITICAL: ANSWER POSITION RANDOMIZATION
 To ensure quiz quality and prevent patterns, you MUST randomize the position of correct answers:
 - Distribute correct answers roughly equally across all positions (a, b, c, d)

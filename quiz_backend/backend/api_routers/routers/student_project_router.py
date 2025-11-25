@@ -38,6 +38,7 @@ from backend.database.sqlite_dal import User as UserModel
 from backend.config.settings import get_app_config, get_pdf_storage_dir
 from backend.database.db import SessionLocal
 from pydantic import BaseModel
+from backend.utils.feedback_context import collect_feedback_context
 
 router = APIRouter()
 
@@ -617,10 +618,28 @@ def _process_quiz_generation_job(job_id: int) -> None:
         requested_questions = payload.get("num_questions")
         difficulty = payload.get("difficulty") or "medium"
 
+        existing_refs = (
+            session.query(StudentProjectQuizReference)
+            .filter(
+                StudentProjectQuizReference.project_id == job.project_id,
+                StudentProjectQuizReference.content_id == job.content_id,
+            )
+            .all()
+        )
+        scoped_topic_ids = [ref.quiz_topic_id for ref in existing_refs if ref.quiz_topic_id]
+        feedback_context = collect_feedback_context(
+            session,
+            user_id=user.id,
+            quiz_topic_ids=scoped_topic_ids or None,
+        )
+        if not feedback_context:
+            feedback_context = collect_feedback_context(session, user_id=user.id)
+
         quiz_data = generate_quiz_from_pdf(
             content.content_url,
             requested_questions if requested_questions and requested_questions > 0 else None,
             difficulty,
+            feedback=feedback_context,
         )
 
         quiz_topic = QuizTopic(
@@ -726,10 +745,28 @@ def _process_essay_generation_job(job_id: int) -> None:
         requested_questions = payload.get("num_questions") or 3
         difficulty = payload.get("difficulty") or "medium"
 
+        existing_refs = (
+            session.query(StudentProjectEssayReference)
+            .filter(
+                StudentProjectEssayReference.project_id == job.project_id,
+                StudentProjectEssayReference.content_id == job.content_id,
+            )
+            .all()
+        )
+        scoped_essay_topic_ids = [ref.essay_topic_id for ref in existing_refs if ref.essay_topic_id]
+        feedback_context = collect_feedback_context(
+            session,
+            user_id=user.id,
+            essay_topic_ids=scoped_essay_topic_ids or None,
+        )
+        if not feedback_context:
+            feedback_context = collect_feedback_context(session, user_id=user.id)
+
         essay_data = generate_essay_qa_from_pdf(
             content.content_url,
             requested_questions,
             difficulty,
+            feedback=feedback_context,
         )
 
         # Create essay topic

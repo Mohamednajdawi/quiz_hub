@@ -16,6 +16,7 @@ from backend.utils.utils import generate_essay_qa, generate_essay_qa_from_pdf
 from backend.api_routers.routers.auth_router import get_current_user_dependency
 from backend.database.sqlite_dal import User as UserModel
 from backend.utils.credits import consume_generation_token
+from backend.utils.feedback_context import collect_feedback_context
 
 router = APIRouter()
 
@@ -37,7 +38,14 @@ async def create_essay_qa(
                 detail="Invalid difficulty level. Choose from: easy, medium, hard",
             )
 
-        essay_qa_data = generate_essay_qa(url, request.num_questions, request.difficulty)
+        feedback_context = collect_feedback_context(db, user_id=current_user.id)
+
+        essay_qa_data = generate_essay_qa(
+            url,
+            request.num_questions,
+            request.difficulty,
+            feedback=feedback_context,
+        )
 
         # Store Essay QA in database
         try:
@@ -166,8 +174,15 @@ async def create_essay_qa_from_pdf(
                 temp_file_path = temp_file.name
             
         try:
+            feedback_context = collect_feedback_context(db, user_id=current_user.id)
+
             # Generate Essay QA from the PDF
-            essay_qa_data = generate_essay_qa_from_pdf(temp_file_path, num_questions, difficulty)
+            essay_qa_data = generate_essay_qa_from_pdf(
+                temp_file_path,
+                num_questions,
+                difficulty,
+                feedback=feedback_context,
+            )
             
             # Store Essay QA in database
             try:

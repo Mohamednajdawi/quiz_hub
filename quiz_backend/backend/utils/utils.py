@@ -28,13 +28,17 @@ _QUIZ_PROMPT_TEMPLATE = Template(QUIZ_GENERATION_PROMPT, trim_blocks=True, lstri
 
 
 def generate_quiz(
-    url: str, num_questions: Optional[int] = None, difficulty: str = "medium"
+    url: str,
+    num_questions: Optional[int] = None,
+    difficulty: str = "medium",
+    feedback: Optional[str] = None,
 ) -> Dict[str, Any]:
     extracted_text = _extract_text_from_url(url)
     return _generate_quiz_from_text(
         extracted_text,
         num_questions=num_questions,
         difficulty=difficulty,
+        feedback=feedback,
     )
 
 
@@ -42,6 +46,7 @@ def generate_quiz_from_pdf(
     pdf_path: str,
     num_questions: Optional[int] = None,
     difficulty: str = "medium",
+    feedback: Optional[str] = None,
 ) -> Dict[str, Any]:
     """
     Generate a quiz from a PDF file.
@@ -65,10 +70,15 @@ def generate_quiz_from_pdf(
         extracted_text,
         num_questions=num_questions,
         difficulty=difficulty,
+        feedback=feedback,
     )
 
 
-def generate_flashcards(url: str, num_cards: int = 10) -> Dict[str, Any]:
+def generate_flashcards(
+    url: str,
+    num_cards: int = 10,
+    feedback: Optional[str] = None,
+) -> Dict[str, Any]:
     """
     Generate flashcards from a URL.
     
@@ -84,7 +94,7 @@ def generate_flashcards(url: str, num_cards: int = 10) -> Dict[str, Any]:
             "link_content_fetcher": {"urls": [url]},
             "prompt_builder": {
                 "num_cards": num_cards,
-                "feedback": "",
+                "feedback": feedback or "",
             },
         }
     )["flashcard_parser"]["flashcards"]
@@ -118,7 +128,10 @@ def generate_flashcards_from_pdf(
 
 
 def generate_essay_qa(
-    url: str, num_questions: int = 3, difficulty: str = "medium"
+    url: str,
+    num_questions: int = 3,
+    difficulty: str = "medium",
+    feedback: Optional[str] = None,
 ) -> Dict[str, Any]:
     """
     Generate essay-type questions with detailed answers from a URL.
@@ -137,13 +150,17 @@ def generate_essay_qa(
             "prompt_builder": {
                 "num_questions": num_questions,
                 "difficulty": difficulty,
+                "feedback": feedback or "",
             },
         }
     )["essay_qa_parser"]["essay_qa"]
 
 
 def generate_essay_qa_from_pdf(
-    pdf_path: str, num_questions: int = 3, difficulty: str = "medium"
+    pdf_path: str,
+    num_questions: int = 3,
+    difficulty: str = "medium",
+    feedback: Optional[str] = None,
 ) -> Dict[str, Any]:
     """
     Generate essay-type questions with detailed answers from a PDF file.
@@ -162,6 +179,7 @@ def generate_essay_qa_from_pdf(
             "prompt_builder": {
                 "num_questions": num_questions,
                 "difficulty": difficulty,
+                "feedback": feedback or "",
             },
         }
     )["essay_qa_parser"]["essay_qa"]
@@ -195,6 +213,7 @@ def _generate_quiz_from_text(
     source_text: str,
     num_questions: Optional[int],
     difficulty: str,
+    feedback: Optional[str] = None,
 ) -> Dict[str, Any]:
     chunks = _chunk_text(source_text, _QUIZ_MAX_INPUT_CHARS, _QUIZ_CHUNK_OVERLAP_CHARS)
     if not chunks:
@@ -219,6 +238,7 @@ def _generate_quiz_from_text(
                 target if (target and not auto_question_mode) else 0,
                 auto_question_mode,
                 difficulty,
+                feedback,
             )
             for index, (chunk_text, target) in enumerate(zip(chunks, question_targets))
         ]
@@ -320,6 +340,7 @@ def _generate_quiz_for_chunk(
     chunk_target: int,
     auto_question_mode: bool,
     difficulty: str,
+    feedback: Optional[str],
 ) -> Tuple[int, Dict[str, Any]]:
     logger.debug("Submitting quiz generation for chunk %s (length=%s characters)", index + 1, len(chunk_text))
 
@@ -328,6 +349,7 @@ def _generate_quiz_for_chunk(
         "num_questions": chunk_target if (chunk_target and not auto_question_mode) else 0,
         "auto_question_mode": auto_question_mode,
         "difficulty": difficulty,
+        "feedback": feedback or "",
     }
     prompt = _QUIZ_PROMPT_TEMPLATE.render(**prompt_inputs)
 
