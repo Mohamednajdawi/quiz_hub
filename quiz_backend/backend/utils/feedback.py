@@ -1,5 +1,6 @@
 import logging
 import os
+import re
 from collections import Counter, defaultdict
 from typing import Iterable, Optional
 
@@ -14,6 +15,19 @@ def _format_time(seconds: int) -> str:
     if remaining_seconds == 0:
         return f"{minutes} minutes"
     return f"{minutes} minutes and {remaining_seconds} seconds"
+
+
+def _derive_topic_label(raw_value: str) -> str:
+    """
+    Try to convert question/concept text into a short topic label without question numbers.
+    """
+    if not raw_value:
+        return ""
+    label = raw_value.strip()
+    # Remove leading "Question X: " patterns
+    label = re.sub(r"^question\s*\d+[:\-\s]*", "", label, flags=re.IGNORECASE).strip()
+    # If everything was stripped, fall back to original description
+    return label or raw_value.strip()
 
 
 def generate_quiz_feedback(
@@ -57,6 +71,7 @@ def generate_quiz_feedback(
     incorrect = []
     correct = []
     for detail in question_details:
+        base_topic_text = detail.get("concept") or detail.get("topic") or detail.get("question") or ""
         entry = {
             "number": detail.get("number"),
             "question": detail.get("question"),
@@ -64,6 +79,7 @@ def generate_quiz_feedback(
             "correct_answer": detail.get("correct_answer") or "Unknown",
             "is_correct": bool(detail.get("is_correct")),
             "concept": detail.get("concept") or detail.get("topic") or "",
+            "topic_label": _derive_topic_label(base_topic_text),
         }
         if entry["is_correct"]:
             correct.append(entry)
@@ -92,15 +108,19 @@ def generate_quiz_feedback(
     # Identify weak topics (most frequently missed concepts/questions)
     weak_topic_counter: Counter[str] = Counter()
     weak_topic_examples: dict[str, list[str]] = defaultdict(list)
+    weak_topic_labels: dict[str, str] = {}
     for entry in incorrect:
         topic_key = entry["concept"] or entry["question"] or f"Question {entry['number']}"
         weak_topic_counter[topic_key] += 1
+        if topic_key not in weak_topic_labels:
+            weak_topic_labels[topic_key] = entry["topic_label"] or topic_key
         if len(weak_topic_examples[topic_key]) < 2:
             weak_topic_examples[topic_key].append(
                 f"Q{entry['number']}: {entry['question']}"
             )
 
     top_weak_topics = weak_topic_counter.most_common(3)
+    top_weak_topic_labels = [weak_topic_labels.get(topic_key, topic_key) for topic_key, _ in top_weak_topics]
     weak_topic_summary_lines = []
     for topic_key, misses in top_weak_topics:
         examples = "; ".join(weak_topic_examples.get(topic_key, []))
@@ -114,7 +134,9 @@ def generate_quiz_feedback(
     # Identify focus topics (up to 2 most recent incorrect answers)
     focus_topics = []
     for entry in incorrect[:2]:
-        if entry["concept"]:
+        if entry["topic_label"]:
+            focus_topics.append(entry["topic_label"])
+        elif entry["concept"]:
             focus_topics.append(entry["concept"])
         else:
             focus_topics.append(entry["question"])
@@ -135,8 +157,9 @@ def generate_quiz_feedback(
     avg_seconds_per_question = (
         time_taken_seconds / total_questions if total_questions > 0 else time_taken_seconds
     )
+    weak_topic_name_list = ", ".join(label for label in top_weak_topic_labels if label) or topic_name
     study_seed_lines = [
-        f"- Flashcards focus: {', '.join(t for t, _ in top_weak_topics) or topic_name}",
+        f"- Flashcards focus: {weak_topic_name_list}",
         f"- Targeted quizzes focus: {focus_text}",
         "- Deep reading focus: revisit the source material sections tied to the above weak topics.",
     ]
@@ -178,6 +201,8 @@ def generate_quiz_feedback(
                         "- Keep total length under 1200 characters.\n"
                         "- Do not add extra sections or bullet groups beyond the template.\n"
                         "- Work the provided study plan seeds into your guidance naturally.\n"
+                        "- Never reference question numbers (like 'Question 2'); instead, restate the topic/skill names provided in the context.\n"
+                        "- Each Study Plan bullet should start with 'Focus on' followed by the topic name (e.g., 'Focus on **photosynthesis basics** by...').\n"
                     ),
                 },
                 {
@@ -267,6 +292,8 @@ Please evaluate the student's answer and provide:
      - Deep Reading: ...
      Adaptive Difficulty: ...
    - For Adaptive Difficulty, infer the level (easy/medium/hard) using the score you assign (>=85 = hard, 60-84 = medium, else easy) and explain the adjustment.
+   - Never mention question numbers; paraphrase the topic/skill names from the prompt when referring to weaknesses.
+   - Each Study Plan bullet should start with 'Focus on' followed by the topic/skill (e.g., "Focus on **cell structure** by...").
    
 Format your response as JSON:
 {{
@@ -285,7 +312,8 @@ Format your response as JSON:
                         "Evaluate essay answers fairly and provide helpful feedback. "
                         "Always return valid JSON with 'score' (0-100) and 'feedback' (string) fields. "
                         "Ensure the feedback text strictly follows the requested template so the learner sees: "
-                        "Mistake Analysis, Weak Topics (bullets), Study Plan (Flashcards/Targeted Quizzes/Deep Reading), and Adaptive Difficulty."
+                        "Mistake Analysis, Weak Topics (bullets), Study Plan (Flashcards/Targeted Quizzes/Deep Reading), and Adaptive Difficulty. "
+                        "Never reference question numbers; instead, restate the underlying topic/skill names and start each Study Plan bullet with 'Focus on ...'."
                     ),
                 },
                 {
@@ -402,6 +430,8 @@ Please evaluate ALL answers together and provide:
      - Deep Reading: ...
      Adaptive Difficulty: ...
    - For Adaptive Difficulty, infer the level (easy/medium/hard) using the score you assign (>=85 = hard, 60-84 = medium, else easy) and explain the adjustment.
+   - Never mention question numbers; paraphrase the underlying topic/skill names from the prompts.
+   - Each Study Plan bullet should start with 'Focus on' followed by the topic/skill.
    
 Format your response as JSON:
 {{
@@ -420,7 +450,8 @@ Format your response as JSON:
                         "Evaluate the complete set of essay answers together and provide overall feedback. "
                         "Always return valid JSON with 'score' (0-100) and 'feedback' (string) fields. "
                         "Ensure the feedback string follows the required template exactly so the learner always sees Mistake Analysis, Weak Topics (bullets), Study Plan (Flashcards/Targeted Quizzes/Deep Reading), and Adaptive Difficulty. "
-                        "Provide one overall assessment, not per-question feedback."
+                        "Provide one overall assessment, not per-question feedback. "
+                        "Never reference question numbers; instead, restate the topic/skill names and start each Study Plan bullet with 'Focus on ...'."
                     ),
                 },
                 {
