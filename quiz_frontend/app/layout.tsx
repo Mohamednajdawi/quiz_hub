@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { Providers } from "./providers";
 import { StructuredData } from "@/components/StructuredData";
+import { AnalyticsProvider } from "@/components/analytics/AnalyticsProvider";
 import { siteConfig } from "@/lib/config/site";
 
 const geistSans = Geist({
@@ -86,7 +87,10 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
         <StructuredData />
-        <Providers>{children}</Providers>
+        <Providers>
+          <AnalyticsProvider />
+          {children}
+        </Providers>
       </body>
     </html>
   );

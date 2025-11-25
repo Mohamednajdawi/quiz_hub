@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import type { FormEvent, ChangeEvent } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Layout } from '@/components/Layout';
 import { Card, CardHeader } from '@/components/ui/Card';
@@ -11,6 +12,10 @@ import { Select } from '@/components/ui/Select';
 import { UserPlus } from 'lucide-react';
 import Link from 'next/link';
 import type { GenderOption } from '@/lib/api/auth';
+import { trackEvent } from '@/lib/analytics/events';
+
+type InputChangeEvent = ChangeEvent<HTMLInputElement>;
+type SelectChangeEvent = ChangeEvent<HTMLSelectElement>;
 
 export default function RegisterPage() {
   const [email, setEmail] = useState('');
@@ -34,7 +39,7 @@ export default function RegisterPage() {
     return minBirthDate.toISOString().split('T')[0];
   })();
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setError(null);
 
@@ -98,8 +103,16 @@ export default function RegisterPage() {
         birth_date: birthDate,
         gender,
       });
+      trackEvent({
+        name: 'signup_success',
+        params: { method: 'email' },
+      });
     } catch (err: any) {
       setError(err.response?.data?.detail || err.message || 'Registration failed. Please try again.');
+      trackEvent({
+        name: 'signup_error',
+        params: { reason: err.response?.status ?? 'unknown' },
+      });
     } finally {
       setIsLoading(false);
     }
@@ -134,7 +147,7 @@ export default function RegisterPage() {
                 <Input
                   label="First Name"
                   value={firstName}
-                  onChange={(e) => setFirstName(e.target.value)}
+                  onChange={(event: InputChangeEvent) => setFirstName(event.target.value)}
                   placeholder="John"
                   required
                   autoComplete="given-name"
@@ -142,7 +155,7 @@ export default function RegisterPage() {
                 <Input
                   label="Last Name"
                   value={lastName}
-                  onChange={(e) => setLastName(e.target.value)}
+                  onChange={(event: InputChangeEvent) => setLastName(event.target.value)}
                   placeholder="Doe"
                   required
                   autoComplete="family-name"
@@ -153,7 +166,7 @@ export default function RegisterPage() {
                 label="Email"
                 type="email"
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                onChange={(event: InputChangeEvent) => setEmail(event.target.value)}
                 placeholder="your.email@example.com"
                 required
                 autoComplete="email"
@@ -164,14 +177,16 @@ export default function RegisterPage() {
                   label="Birth Date"
                   type="date"
                   value={birthDate}
-                  onChange={(e) => setBirthDate(e.target.value)}
+                  onChange={(event: InputChangeEvent) => setBirthDate(event.target.value)}
                   max={maxBirthDate}
                   required
                 />
                 <Select
                   label="Gender"
                   value={gender}
-                  onChange={(e) => setGender(e.target.value as GenderOption)}
+                  onChange={(event: SelectChangeEvent) =>
+                    setGender(event.target.value as GenderOption)
+                  }
                   options={genderOptions}
                   required
                 />
@@ -181,7 +196,7 @@ export default function RegisterPage() {
                 label="Password"
                 type="password"
                 value={password}
-                onChange={(e) => setPassword(e.target.value)}
+                onChange={(event: InputChangeEvent) => setPassword(event.target.value)}
                 placeholder="At least 6 characters (max 72)"
                 required
                 autoComplete="new-password"
@@ -192,7 +207,7 @@ export default function RegisterPage() {
                 label="Confirm Password"
                 type="password"
                 value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
+                onChange={(event: InputChangeEvent) => setConfirmPassword(event.target.value)}
                 placeholder="Re-enter your password"
                 required
                 autoComplete="new-password"

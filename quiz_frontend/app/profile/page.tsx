@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
+import type { ChangeEvent, FormEvent } from 'react';
 import Link from 'next/link';
 import { ProtectedRoute } from '@/components/ProtectedRoute';
 import { Layout } from '@/components/Layout';
@@ -12,6 +13,7 @@ import { Select } from '@/components/ui/Select';
 import { useAuth } from '@/contexts/AuthContext';
 import type { GenderOption, UpdateProfileRequest } from '@/lib/api/auth';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
+import { trackEvent } from '@/lib/analytics/events';
 
 interface ProfileFormState {
   first_name: string;
@@ -27,6 +29,9 @@ const genderOptions: { value: GenderOption; label: string }[] = [
   { value: 'other', label: 'Other' },
   { value: 'prefer_not_to_say', label: 'Prefer not to say' },
 ];
+
+type InputChangeEvent = ChangeEvent<HTMLInputElement>;
+type SelectChangeEvent = ChangeEvent<HTMLSelectElement>;
 
 function ProfileContent() {
   const { user, updateProfile, isLoading } = useAuth();
@@ -89,7 +94,7 @@ function ProfileContent() {
     );
   };
 
-  const handleSubmit = async (event: React.FormEvent) => {
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!formState) return;
 
@@ -134,6 +139,7 @@ function ProfileContent() {
     setIsSaving(true);
     try {
       await updateProfile(payload);
+      trackEvent({ name: 'profile_updated' });
       setSuccess('Profile updated successfully.');
     } catch (err: any) {
       setError(err?.response?.data?.detail || err?.message || 'Failed to update profile.');
@@ -203,14 +209,18 @@ function ProfileContent() {
                   <Input
                     label="First Name"
                     value={formState.first_name}
-                  onChange={(e) => handleChange('first_name', e.target.value)}
+                  onChange={(event: InputChangeEvent) =>
+                    handleChange('first_name', event.target.value)
+                  }
                     placeholder="John"
                     required
                   />
                   <Input
                     label="Last Name"
                     value={formState.last_name}
-                  onChange={(e) => handleChange('last_name', e.target.value)}
+                  onChange={(event: InputChangeEvent) =>
+                    handleChange('last_name', event.target.value)
+                  }
                     placeholder="Doe"
                     required
                   />
@@ -221,14 +231,18 @@ function ProfileContent() {
                   label="Birth Date"
                   type="date"
                   value={formState.birth_date}
-                  onChange={(e) => handleChange('birth_date', e.target.value)}
+                  onChange={(event: InputChangeEvent) =>
+                    handleChange('birth_date', event.target.value)
+                  }
                   max={maxBirthDate}
                   required
                   />
                   <Select
                     label="Gender"
                     value={formState.gender}
-                  onChange={(e) => handleChange('gender', e.target.value)}
+                  onChange={(event: SelectChangeEvent) =>
+                    handleChange('gender', event.target.value)
+                  }
                     options={genderOptions}
                     required
                   />

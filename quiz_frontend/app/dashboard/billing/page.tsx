@@ -12,6 +12,7 @@ import { Alert } from '@/components/ui/Alert';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { subscriptionApi } from '@/lib/api/subscription';
 import { Crown, RefreshCw, ShieldCheck, CheckCircle2, Info, AlertTriangle } from 'lucide-react';
+import { trackEvent } from '@/lib/analytics/events';
 
 function useSubscriptionDetails() {
   return useQuery({
@@ -42,6 +43,9 @@ export function BillingContent() {
     },
     onSuccess: (_data: unknown, cancelAtPeriodEnd: boolean) => {
       queryClient.invalidateQueries({ queryKey: ['billing', 'subscription'] });
+      trackEvent({
+        name: cancelAtPeriodEnd ? 'billing_cancel_scheduled' : 'billing_resumed',
+      });
       setBanner({
         type: 'success',
         message: cancelAtPeriodEnd
@@ -70,17 +74,39 @@ export function BillingContent() {
   }, [subscription?.current_period_end]);
 
   const usage = useMemo(() => {
-    const total = subscription?.monthly_generations;
+    const used = subscription?.monthly_generations;
     const remaining = subscription?.remaining_generations;
-    if (typeof total === 'number' && typeof remaining === 'number' && total > 0) {
-      const rawUsed = total - remaining;
-      const used = Math.min(total, Math.max(0, rawUsed));
-      const clampRemaining = Math.min(total, Math.max(0, remaining));
-      const percent = Math.min(100, Math.max(0, Math.round((used / total) * 100)));
-      return { used, remaining: clampRemaining, total, percent };
+    const total = subscription?.monthly_limit ?? (
+      typeof used === 'number' && typeof remaining === 'number'
+        ? used + remaining
+        : undefined
+    );
+
+    if (
+      typeof used === 'number' &&
+      typeof remaining === 'number' &&
+      typeof total === 'number' &&
+      total > 0
+    ) {
+      const clampedUsed = Math.min(total, Math.max(0, used));
+      const clampedRemaining = Math.min(total, Math.max(0, remaining));
+      const percent = Math.min(
+        100,
+        Math.max(0, Math.round((clampedUsed / total) * 100))
+      );
+      return {
+        used: clampedUsed,
+        remaining: clampedRemaining,
+        total,
+        percent,
+      };
     }
     return null;
-  }, [subscription?.monthly_generations, subscription?.remaining_generations]);
+  }, [
+    subscription?.monthly_generations,
+    subscription?.remaining_generations,
+    subscription?.monthly_limit,
+  ]);
 
   const hasSubscription = !!subscription?.has_subscription;
   const isCanceled = Boolean(subscription?.cancel_at_period_end);
@@ -294,7 +320,7 @@ export function BillingContent() {
                       Usage this cycle
                     </p>
                     <h2 className="text-xl font-semibold text-gray-900">
-                      {usage ? `${usage.total}/${usage.used}` : '—'}
+                      {usage ? `${usage.used}/${usage.total}` : '—'}
                     </h2>
                   </div>
                 </div>
@@ -304,6 +330,7 @@ export function BillingContent() {
                   onClick={async () => {
                     try {
                       await subscriptionQuery.refetch();
+                      trackEvent({ name: 'billing_refresh' });
                     } catch {
                       setBanner({
                         type: 'error',
