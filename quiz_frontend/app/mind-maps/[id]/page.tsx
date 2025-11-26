@@ -121,10 +121,12 @@ function MindMapPageContent() {
                     {data.key_concepts?.length ? (
                       data.key_concepts.map((concept, index) => (
                         <div
-                          key={concept.id ?? index}
+                          key={String((concept as any).id ?? index)}
                           className="p-4 rounded-xl border border-gray-200 bg-indigo-50 hover:shadow-sm transition-all"
                         >
-                          <p className="text-sm font-semibold text-indigo-900">{concept.label ?? concept.id}</p>
+                          <p className="text-sm font-semibold text-indigo-900">
+                            {String((concept as any).label ?? (concept as any).id ?? `Concept ${index + 1}`)}
+                          </p>
                           {concept.definition && (
                             <p className="mt-2 text-sm text-gray-700">{concept.definition}</p>
                           )}
