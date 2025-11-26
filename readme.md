@@ -13,6 +13,8 @@
 - [Admin Dashboard](#admin-dashboard)
 - [API Endpoints](#api-endpoints)
 - [Key Features](#key-features)
+- [Visual Mind Maps](#visual-mind-maps)
+- [Agent Guide: Mind Map Stack](#agent-guide-mind-map-stack)
 
 ---
 
@@ -501,6 +503,141 @@ railway up
 - **Feedback-Aware Generation**: Automatically reuses the learner's latest quiz/essay feedback so newly generated quizzes, flashcards, and essays target the exact weak topics that were previously missed
 - **AI Chat**: Interactive chat with uploaded PDFs for Q&A sessions
 
+---
+
+## 🧠 Visual Mind Maps
+
+The platform can auto-generate **visual knowledge maps (mind maps)** from student project PDFs. These appear in the **Student Hub → Project → Generated Content → Mind Maps** section and open in a dedicated viewer.
+
+### Backend (Mind Map Generation)
+
+- **Model & Storage (SQLite/Postgres ORM)**  
+  - Class: `MindMap` in `quiz_backend/backend/database/sqlite_dal.py`  
+  - Backed by:
+    - Table: `mind_maps`
+    - Columns (core): `id`, `user_id`, `project_id`, `content_id`, `title`, `category`, `subcategory`, `central_idea`, `summary`, `key_concepts`, `nodes`, `edges`, `connections`, `callouts`, `recommended_next_steps`, `metadata/extra_metadata`, `created_at`, `updated_at`
+  - Linked to student projects via `StudentProjectMindMapReference` (`student_project_mindmap_references`).
+
+- **Migrations (ordered)** – important for agents touching DB:
+  - `20251125_0007_add_mind_maps_table.py` – placeholder for old rollback (no-op now)
+  - `20251126_0008_add_mind_map_tables.py` – creates `mind_maps` + `student_project_mindmap_references` in new installs
+  - `20251126_0009_fix_mind_maps_columns.py` – **repairs existing** `mind_maps` table on Railway/volumes by adding any missing columns
+  - `20251126_0010_relax_mind_maps_topic_not_null.py` – relaxes a legacy `NOT NULL` constraint on `mind_maps.topic` so new inserts don’t fail
+
+- **Generation Pipeline**
+  - Prompt template: `quiz_backend/backend/generation/mind_map_template.py` (`MIND_MAP_PROMPT`)
+    - Input variables: `documents` (PDF text, truncated), `focus` (optional string)
+    - Output: strict JSON with fields: `topic`, `category`, `subcategory`, `central_idea`, `summary`, `key_concepts`, `nodes`, `edges`, `connections`, `callouts`, `recommended_next_steps`
+  - Pipeline wiring: `create_pdf_mind_map_pipeline()` in  
+    `quiz_backend/backend/pipelines/content_pipelines.py`
+    - Components: `PDFTextExtractor` → `PromptBuilder(MIND_MAP_PROMPT)` → `OpenAIGenerator` → `MindMapParser`
+  - Utility function: `generate_mind_map_from_pdf()` in  
+    `quiz_backend/backend/utils/utils.py`
+    - Payload keys it passes to pipeline:
+      - `"pdf_extractor": {"file_path": pdf_path}`
+      - `"prompt_builder": {"focus": focus_or_empty}`  
+      - **Note**: it intentionally does **not** send `feedback` to the prompt builder (template doesn’t accept it).
+
+- **Async Job Flow**
+  - Uses existing `GenerationJob` infrastructure (`generation_jobs` table).
+  - Entrypoint route:
+    - `POST /student-projects/{project_id}/content/{content_id}/mind-map-generation`  
+      (`start_mind_map_generation_job` in `backend/api_routers/routers/student_project_router.py`)
+    - Creates a `GenerationJob` row with `job_type="mind_map"` and enqueues `_process_mind_map_generation_job` as a background task.
+  - Worker: `_process_mind_map_generation_job(job_id: int)`
+    - Validates user, project, and PDF content
+    - Calls `generate_mind_map_from_pdf`
+    - Creates `MindMap` + `StudentProjectMindMapReference`
+    - Consumes a generation token (free tier only)
+    - Sets `GenerationJob.status` to `completed` and `result_topic_id = mind_map.id`
+
+- **Read API**
+  - `GET /student-projects/{project_id}/content/{content_id}/generated-content`
+    - Now includes a `mind_maps` array and `total_mind_maps` count.
+  - `GET /student-projects/{project_id}/generated-content`
+    - Project-level rollup also includes `mind_maps`/`total_mind_maps`.
+  - `GET /mind-maps/{mind_map_id}`
+    - Returns full detail for the viewer (title, central_idea, nodes, edges, callouts, next steps, and metadata).
+
+### Frontend (Mind Map UI)
+
+- **Routes & Components**
+  - Mind map viewer page: `quiz_frontend/app/mind-maps/[id]/page.tsx`
+    - Fetches `studentProjectsApi.getMindMap(id)`
+    - Renders:
+      - A React Flow canvas (`MindMapCanvas`)
+      - Key concepts, next steps, and callouts panels
+  - Visualization component: `quiz_frontend/components/mindmaps/MindMapCanvas.tsx`
+    - Library: `reactflow` (declared in `quiz_frontend/package.json`)
+    - Layout:
+      - Radial layout around a central idea
+      - Uses `depth` and `importance` to estimate layers
+    - Edges:
+      - If `edges` array is present in the JSON, uses it directly
+      - Otherwise auto-builds edges from `node.parents` (fallback to ensure visible connections)
+
+- **Student Hub Integration**
+  - Main project UI: `quiz_frontend/app/student-hub/[id]/page.tsx`
+    - Adds **Mind Map** under the “Generate” menu for each PDF
+    - Starts jobs via `studentProjectsApi.startMindMapGenerationJob`
+    - Reuses the existing background job + polling system:
+      - `GenerationJobsContext` now tracks jobType `"mind_map"`
+      - Notifications: `NotificationsContext` type includes `'mind_map'`
+      - Navigation bell shows a “Mind map generation completed” toast with link to `/mind-maps/[id]?projectId=...`
+    - Generated content accordion per PDF includes a **Mind Maps** section listing all generated maps (ordered by recency).
+
+---
+
+## 🤖 Agent Guide: Mind Map Stack
+
+This section is specifically for **AI/agentic coders** extending or debugging the mind map feature.
+
+### Where to Modify Behavior
+
+- **Prompt / Output Schema**: edit `MIND_MAP_PROMPT` in  
+  `quiz_backend/backend/generation/mind_map_template.py`  
+  - If you add/remove fields there, you must also:
+    - Update `MindMapParser` if parsing changes are needed (usually only if top-level keys change)
+    - Update `MindMap` ORM fields (`sqlite_dal.py`) and run new Alembic migrations
+    - Update `MindMapDetail` / `MindMapEdge` types in `quiz_frontend/lib/api/studentProjects.ts`
+    - Update the viewer UI (`MindMapCanvas` and `/app/mind-maps/[id]/page.tsx`)
+
+- **LLM / Token Limits**:
+  - Configured via `LLM_CONFIG` in `backend/pipelines/content_pipelines.py`
+    - `model`, `default_max_tokens`, `mind_map_temperature` are the key knobs.
+  - Haystack logs may emit “completion truncated” warnings; if mind maps are cut off, consider raising `default_max_tokens` for this pipeline only.
+
+- **Job Semantics**:
+  - Mind map generation is treated like quizzes/essays, via `GenerationJob`:
+    - Any new job types should follow the same pattern: start route → background worker → reference row → notify via `GenerationJobsContext`.
+
+### Migration & Schema Tips for Agents
+
+- **Never assume a fresh DB.** Railway often has an old `mind_maps` table from earlier iterations:
+  - `20251126_0009_fix_mind_maps_columns.py` is intentionally defensive and additive – it **only** adds missing columns.
+  - `20251126_0010_relax_mind_maps_topic_not_null.py` exists because an older schema had a `NOT NULL` `topic` column that the current ORM doesn’t write to.
+- When adding new columns to `mind_maps`:
+  - Prefer nullable columns + backfilled values (if needed)
+  - Use the same “check then add” strategy as `0009` when you might encounter heterogeneous schemas in existing volumes.
+
+### Frontend Agent Notes
+
+- **Type safety**:
+  - Mind map shapes are deliberately typed as `Record<string, unknown>` + narrowings in the viewer to be resilient to minor prompt changes.
+  - When tightening the JSON schema from the model, update `MindMapDetail` so TypeScript remains in sync.
+
+- **React Flow**:
+  - All mind map layout/rendering is isolated in `components/mindmaps/MindMapCanvas.tsx`. If you want to:
+    - Change layout strategy → modify `assignPositions`
+    - Change edge behavior → modify `buildFallbackEdgesFromHierarchy` or the mapping from raw edges to `ReactFlow` edges
+
+- **Notifications & UX**:
+  - Types live in `contexts/NotificationsContext.tsx` and `contexts/GenerationJobsContext.tsx`.
+  - Any new job type should:
+    - Extend `TrackedJobType`
+    - Add a notification type and style
+    - Decide where the notification’s `href` points (e.g., new page or existing view)
+
 ### Student Hub
 
 - Organize study materials into projects
@@ -654,4 +791,4 @@ alembic downgrade -1
 
 ---
 
-**Last Updated**: 2025-11-25
+**Last Updated**: 2025-11-26
