@@ -141,10 +141,12 @@ function ContentItem({
     generatedContent.mind_maps.length > 0
   );
 
-  const sortByRecency = <T extends { creation_timestamp?: string | null }>(items: T[]) =>
+  const sortByRecency = <T extends { creation_timestamp?: string | null; created_at?: string | null }>(items: T[]) =>
     [...items].sort((a, b) => {
-      const aTime = a.creation_timestamp ? new Date(a.creation_timestamp).getTime() : 0;
-      const bTime = b.creation_timestamp ? new Date(b.creation_timestamp).getTime() : 0;
+      const aSource = a.creation_timestamp ?? a.created_at ?? null;
+      const bSource = b.creation_timestamp ?? b.created_at ?? null;
+      const aTime = aSource ? new Date(aSource).getTime() : 0;
+      const bTime = bSource ? new Date(bSource).getTime() : 0;
       return bTime - aTime;
     });
 

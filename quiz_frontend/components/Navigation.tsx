@@ -23,6 +23,7 @@ const notificationTypeStyles: Record<AppNotificationType, { iconBg: string; icon
   quiz: { iconBg: 'bg-indigo-50', iconColor: 'text-indigo-600' },
   flashcards: { iconBg: 'bg-emerald-50', iconColor: 'text-emerald-600' },
   essay: { iconBg: 'bg-amber-50', iconColor: 'text-amber-600' },
+  mind_map: { iconBg: 'bg-sky-50', iconColor: 'text-sky-600' },
   info: { iconBg: 'bg-slate-100', iconColor: 'text-slate-600' },
 };
 
@@ -34,6 +35,8 @@ const renderNotificationIcon = (type: AppNotificationType) => {
       return BookOpen;
     case 'essay':
       return FileText;
+    case 'mind_map':
+      return Sparkles;
     default:
       return Sparkles;
   }
