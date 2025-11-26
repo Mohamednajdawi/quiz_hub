@@ -10,6 +10,8 @@ interface RawNode {
   definition?: string;
   importance?: string;
   depth?: number;
+  parents?: Array<string | number>;
+  children?: Array<string | number>;
   tags?: string[];
   color?: string;
 }
@@ -80,6 +82,33 @@ const assignPositions = (nodes: RawNode[]) => {
   return positions;
 };
 
+const buildFallbackEdgesFromHierarchy = (nodes: RawNode[]): RawEdge[] => {
+  const edges: RawEdge[] = [];
+  const nodeIds = new Set<string>(nodes.map((n, index) => String(n.id ?? `node-${index}`)));
+
+  nodes.forEach((node, index) => {
+    const id = String(node.id ?? `node-${index}`);
+    const parents = node.parents ?? [];
+
+    if (parents.length) {
+      parents.forEach((parent) => {
+        const parentId = String(parent);
+        if (nodeIds.has(parentId)) {
+          edges.push({
+            id: `auto-${parentId}-${id}`,
+            source: parentId,
+            target: id,
+            label: undefined,
+            kind: 'connection',
+          });
+        }
+      });
+    }
+  });
+
+  return edges;
+};
+
 export function MindMapCanvas({ nodes, edges, centralIdea }: MindMapCanvasProps) {
   const flowNodes: Node[] = useMemo(() => {
     if (!nodes.length) {
@@ -133,8 +162,12 @@ export function MindMapCanvas({ nodes, edges, centralIdea }: MindMapCanvasProps)
   }, [centralIdea, nodes]);
 
   const flowEdges: Edge[] = useMemo(() => {
-    if (!edges?.length) return [];
-    return edges.map((edge, index) => {
+    const effectiveEdges: RawEdge[] =
+      edges && edges.length > 0 ? edges : buildFallbackEdgesFromHierarchy(nodes);
+
+    if (!effectiveEdges.length) return [];
+
+    return effectiveEdges.map((edge, index) => {
       const id = String(edge.id ?? `edge-${index}`);
       const kind = (edge.kind as string | undefined) ?? 'connection';
       const stroke = kind === 'emphasis' ? '#F97316' : '#94A3B8';
