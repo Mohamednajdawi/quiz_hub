@@ -1,7 +1,7 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import ReactFlow, { Background, Controls, Edge, MiniMap, Node, MarkerType, NodeMouseHandler } from 'reactflow';
+import ReactFlow, { Background, Controls, Edge, MiniMap, Node, MarkerType, NodeMouseHandler, Position } from 'reactflow';
 import 'reactflow/dist/style.css';
 
 interface RawNode {
@@ -237,8 +237,8 @@ export function MindMapCanvas({ nodes, edges, centralIdea }: MindMapCanvasProps)
         {
           id: 'root',
           position: { x: 0, y: 0 },
-          sourcePosition: 'right' as const,
-          targetPosition: 'left' as const,
+          sourcePosition: Position.Right,
+          targetPosition: Position.Left,
           data: { label: centralIdea, definition: 'Mind map overview' },
           style: {
             background: '#EEF2FF',
@@ -280,8 +280,8 @@ export function MindMapCanvas({ nodes, edges, centralIdea }: MindMapCanvasProps)
       return {
         id,
         position,
-        sourcePosition: 'right' as const, // Edges leave from right side
-        targetPosition: 'left' as const, // Edges enter from left side
+        sourcePosition: Position.Right, // Edges leave from right side
+        targetPosition: Position.Left, // Edges enter from left side
         data: {
           label: `${label}${depthSuffix}`,
           definition: node.definition ?? '',
