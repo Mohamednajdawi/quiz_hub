@@ -145,10 +145,8 @@ const assignPositions = (nodes: RawNode[], edges: RawEdge[]): Map<string, { x: n
     depthMap.get(depth)!.push(id);
   });
 
-  // Calculate positions: left to right, top to bottom
-  const maxDepth = Math.max(...Array.from(depthMap.keys()));
-  
-  Array.from(depthMap.entries())
+    // Calculate positions: left to right, top to bottom
+    Array.from(depthMap.entries())
     .sort((a, b) => a[0] - b[0])
     .forEach(([depth, nodeIds]) => {
       const x = START_X + depth * LEVEL_SPACING;
@@ -180,7 +178,7 @@ const buildFallbackEdgesFromHierarchy = (nodes: RawNode[]): RawEdge[] => {
             id: `auto-${parentId}-${id}`,
             source: parentId,
             target: id,
-            label: 'parent',
+            label: undefined, // No label for auto-generated edges
             kind: 'connection',
           });
         }
@@ -193,6 +191,7 @@ const buildFallbackEdgesFromHierarchy = (nodes: RawNode[]): RawEdge[] => {
 
 export function MindMapCanvas({ nodes, edges, centralIdea }: MindMapCanvasProps) {
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
+  const [expandedNodes, setExpandedNodes] = useState<Set<string>>(new Set());
 
   const nodeIndex = useMemo(() => {
     const map = new Map<string, RawNode>();
@@ -203,33 +202,91 @@ export function MindMapCanvas({ nodes, edges, centralIdea }: MindMapCanvasProps)
     return map;
   }, [nodes]);
 
+  // Build adjacency from edges and node relationships
   const adjacency = useMemo(() => {
     const parentsOf = new Map<string, string[]>();
     const childrenOf = new Map<string, string[]>();
 
+    // Build from edges
+    edges.forEach((edge) => {
+      const source = String(edge.source);
+      const target = String(edge.target);
+      
+      if (!childrenOf.has(source)) childrenOf.set(source, []);
+      if (!parentsOf.has(target)) parentsOf.set(target, []);
+      
+      childrenOf.get(source)!.push(target);
+      parentsOf.get(target)!.push(source);
+    });
+
+    // Also use node.parents/children
     nodes.forEach((node, index) => {
       const id = String(node.id ?? `node-${index}`);
-      const parents = node.parents?.map((p) => String(p)) ?? [];
-      const children = node.children?.map((c) => String(c)) ?? [];
-
       if (!parentsOf.has(id)) parentsOf.set(id, []);
       if (!childrenOf.has(id)) childrenOf.set(id, []);
 
+      const parents = node.parents?.map((p) => String(p)) ?? [];
+      const children = node.children?.map((c) => String(c)) ?? [];
+
       parents.forEach((pid) => {
-        parentsOf.get(id)!.push(pid);
+        if (!parentsOf.get(id)!.includes(pid)) {
+          parentsOf.get(id)!.push(pid);
+        }
         if (!childrenOf.has(pid)) childrenOf.set(pid, []);
-        childrenOf.get(pid)!.push(id);
+        if (!childrenOf.get(pid)!.includes(id)) {
+          childrenOf.get(pid)!.push(id);
+        }
       });
 
       children.forEach((cid) => {
-        childrenOf.get(id)!.push(cid);
+        if (!childrenOf.get(id)!.includes(cid)) {
+          childrenOf.get(id)!.push(cid);
+        }
         if (!parentsOf.has(cid)) parentsOf.set(cid, []);
-        parentsOf.get(cid)!.push(id);
+        if (!parentsOf.get(cid)!.includes(id)) {
+          parentsOf.get(cid)!.push(id);
+        }
       });
     });
 
     return { parentsOf, childrenOf };
-  }, [nodes]);
+  }, [nodes, edges]);
+
+  // Determine which nodes should be visible based on expanded state
+  const visibleNodeIds = useMemo(() => {
+    const visible = new Set<string>();
+    
+    // Always show root nodes (depth 0) and L1 nodes
+    nodes.forEach((node, index) => {
+      const id = String(node.id ?? `node-${index}`);
+      const depth = importanceToDepth(node);
+      if (depth === 0 || depth === 1) {
+        visible.add(id);
+      }
+    });
+
+    // Show expanded nodes and their direct children
+    expandedNodes.forEach((expandedId: string) => {
+      visible.add(expandedId);
+      const children = adjacency.childrenOf.get(expandedId) ?? [];
+      children.forEach((childId: string) => visible.add(childId));
+    });
+
+    // Also show all ancestors of visible nodes
+    const addAncestors = (nodeId: string) => {
+      const parents = adjacency.parentsOf.get(nodeId) ?? [];
+      parents.forEach((parentId: string) => {
+        if (!visible.has(parentId)) {
+          visible.add(parentId);
+          addAncestors(parentId);
+        }
+      });
+    };
+
+    Array.from(visible).forEach(addAncestors);
+    
+    return visible;
+  }, [nodes, expandedNodes, adjacency]);
 
   const flowNodes: Node[] = useMemo(() => {
     if (!nodes.length) {
@@ -251,8 +308,20 @@ export function MindMapCanvas({ nodes, edges, centralIdea }: MindMapCanvasProps)
       ];
     }
 
-    const positions = assignPositions(nodes, edges);
-    return nodes.map((node, index) => {
+    // Filter to only visible nodes
+    const visibleNodes = nodes.filter((node, index) => {
+      const id = String(node.id ?? `node-${index}`);
+      return visibleNodeIds.has(id);
+    });
+
+    const visibleEdges = edges.filter((edge) => {
+      const source = String(edge.source);
+      const target = String(edge.target);
+      return visibleNodeIds.has(source) && visibleNodeIds.has(target);
+    });
+
+    const positions = assignPositions(visibleNodes, visibleEdges);
+    return visibleNodes.map((node, index) => {
       const id = String(node.id ?? `node-${index}`);
       const position =
         positions.get(id) ??
@@ -302,7 +371,7 @@ export function MindMapCanvas({ nodes, edges, centralIdea }: MindMapCanvasProps)
         },
       } satisfies Node;
     });
-  }, [adjacency.childrenOf, adjacency.parentsOf, centralIdea, nodes, selectedNodeId]);
+  }, [adjacency.childrenOf, adjacency.parentsOf, centralIdea, nodes, selectedNodeId, visibleNodeIds, edges]);
 
   const flowEdges: Edge[] = useMemo(() => {
     const effectiveEdges: RawEdge[] =
@@ -310,7 +379,19 @@ export function MindMapCanvas({ nodes, edges, centralIdea }: MindMapCanvasProps)
 
     if (!effectiveEdges.length) return [];
 
-    return effectiveEdges.map((edge, index) => {
+    // Filter to only visible edges and remove "parent" labels
+    const filteredEdges = effectiveEdges
+      .filter((edge) => {
+        const source = String(edge.source);
+        const target = String(edge.target);
+        return visibleNodeIds.has(source) && visibleNodeIds.has(target);
+      })
+      .map((edge) => ({
+        ...edge,
+        label: edge.label && edge.label.toLowerCase() !== 'parent' ? edge.label : undefined,
+      }));
+
+    return filteredEdges.map((edge, index) => {
       const id = String(edge.id ?? `edge-${index}`);
       const kind = (edge.kind as string | undefined) ?? 'connection';
       const stroke = kind === 'emphasis' ? '#F97316' : '#94A3B8';
@@ -322,7 +403,7 @@ export function MindMapCanvas({ nodes, edges, centralIdea }: MindMapCanvasProps)
         id,
         source: String(edge.source),
         target: String(edge.target),
-        label: edge.label,
+        label: edge.label, // Will be undefined if it was "parent"
         type: 'smoothstep', // Smooth curved edge for left-to-right flow
         animated: kind === 'flow',
         style: {
@@ -341,10 +422,45 @@ export function MindMapCanvas({ nodes, edges, centralIdea }: MindMapCanvasProps)
         labelStyle: { fill: '#0f172a', fontWeight: 600 },
       } satisfies Edge;
     });
-  }, [edges, nodes, selectedNodeId]);
+  }, [edges, nodes, selectedNodeId, visibleNodeIds]);
 
   const handleNodeClick: NodeMouseHandler = (_, node) => {
-    setSelectedNodeId((prev) => (prev === node.id ? null : String(node.id)));
+    const nodeId = String(node.id);
+    const rawNode = nodeIndex.get(nodeId);
+    
+    if (!rawNode) {
+      setSelectedNodeId((prev) => (prev === nodeId ? null : nodeId));
+      return;
+    }
+
+    const depth = importanceToDepth(rawNode);
+    
+    // If clicking an L1 node, expand/collapse it and collapse other L1 nodes
+    if (depth === 1) {
+      setExpandedNodes((prev: Set<string>) => {
+        const newExpanded = new Set(prev);
+        
+        // If this node is already expanded, collapse it
+        if (newExpanded.has(nodeId)) {
+          newExpanded.delete(nodeId);
+        } else {
+          // Collapse all other L1 nodes
+          const l1Nodes = nodes
+            .map((n, idx) => ({ node: n, id: String(n.id ?? `node-${idx}`) }))
+            .filter(({ node }) => importanceToDepth(node) === 1)
+            .map(({ id }) => id);
+          
+          l1Nodes.forEach((id: string) => newExpanded.delete(id));
+          
+          // Expand this node
+          newExpanded.add(nodeId);
+        }
+        
+        return newExpanded;
+      });
+    }
+    
+    setSelectedNodeId((prev: string | null) => (prev === nodeId ? null : nodeId));
   };
 
   const selectedDetails = useMemo(() => {
@@ -353,11 +469,11 @@ export function MindMapCanvas({ nodes, edges, centralIdea }: MindMapCanvasProps)
     if (!raw) return null;
 
     const depth = importanceToDepth(raw);
-    const parents = (adjacency.parentsOf.get(selectedNodeId) ?? []).map((pid) => ({
+    const parents = (adjacency.parentsOf.get(selectedNodeId) ?? []).map((pid: string) => ({
       id: pid,
       label: nodeIndex.get(pid)?.label ?? pid,
     }));
-    const children = (adjacency.childrenOf.get(selectedNodeId) ?? []).map((cid) => ({
+    const children = (adjacency.childrenOf.get(selectedNodeId) ?? []).map((cid: string) => ({
       id: cid,
       label: nodeIndex.get(cid)?.label ?? cid,
     }));
@@ -384,6 +500,10 @@ export function MindMapCanvas({ nodes, edges, centralIdea }: MindMapCanvasProps)
           defaultViewport={{ x: 0, y: 0, zoom: 0.8 }}
           proOptions={{ hideAttribution: true }}
           onNodeClick={handleNodeClick}
+          defaultEdgeOptions={{
+            type: 'smoothstep',
+            style: { strokeWidth: 2 },
+          }}
         >
           <Background gap={24} color="#E5E7EB" />
           <MiniMap pannable zoomable />
