@@ -119,19 +119,24 @@ function MindMapPageContent() {
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     {data.key_concepts?.length ? (
-                      data.key_concepts.map((concept, index) => (
-                        <div
-                          key={String((concept as any).id ?? index)}
-                          className="p-4 rounded-xl border border-gray-200 bg-indigo-50 hover:shadow-sm transition-all"
-                        >
-                          <p className="text-sm font-semibold text-indigo-900">
-                            {String((concept as any).label ?? (concept as any).id ?? `Concept ${index + 1}`)}
-                          </p>
-                          {concept.definition && (
-                            <p className="mt-2 text-sm text-gray-700">{concept.definition}</p>
-                          )}
-                        </div>
-                      ))
+                      data.key_concepts.map((concept, index) => {
+                        const c = concept as { id?: string | number; label?: string; definition?: unknown };
+                        const label = String(c.label ?? c.id ?? `Concept ${index + 1}`);
+                        const definition = typeof c.definition === 'string' ? c.definition : undefined;
+                        return (
+                          <div
+                            key={String(c.id ?? index)}
+                            className="p-4 rounded-xl border border-gray-200 bg-indigo-50 hover:shadow-sm transition-all"
+                          >
+                            <p className="text-sm font-semibold text-indigo-900">
+                              {label}
+                            </p>
+                            {definition && (
+                              <p className="mt-2 text-sm text-gray-700">{definition}</p>
+                            )}
+                          </div>
+                        );
+                      })
                     ) : (
                       <p className="text-sm text-gray-600">No key concepts were returned by the model.</p>
                     )}
