@@ -201,9 +201,9 @@ def generate_mind_map_from_pdf(
     """
     payload = {
         "pdf_extractor": {"file_path": pdf_path},
+        # The template currently only uses "focus" in addition to "documents".
         "prompt_builder": {
             "focus": focus or "",
-            "feedback": feedback or "",
         },
     }
     return pdf_mind_map_generation_pipeline.run(payload)["mind_map_parser"]["mind_map"]
