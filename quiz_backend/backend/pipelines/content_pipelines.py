@@ -7,10 +7,11 @@ from haystack.components.fetchers import LinkContentFetcher
 from haystack.components.generators import OpenAIGenerator
 from haystack.utils import Secret
 
-from backend.components.custom_components import PDFTextExtractor, QuizParser, FlashcardParser, EssayQAParser
+from backend.components.custom_components import PDFTextExtractor, QuizParser, FlashcardParser, EssayQAParser, MindMapParser
 from backend.generation.mcq_quiz_template import QUIZ_GENERATION_PROMPT
 from backend.generation.flashcard_template import FLASHCARD_GENERATION_PROMPT
 from backend.generation.essay_qa_template import Essay_QA_PROMPT
+from backend.generation.mind_map_template import MIND_MAP_PROMPT
 
 # Validate that required environment variables exist
 # Support both OPENAI_API_KEY (standard) and OPEN_API_KEY (user's typo)
@@ -26,6 +27,7 @@ LLM_CONFIG = {
     "quiz_temperature": 0.8,
     "flashcard_temperature": 0.7,
     "essay_qa_temperature": 0.7,
+    "mind_map_temperature": 0.65,
 }
 
 def create_generator(temperature: float = 0.8) -> OpenAIGenerator:
@@ -219,3 +221,26 @@ def create_url_essay_qa_pipeline() -> Pipeline:
 # Create instances of the Essay QA pipelines
 pdf_essay_qa_generation_pipeline = create_pdf_essay_qa_pipeline()
 url_essay_qa_generation_pipeline = create_url_essay_qa_pipeline() 
+
+# ==================== Mind Map PIPELINES ====================
+
+def create_pdf_mind_map_pipeline() -> Pipeline:
+    """
+    Creates a pipeline that generates structured mind maps from PDF content.
+    """
+    pipeline = Pipeline()
+    pipeline.add_component("pdf_extractor", PDFTextExtractor())
+    pipeline.add_component(
+        "prompt_builder", PromptBuilder(template=MIND_MAP_PROMPT)
+    )
+    pipeline.add_component("generator", create_generator(temperature=LLM_CONFIG["mind_map_temperature"]))
+    pipeline.add_component("mind_map_parser", MindMapParser())
+
+    pipeline.connect("pdf_extractor.text", "prompt_builder.documents")
+    pipeline.connect("prompt_builder", "generator")
+    pipeline.connect("generator", "mind_map_parser")
+
+    return pipeline
+
+
+pdf_mind_map_generation_pipeline = create_pdf_mind_map_pipeline()

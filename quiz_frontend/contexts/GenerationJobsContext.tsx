@@ -6,7 +6,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useNotifications } from '@/contexts/NotificationsContext';
 import { studentProjectsApi, type GenerationJobStatus } from '@/lib/api/studentProjects';
 
-type TrackedJobType = 'quiz' | 'essay';
+type TrackedJobType = 'quiz' | 'essay' | 'mind_map';
 
 interface FlashcardTaskInput {
   projectId: number;
@@ -154,6 +154,14 @@ export function GenerationJobsProvider({ children }: { children: ReactNode }) {
                 title: 'Essay Q&A generation completed',
                 description: `"${status.result.topic}" from ${job.contentName} is ready.`,
                 href: `/essays/${status.result.essay_id}`,
+                meta: { jobId: job.jobId, contentId: job.contentId, projectId: job.projectId },
+              });
+            } else if (status.result?.mind_map_id && job.jobType === 'mind_map') {
+              addNotification({
+                type: 'mind_map',
+                title: 'Mind map generation completed',
+                description: `"${status.result.topic}" from ${job.contentName} is ready.`,
+                href: `/mind-maps/${status.result.mind_map_id}?projectId=${job.projectId}`,
                 meta: { jobId: job.jobId, contentId: job.contentId, projectId: job.projectId },
               });
             }

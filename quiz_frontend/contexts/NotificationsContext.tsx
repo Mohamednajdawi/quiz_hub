@@ -3,7 +3,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 
-export type AppNotificationType = 'quiz' | 'flashcards' | 'essay' | 'info';
+export type AppNotificationType = 'quiz' | 'flashcards' | 'essay' | 'mind_map' | 'info';
 
 export interface AppNotification {
   id: string;

@@ -16,6 +16,7 @@ from backend.pipelines.content_pipelines import (
     create_generator,
     pdf_flashcard_generation_pipeline,
     pdf_essay_qa_generation_pipeline,
+    pdf_mind_map_generation_pipeline,
     url_flashcard_generation_pipeline,
     url_essay_qa_generation_pipeline,
 )
@@ -183,6 +184,29 @@ def generate_essay_qa_from_pdf(
             },
         }
     )["essay_qa_parser"]["essay_qa"]
+
+
+def generate_mind_map_from_pdf(
+    pdf_path: str,
+    focus: Optional[str] = None,
+    feedback: Optional[str] = None,
+) -> Dict[str, Any]:
+    """
+    Generate a structured mind map JSON from a PDF file.
+
+    Args:
+        pdf_path: Path to the PDF file.
+        focus: Optional hint about what to emphasize.
+        feedback: Optional learner feedback context.
+    """
+    payload = {
+        "pdf_extractor": {"file_path": pdf_path},
+        "prompt_builder": {
+            "focus": focus or "",
+            "feedback": feedback or "",
+        },
+    }
+    return pdf_mind_map_generation_pipeline.run(payload)["mind_map_parser"]["mind_map"]
 
 
 def _extract_text_from_url(url: str) -> str:

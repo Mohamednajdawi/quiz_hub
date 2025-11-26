@@ -9,6 +9,7 @@ export interface StudentProject {
   quiz_references?: number[];
   flashcard_references?: number[];
   essay_references?: number[];
+  mind_map_references?: number[];
 }
 
 export interface ProjectContent {
@@ -29,12 +30,36 @@ export interface GenerationJobStatus {
   result?: {
     quiz_id?: number;
     essay_id?: number;
+    mind_map_id?: number;
     topic: string;
   } | null;
   error_message?: string | null;
   created_at?: string | null;
   updated_at?: string | null;
   completed_at?: string | null;
+}
+
+export interface MindMapSummary {
+  id: number;
+  title: string;
+  central_idea: string;
+  category?: string;
+  subcategory?: string;
+  node_count: number;
+  created_at?: string;
+}
+
+export interface MindMapDetail extends MindMapSummary {
+  project_id: number;
+  content_id?: number;
+  summary?: string | null;
+  key_concepts: Array<Record<string, unknown>>;
+  nodes: Array<Record<string, unknown>>;
+  edges: Array<Record<string, unknown>>;
+  connections: Array<Record<string, unknown>>;
+  callouts: Array<Record<string, unknown>>;
+  recommended_next_steps: string[];
+  metadata?: Record<string, unknown>;
 }
 
 export const studentProjectsApi = {
@@ -197,6 +222,23 @@ export const studentProjectsApi = {
     return data;
   },
 
+  startMindMapGenerationJob: async (
+    projectId: number,
+    contentId: number,
+    payload: { focus?: string; include_examples?: boolean }
+  ): Promise<{
+    job_id: number;
+    status: string;
+    job_type: string;
+    message?: string;
+  }> => {
+    const { data } = await apiClient.post(
+      `/student-projects/${projectId}/content/${contentId}/mind-map-generation`,
+      payload
+    );
+    return data;
+  },
+
   getContentGeneratedContent: async (projectId: number, contentId: number) => {
     const { data } = await apiClient.get(`/student-projects/${projectId}/content/${contentId}/generated-content`);
     return data;
@@ -223,6 +265,11 @@ export const studentProjectsApi = {
 
   deleteContent: async (projectId: number, contentId: number) => {
     const { data } = await apiClient.delete(`/student-projects/${projectId}/content/${contentId}`);
+    return data;
+  },
+
+  getMindMap: async (mindMapId: number): Promise<MindMapDetail> => {
+    const { data } = await apiClient.get(`/mind-maps/${mindMapId}`);
     return data;
   },
 };

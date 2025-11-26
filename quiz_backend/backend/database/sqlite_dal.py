@@ -35,6 +35,7 @@ class User(Base):
     student_projects = relationship("StudentProject", back_populates="user")
     flashcard_topics_created = relationship("FlashcardTopic", back_populates="created_by_user")
     essay_topics_created = relationship("EssayQATopic", back_populates="created_by_user")
+    mind_maps = relationship("MindMap", back_populates="user")
     referrals_sent = relationship("Referral", foreign_keys="Referral.referrer_id", back_populates="referrer")
     referral_received = relationship("Referral", foreign_keys="Referral.referred_id", back_populates="referred")
 
@@ -223,6 +224,33 @@ class EssayAnswer(Base):
     user = relationship("User")
 
 
+class MindMap(Base):
+    __tablename__ = "mind_maps"
+
+    id = Column(Integer, primary_key=True)
+    user_id = Column(String(255), ForeignKey("users.id"), nullable=False)
+    project_id = Column(Integer, ForeignKey("student_projects.id"), nullable=False)
+    content_id = Column(Integer, ForeignKey("student_project_contents.id"), nullable=True)
+    title = Column(String, nullable=False)
+    category = Column(String, nullable=True)
+    subcategory = Column(String, nullable=True)
+    central_idea = Column(String, nullable=False)
+    summary = Column(Text, nullable=True)
+    key_concepts = Column(JSON, nullable=True)
+    nodes = Column(JSON, nullable=False)
+    edges = Column(JSON, nullable=True)
+    connections = Column(JSON, nullable=True)
+    callouts = Column(JSON, nullable=True)
+    recommended_next_steps = Column(JSON, nullable=True)
+    metadata = Column(JSON, nullable=True)
+    created_at = Column(DateTime, default=datetime.datetime.now)
+    updated_at = Column(DateTime, default=datetime.datetime.now, onupdate=datetime.datetime.now)
+
+    user = relationship("User", back_populates="mind_maps")
+    project = relationship("StudentProject", back_populates="mind_maps")
+    content = relationship("StudentProjectContent")
+
+
 # New Student Project Models
 class StudentProject(Base):
     __tablename__ = "student_projects"
@@ -240,6 +268,8 @@ class StudentProject(Base):
     quiz_references = relationship("StudentProjectQuizReference", back_populates="project")
     flashcard_references = relationship("StudentProjectFlashcardReference", back_populates="project")
     essay_references = relationship("StudentProjectEssayReference", back_populates="project")
+    mind_map_references = relationship("StudentProjectMindMapReference", back_populates="project")
+    mind_maps = relationship("MindMap", back_populates="project")
 
 
 class StudentProjectContent(Base):
@@ -301,6 +331,20 @@ class StudentProjectEssayReference(Base):
     project = relationship("StudentProject", back_populates="essay_references")
     content = relationship("StudentProjectContent")  # Added relationship
     essay_topic = relationship("EssayQATopic")
+
+
+class StudentProjectMindMapReference(Base):
+    __tablename__ = "student_project_mindmap_references"
+
+    id = Column(Integer, primary_key=True)
+    project_id = Column(Integer, ForeignKey("student_projects.id"), nullable=False)
+    content_id = Column(Integer, ForeignKey("student_project_contents.id"), nullable=True)
+    mind_map_id = Column(Integer, ForeignKey("mind_maps.id"), nullable=False)
+    created_at = Column(DateTime, default=datetime.datetime.now)
+
+    project = relationship("StudentProject", back_populates="mind_map_references")
+    content = relationship("StudentProjectContent")
+    mind_map = relationship("MindMap")
 
 
 class GenerationJob(Base):

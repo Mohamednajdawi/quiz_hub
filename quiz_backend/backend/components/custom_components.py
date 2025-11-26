@@ -163,3 +163,39 @@ class EssayQAParser:
         print(essay_qa)
         
         return {"essay_qa": essay_qa}
+
+
+@component
+class MindMapParser:
+    @component.output_types(mind_map=Dict)
+    def run(self, replies: List[str]):
+        """
+        Parse the LLM response for mind map generation.
+        Ensures nodes/edges arrays are present even if missing from the payload.
+        """
+        reply = replies[0]
+
+        first_index_candidates = [idx for idx in (reply.find("{"), reply.find("[")) if idx != -1]
+        if not first_index_candidates:
+            raise ValueError("Mind map response did not contain JSON content")
+        first_index = min(first_index_candidates)
+        last_index = max(reply.rfind("}"), reply.rfind("]")) + 1
+
+        json_portion = reply[first_index:last_index]
+
+        try:
+            mind_map = json.loads(json_portion)
+        except json.JSONDecodeError:
+            mind_map = json_repair.loads(json_portion)
+
+        if isinstance(mind_map, list):
+            mind_map = mind_map[0] if mind_map else {}
+
+        mind_map.setdefault("key_concepts", [])
+        mind_map.setdefault("nodes", [])
+        mind_map.setdefault("edges", [])
+        mind_map.setdefault("connections", [])
+        mind_map.setdefault("callouts", [])
+        mind_map.setdefault("recommended_next_steps", [])
+
+        return {"mind_map": mind_map}
