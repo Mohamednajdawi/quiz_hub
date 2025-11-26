@@ -242,7 +242,7 @@ class MindMap(Base):
     connections = Column(JSON, nullable=True)
     callouts = Column(JSON, nullable=True)
     recommended_next_steps = Column(JSON, nullable=True)
-    metadata = Column(JSON, nullable=True)
+    extra_metadata = Column("metadata", JSON, nullable=True)
     created_at = Column(DateTime, default=datetime.datetime.now)
     updated_at = Column(DateTime, default=datetime.datetime.now, onupdate=datetime.datetime.now)
 

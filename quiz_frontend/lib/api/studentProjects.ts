@@ -49,13 +49,21 @@ export interface MindMapSummary {
   created_at?: string;
 }
 
+export interface MindMapEdge {
+  id?: string | number;
+  source: string | number;
+  target: string | number;
+  label?: string;
+  kind?: string;
+}
+
 export interface MindMapDetail extends MindMapSummary {
   project_id: number;
   content_id?: number;
   summary?: string | null;
   key_concepts: Array<Record<string, unknown>>;
   nodes: Array<Record<string, unknown>>;
-  edges: Array<Record<string, unknown>>;
+  edges: MindMapEdge[];
   connections: Array<Record<string, unknown>>;
   callouts: Array<Record<string, unknown>>;
   recommended_next_steps: string[];

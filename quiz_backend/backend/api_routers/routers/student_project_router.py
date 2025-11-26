@@ -928,7 +928,7 @@ def _process_mind_map_generation_job(job_id: int) -> None:
             connections=mind_map_data.get("connections") or [],
             callouts=mind_map_data.get("callouts") or [],
             recommended_next_steps=mind_map_data.get("recommended_next_steps") or [],
-            metadata={
+            extra_metadata={
                 "focus": focus,
                 "include_examples": include_examples,
                 "source_content_id": job.content_id,
@@ -1792,7 +1792,7 @@ async def get_mind_map(
             "connections": mind_map.connections or [],
             "callouts": mind_map.callouts or [],
             "recommended_next_steps": mind_map.recommended_next_steps or [],
-            "metadata": mind_map.metadata or {},
+            "metadata": mind_map.extra_metadata or {},
             "created_at": mind_map.created_at.isoformat() if mind_map.created_at else None,
         }
     )
