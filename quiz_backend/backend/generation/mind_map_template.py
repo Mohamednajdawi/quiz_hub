@@ -82,6 +82,6 @@ Constraints:
 - Make sure every edge source/target matches an existing node id.
 - If the document is very short, prefer fewer but richer nodes.
 
-Source text (truncated to 20k characters max):
-{{ documents|truncate(20000) }}
+Source text (truncated to 60k characters max):
+{{ documents|truncate(60000) }}
 """
