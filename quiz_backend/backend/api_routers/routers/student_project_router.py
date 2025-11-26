@@ -857,17 +857,23 @@ def _process_essay_generation_job(job_id: int) -> None:
 def _process_mind_map_generation_job(job_id: int) -> None:
     session = SessionLocal()
     try:
+        logging.info("[MIND MAP JOB] Starting mind map generation job %s", job_id)
         job = session.query(GenerationJob).filter(GenerationJob.id == job_id).first()
         if not job:
-            logging.error("[GEN JOB] Mind map job %s not found", job_id)
+            logging.error("[MIND MAP JOB] Job %s not found", job_id)
             return
+
+        logging.debug("[MIND MAP JOB] Job %s found: user_id=%s, project_id=%s, content_id=%s", 
+                     job_id, job.user_id, job.project_id, job.content_id)
 
         job.status = "in_progress"
         job.updated_at = datetime.datetime.now()
         session.commit()
+        logging.debug("[MIND MAP JOB] Job %s status set to 'in_progress'", job_id)
 
         user = session.query(User).filter(User.id == job.user_id).first()
         if not user:
+            logging.error("[MIND MAP JOB] User %s not found for job %s", job.user_id, job_id)
             job.status = "failed"
             job.error_message = "User not found"
             job.completed_at = datetime.datetime.now()
@@ -875,12 +881,15 @@ def _process_mind_map_generation_job(job_id: int) -> None:
             session.commit()
             return
 
+        logging.debug("[MIND MAP JOB] User %s validated for job %s", user.id, job_id)
+
         content = session.query(StudentProjectContent).filter(
             StudentProjectContent.id == job.content_id,
             StudentProjectContent.project_id == job.project_id,
         ).first()
 
         if not content:
+            logging.error("[MIND MAP JOB] Content %s not found for job %s", job.content_id, job_id)
             job.status = "failed"
             job.error_message = "Content not found"
             job.completed_at = datetime.datetime.now()
@@ -889,6 +898,8 @@ def _process_mind_map_generation_job(job_id: int) -> None:
             return
 
         if content.content_type != "pdf" or not content.content_url:
+            logging.error("[MIND MAP JOB] Invalid content type for job %s: type=%s, url=%s", 
+                         job_id, content.content_type, bool(content.content_url))
             job.status = "failed"
             job.error_message = "Only PDF content is supported for mind map generation"
             job.completed_at = datetime.datetime.now()
@@ -896,12 +907,20 @@ def _process_mind_map_generation_job(job_id: int) -> None:
             session.commit()
             return
 
+        logging.info("[MIND MAP JOB] Processing PDF content: %s (content_id=%s)", 
+                    content.content_url, content.id)
+
         payload = job.payload or {}
         focus = payload.get("focus")
         include_examples = payload.get("include_examples", True)
+        logging.debug("[MIND MAP JOB] Job %s payload: focus=%s, include_examples=%s", 
+                     job_id, bool(focus), include_examples)
 
         feedback_context = collect_feedback_context(session, user_id=user.id)
+        if feedback_context:
+            logging.debug("[MIND MAP JOB] Collected feedback context (length: %d chars)", len(feedback_context))
 
+        logging.info("[MIND MAP JOB] Calling generate_mind_map_from_pdf for job %s", job_id)
         mind_map_data = generate_mind_map_from_pdf(
             content.content_url,
             focus=focus,
@@ -909,10 +928,13 @@ def _process_mind_map_generation_job(job_id: int) -> None:
         )
 
         nodes_payload = mind_map_data.get("nodes") or []
+        original_node_count = len(nodes_payload)
         if not include_examples:
             for node in nodes_payload:
                 node.pop("examples", None)
+            logging.debug("[MIND MAP JOB] Removed examples from %d nodes", original_node_count)
 
+        logging.info("[MIND MAP JOB] Creating MindMap record for job %s", job_id)
         mind_map = MindMap(
             user_id=user.id,
             project_id=job.project_id,
@@ -938,6 +960,8 @@ def _process_mind_map_generation_job(job_id: int) -> None:
         )
         session.add(mind_map)
         session.flush()
+        logging.info("[MIND MAP JOB] MindMap record created with id=%s (title='%s')", 
+                    mind_map.id, mind_map.title)
 
         mind_map_reference = StudentProjectMindMapReference(
             project_id=job.project_id,
@@ -946,8 +970,11 @@ def _process_mind_map_generation_job(job_id: int) -> None:
             created_at=datetime.datetime.now(),
         )
         session.add(mind_map_reference)
+        logging.debug("[MIND MAP JOB] Created mind map reference for project %s, content %s", 
+                     job.project_id, job.content_id)
 
         consume_generation_token(session, user)
+        logging.debug("[MIND MAP JOB] Consumed generation token for user %s", user.id)
 
         job.status = "completed"
         job.result_topic_id = mind_map.id
@@ -955,18 +982,21 @@ def _process_mind_map_generation_job(job_id: int) -> None:
         job.updated_at = datetime.datetime.now()
         session.commit()
 
-        logging.info("[GEN JOB] Mind map generation completed for job %s -> mind map %s", job_id, mind_map.id)
+        logging.info("[MIND MAP JOB] Mind map generation completed successfully: job_id=%s, mind_map_id=%s, nodes=%d, edges=%d", 
+                    job_id, mind_map.id, len(nodes_payload), len(mind_map_data.get("edges", [])))
     except Exception as exc:  # pylint: disable=broad-except
-        logging.exception("[GEN JOB] Mind map generation failed for job %s: %s", job_id, exc)
+        logging.exception("[MIND MAP JOB] Mind map generation failed for job %s: %s", job_id, exc)
         try:
             job = session.query(GenerationJob).filter(GenerationJob.id == job_id).first()
             if job:
+                logging.error("[MIND MAP JOB] Marking job %s as failed with error: %s", job_id, str(exc))
                 job.status = "failed"
                 job.error_message = str(exc)
                 job.completed_at = datetime.datetime.now()
                 job.updated_at = datetime.datetime.now()
                 session.commit()
-        except Exception:  # pylint: disable=broad-except
+        except Exception as inner_exc:  # pylint: disable=broad-except
+            logging.error("[MIND MAP JOB] Failed to update job %s status after error: %s", job_id, str(inner_exc))
             session.rollback()
     finally:
         session.close()
@@ -1188,12 +1218,16 @@ async def start_mind_map_generation_job(
     db: Session = Depends(get_db),
 ) -> JSONResponse:
     """Start an asynchronous mind map generation job for a project content."""
+    logging.info("[MIND MAP API] Starting mind map generation request: user_id=%s, project_id=%s, content_id=%s", 
+                current_user.id, project_id, content_id)
+    
     project = db.query(StudentProject).filter(
         StudentProject.id == project_id,
         StudentProject.user_id == current_user.id,
     ).first()
 
     if not project:
+        logging.warning("[MIND MAP API] Project %s not found for user %s", project_id, current_user.id)
         raise HTTPException(status_code=404, detail="Project not found")
 
     content = db.query(StudentProjectContent).filter(
@@ -1202,9 +1236,12 @@ async def start_mind_map_generation_job(
     ).first()
 
     if not content:
+        logging.warning("[MIND MAP API] Content %s not found for project %s", content_id, project_id)
         raise HTTPException(status_code=404, detail="Content not found")
 
     if content.content_type != "pdf" or not content.content_url:
+        logging.warning("[MIND MAP API] Invalid content type for mind map generation: type=%s, url=%s", 
+                       content.content_type, bool(content.content_url))
         raise HTTPException(
             status_code=400,
             detail="Only PDF content can be used for mind map generation",
@@ -1214,6 +1251,8 @@ async def start_mind_map_generation_job(
         "focus": request.focus,
         "include_examples": request.include_examples,
     }
+    logging.debug("[MIND MAP API] Request payload: focus=%s, include_examples=%s", 
+                 bool(request.focus), request.include_examples)
 
     job = GenerationJob(
         user_id=current_user.id,
@@ -1229,7 +1268,11 @@ async def start_mind_map_generation_job(
     db.commit()
     db.refresh(job)
 
+    logging.info("[MIND MAP API] Created generation job %s for user %s, project %s, content %s", 
+                job.id, current_user.id, project_id, content_id)
+
     background_tasks.add_task(_process_mind_map_generation_job, job.id)
+    logging.debug("[MIND MAP API] Enqueued background task for job %s", job.id)
 
     return JSONResponse(
         content={

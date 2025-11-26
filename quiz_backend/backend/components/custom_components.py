@@ -1,4 +1,5 @@
 import json
+import logging
 import os
 from typing import Dict, List
 
@@ -173,22 +174,29 @@ class MindMapParser:
         Parse the LLM response for mind map generation.
         Ensures nodes/edges arrays are present even if missing from the payload.
         """
+        logging.info("[MIND MAP PARSER] Starting to parse LLM response (length: %d chars)", len(replies[0]) if replies else 0)
         reply = replies[0]
 
         first_index_candidates = [idx for idx in (reply.find("{"), reply.find("[")) if idx != -1]
         if not first_index_candidates:
+            logging.error("[MIND MAP PARSER] Response did not contain JSON content")
             raise ValueError("Mind map response did not contain JSON content")
         first_index = min(first_index_candidates)
         last_index = max(reply.rfind("}"), reply.rfind("]")) + 1
 
         json_portion = reply[first_index:last_index]
+        logging.debug("[MIND MAP PARSER] Extracted JSON portion (length: %d chars)", len(json_portion))
 
         try:
             mind_map = json.loads(json_portion)
-        except json.JSONDecodeError:
+            logging.debug("[MIND MAP PARSER] Successfully parsed JSON using standard parser")
+        except json.JSONDecodeError as e:
+            logging.warning("[MIND MAP PARSER] Standard JSON parsing failed, attempting repair: %s", str(e))
             mind_map = json_repair.loads(json_portion)
+            logging.info("[MIND MAP PARSER] Successfully repaired and parsed JSON")
 
         if isinstance(mind_map, list):
+            logging.debug("[MIND MAP PARSER] Response was a list, extracting first element")
             mind_map = mind_map[0] if mind_map else {}
 
         mind_map.setdefault("key_concepts", [])
@@ -197,5 +205,16 @@ class MindMapParser:
         mind_map.setdefault("connections", [])
         mind_map.setdefault("callouts", [])
         mind_map.setdefault("recommended_next_steps", [])
+
+        node_count = len(mind_map.get("nodes", []))
+        edge_count = len(mind_map.get("edges", []))
+        key_concept_count = len(mind_map.get("key_concepts", []))
+        logging.info(
+            "[MIND MAP PARSER] Parsed mind map: topic='%s', nodes=%d, edges=%d, key_concepts=%d",
+            mind_map.get("topic", "N/A"),
+            node_count,
+            edge_count,
+            key_concept_count,
+        )
 
         return {"mind_map": mind_map}

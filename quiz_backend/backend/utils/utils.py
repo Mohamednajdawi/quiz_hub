@@ -199,6 +199,12 @@ def generate_mind_map_from_pdf(
         focus: Optional hint about what to emphasize.
         feedback: Optional learner feedback context.
     """
+    logging.info("[MIND MAP GEN] Starting mind map generation from PDF: %s", pdf_path)
+    if focus:
+        logging.info("[MIND MAP GEN] Focus provided: %s", focus[:100] if len(focus) > 100 else focus)
+    if feedback:
+        logging.debug("[MIND MAP GEN] Feedback context provided (length: %d chars)", len(feedback) if feedback else 0)
+
     payload = {
         "pdf_extractor": {"file_path": pdf_path},
         # The template currently only uses "focus" in addition to "documents".
@@ -206,7 +212,25 @@ def generate_mind_map_from_pdf(
             "focus": focus or "",
         },
     }
-    return pdf_mind_map_generation_pipeline.run(payload)["mind_map_parser"]["mind_map"]
+    
+    logging.debug("[MIND MAP GEN] Running pipeline with payload keys: %s", list(payload.keys()))
+    try:
+        result = pdf_mind_map_generation_pipeline.run(payload)
+        mind_map = result["mind_map_parser"]["mind_map"]
+        
+        node_count = len(mind_map.get("nodes", []))
+        edge_count = len(mind_map.get("edges", []))
+        logging.info(
+            "[MIND MAP GEN] Successfully generated mind map: topic='%s', nodes=%d, edges=%d",
+            mind_map.get("topic", "N/A"),
+            node_count,
+            edge_count,
+        )
+        
+        return mind_map
+    except Exception as e:
+        logging.error("[MIND MAP GEN] Failed to generate mind map from PDF %s: %s", pdf_path, str(e))
+        raise
 
 
 def _extract_text_from_url(url: str) -> str:
