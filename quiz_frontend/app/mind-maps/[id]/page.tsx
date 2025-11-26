@@ -168,12 +168,22 @@ function MindMapPageContent() {
                 <Card className="p-6 space-y-3">
                   <h2 className="text-lg font-semibold text-gray-900">Callouts & insights</h2>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {data.callouts.map((callout, index) => (
-                      <div key={`${callout.title ?? index}`} className="p-4 rounded-lg border border-indigo-100 bg-white shadow-sm">
-                        <p className="text-sm font-semibold text-indigo-700">{callout.title ?? 'Insight'}</p>
-                        <p className="mt-1 text-sm text-gray-700">{callout.body ?? callout.description}</p>
-                      </div>
-                    ))}
+                    {data.callouts.map((raw, index) => {
+                      const callout = raw as { title?: unknown; body?: unknown; description?: unknown };
+                      const title = typeof callout.title === 'string' ? callout.title : undefined;
+                      const body =
+                        typeof callout.body === 'string'
+                          ? callout.body
+                          : typeof callout.description === 'string'
+                            ? callout.description
+                            : undefined;
+                      return (
+                        <div key={title ?? `callout-${index}`} className="p-4 rounded-lg border border-indigo-100 bg-white shadow-sm">
+                          <p className="text-sm font-semibold text-indigo-700">{title ?? `Insight ${index + 1}`}</p>
+                          {body && <p className="mt-1 text-sm text-gray-700">{body}</p>}
+                        </div>
+                      );
+                    })}
                   </div>
                 </Card>
               ) : null}
