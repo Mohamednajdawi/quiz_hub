@@ -237,6 +237,8 @@ export function MindMapCanvas({ nodes, edges, centralIdea }: MindMapCanvasProps)
         {
           id: 'root',
           position: { x: 0, y: 0 },
+          sourcePosition: 'right' as const,
+          targetPosition: 'left' as const,
           data: { label: centralIdea, definition: 'Mind map overview' },
           style: {
             background: '#EEF2FF',
@@ -278,6 +280,8 @@ export function MindMapCanvas({ nodes, edges, centralIdea }: MindMapCanvasProps)
       return {
         id,
         position,
+        sourcePosition: 'right' as const, // Edges leave from right side
+        targetPosition: 'left' as const, // Edges enter from left side
         data: {
           label: `${label}${depthSuffix}`,
           definition: node.definition ?? '',
@@ -319,7 +323,7 @@ export function MindMapCanvas({ nodes, edges, centralIdea }: MindMapCanvasProps)
         source: String(edge.source),
         target: String(edge.target),
         label: edge.label,
-        type: 'step', // Step edge for clear left-to-right flow
+        type: 'smoothstep', // Smooth curved edge for left-to-right flow
         animated: kind === 'flow',
         style: {
           stroke,
