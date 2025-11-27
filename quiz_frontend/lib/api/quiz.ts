@@ -138,5 +138,13 @@ export const quizApi = {
   deleteQuestion: async (topicId: number, questionId: number): Promise<void> => {
     await apiClient.delete(`/quiz/${topicId}/question/${questionId}`);
   },
+
+  exportQuiz: async (topicId: number, format: 'pdf' | 'docx'): Promise<Blob> => {
+    const response = await apiClient.get(`/quiz/${topicId}/export`, {
+      params: { format },
+      responseType: 'blob',
+    });
+    return response.data;
+  },
 };
 

@@ -1,4 +1,4 @@
-free_generation_quota: 20
+free_generation_quota: 5
 referral:
   bonus_tokens_per_referral: 5
 

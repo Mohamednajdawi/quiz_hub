@@ -1,12 +1,14 @@
+import io
 import os
 import shutil
 import tempfile
 import datetime
 import requests
 import random
+import re
 import string
-from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
-from fastapi.responses import JSONResponse
+from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, Query
+from fastapi.responses import JSONResponse, StreamingResponse
 from sqlalchemy.orm import Session
 from pydantic import BaseModel
 from typing import Optional, List
@@ -16,6 +18,7 @@ from backend.api_routers.schemas import URLRequest
 from backend.database.db import get_db
 from backend.database.sqlite_dal import QuizQuestion, QuizTopic, QuizAttempt, TokenUsage
 from backend.utils.utils import generate_quiz, generate_quiz_from_pdf
+from backend.utils.quiz_export import build_quiz_docx, build_quiz_pdf
 from backend.api_routers.routers.auth_router import get_current_user_dependency
 from backend.database.sqlite_dal import User as UserModel
 from backend.utils.credits import consume_generation_token
@@ -414,6 +417,53 @@ async def get_quiz(topic_id: int, db: Session = Depends(get_db)) -> JSONResponse
             ],
         },
         headers={"Content-Type": "application/json; charset=utf-8"}
+    )
+
+
+@router.get("/quiz/{topic_id}/export", tags=["Quiz"])
+async def export_quiz_document(
+    topic_id: int,
+    format: str = Query(
+        "pdf",
+        pattern="^(pdf|docx)$",
+        description="Export format. Allowed values: pdf or docx.",
+    ),
+    db: Session = Depends(get_db),
+    current_user: UserModel = Depends(get_current_user_dependency),
+):
+    """Export a quiz to PDF or Word for offline sharing."""
+    _ = current_user  # Ensures authentication dependency is evaluated
+    topic = db.query(QuizTopic).filter(QuizTopic.id == topic_id).first()
+    if not topic:
+        raise HTTPException(status_code=404, detail="Quiz topic not found")
+
+    questions = (
+        db.query(QuizQuestion)
+        .filter(QuizQuestion.topic_id == topic_id)
+        .order_by(QuizQuestion.id)
+        .all()
+    )
+
+    if not questions:
+        raise HTTPException(status_code=400, detail="Quiz has no questions to export")
+
+    safe_topic = re.sub(r"[^A-Za-z0-9]+", "_", topic.topic).strip("_") or "quiz"
+
+    if format == "docx":
+        content = build_quiz_docx(topic, questions)
+        media_type = (
+            "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+        )
+        filename = f"{safe_topic}_quiz.docx"
+    else:
+        content = build_quiz_pdf(topic, questions)
+        media_type = "application/pdf"
+        filename = f"{safe_topic}_quiz.pdf"
+
+    return StreamingResponse(
+        io.BytesIO(content),
+        media_type=media_type,
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
     )
 
 

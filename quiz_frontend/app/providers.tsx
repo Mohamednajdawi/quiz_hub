@@ -5,6 +5,8 @@ import { useState } from 'react';
 import { AuthProvider } from '@/contexts/AuthContext';
 import { NotificationsProvider } from '@/contexts/NotificationsContext';
 import { GenerationJobsProvider } from '@/contexts/GenerationJobsContext';
+import { CookieConsentProvider } from '@/contexts/CookieConsentContext';
+import { CookieConsentBanner } from '@/components/CookieConsentBanner';
 
 export function Providers({ children }: { children: React.ReactNode }) {
   const [queryClient] = useState(
@@ -23,9 +25,12 @@ export function Providers({ children }: { children: React.ReactNode }) {
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
         <NotificationsProvider>
-          <GenerationJobsProvider>
-            {children}
-          </GenerationJobsProvider>
+          <CookieConsentProvider>
+            <GenerationJobsProvider>
+              {children}
+              <CookieConsentBanner />
+            </GenerationJobsProvider>
+          </CookieConsentProvider>
         </NotificationsProvider>
       </AuthProvider>
     </QueryClientProvider>

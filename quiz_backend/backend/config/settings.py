@@ -14,7 +14,7 @@ import yaml
 PRO_MONTHLY_GENERATIONS_DEFAULT = 100
 
 DEFAULT_CONFIG: Dict[str, Any] = {
-    "free_generation_quota": 10,
+    "free_generation_quota": 5,
     "limits": {
         "free_tier": {
             "max_projects": 3,

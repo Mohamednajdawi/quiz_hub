@@ -12,7 +12,7 @@ import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { Alert } from '@/components/ui/Alert';
 import { quizApi } from '@/lib/api/quiz';
 import { QuizQuestion } from '@/lib/types';
-import { Share2, Copy, Check, BarChart3, Edit2, Save, X, Plus, Trash2, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Share2, Copy, Check, BarChart3, Edit2, Save, X, Plus, Trash2, ChevronLeft, ChevronRight, FileDown } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 
 function QuizDetailPageContent() {
@@ -28,6 +28,7 @@ function QuizDetailPageContent() {
   const [isEditMode, setIsEditMode] = useState(false);
   const [editingQuestions, setEditingQuestions] = useState<QuizQuestion[]>([]);
   const [currentQuestionPage, setCurrentQuestionPage] = useState(1);
+  const [exportingFormat, setExportingFormat] = useState<'pdf' | 'docx' | null>(null);
   const questionsPerPage = 5;
 
   const { data: quiz, isLoading, error } = useQuery({
@@ -88,6 +89,28 @@ function QuizDetailPageContent() {
       navigator.clipboard.writeText(shareCode);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
+    }
+  };
+
+  const handleExportQuiz = async (format: 'pdf' | 'docx') => {
+    try {
+      setExportingFormat(format);
+      const blob = await quizApi.exportQuiz(quizId, format);
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      const extension = format === 'pdf' ? 'pdf' : 'docx';
+      const sanitizedTopic = (quiz?.topic || 'quiz').replace(/\s+/g, '_').toLowerCase();
+      link.href = url;
+      link.download = `${sanitizedTopic}_quiz.${extension}`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    } catch (error: any) {
+      console.error('Failed to export quiz', error);
+      alert(error?.response?.data?.detail || 'Failed to export quiz. Please try again.');
+    } finally {
+      setExportingFormat(null);
     }
   };
 
@@ -356,6 +379,39 @@ function QuizDetailPageContent() {
                 </Button>
               </div>
             )}
+          </div>
+
+          <div className="mb-6 p-4 bg-white border border-gray-200 rounded-lg">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+              <div>
+                <h3 className="font-semibold text-gray-900 flex items-center gap-2">
+                  <FileDown className="w-5 h-5" />
+                  Export Quiz
+                </h3>
+                <p className="text-sm text-gray-600 mt-1">
+                  Download this quiz as a PDF or Word document for offline use.
+                </p>
+              </div>
+              <div className="flex flex-wrap gap-3">
+                <Button
+                  size="sm"
+                  onClick={() => handleExportQuiz('pdf')}
+                  isLoading={exportingFormat === 'pdf'}
+                >
+                  <FileDown className="w-4 h-4 mr-2" />
+                  Export PDF
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleExportQuiz('docx')}
+                  isLoading={exportingFormat === 'docx'}
+                >
+                  <FileDown className="w-4 h-4 mr-2" />
+                  Export Word
+                </Button>
+              </div>
+            </div>
           </div>
 
           {/* Take Quiz Button - Moved to top */}
