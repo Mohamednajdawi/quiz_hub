@@ -5,25 +5,25 @@ import { siteConfig, formatPhoneNumber, getFullAddress } from '@/lib/config/site
 
 export function Footer() {
   return (
-    <footer className="bg-white border-t border-gray-200 mt-auto">
+    <footer className="bg-white border-t border-[#e6e6e6] mt-auto text-brand">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           {/* Legal Links */}
           <div>
-            <h3 className="text-sm font-semibold text-gray-900 mb-4">Legal</h3>
+            <h3 className="text-sm font-semibold text-brand mb-4">Legal</h3>
             <ul className="space-y-2">
               <li>
-                <Link href="/terms" className="text-sm text-gray-600 hover:text-gray-900">
+                <Link href="/terms" className="text-sm text-[#596078] hover:text-brand">
                   Terms of Service
                 </Link>
               </li>
               <li>
-                <Link href="/privacy" className="text-sm text-gray-600 hover:text-gray-900">
+                <Link href="/privacy" className="text-sm text-[#596078] hover:text-brand">
                   Privacy Policy
                 </Link>
               </li>
               <li>
-                <Link href="/refund" className="text-sm text-gray-600 hover:text-gray-900">
+                <Link href="/refund" className="text-sm text-[#596078] hover:text-brand">
                   Refund Policy
                 </Link>
               </li>
@@ -32,16 +32,21 @@ export function Footer() {
 
           {/* Company Info */}
           <div>
-            <h3 className="text-sm font-semibold text-gray-900 mb-4">Company</h3>
+            <h3 className="text-sm font-semibold text-brand mb-4">Company</h3>
             <ul className="space-y-2">
               <li>
-                <Link href="/pricing" className="text-sm text-gray-600 hover:text-gray-900">
+                <Link href="/pricing" className="text-sm text-[#596078] hover:text-brand">
                   Pricing
                 </Link>
               </li>
               <li>
-                <Link href="/dashboard" className="text-sm text-gray-600 hover:text-gray-900">
+                <Link href="/dashboard" className="text-sm text-[#596078] hover:text-brand">
                   Dashboard
+                </Link>
+              </li>
+              <li>
+                <Link href="/blog" className="text-sm text-[#596078] hover:text-brand">
+                  Blog
                 </Link>
               </li>
             </ul>
@@ -49,8 +54,8 @@ export function Footer() {
 
           {/* Impressum (Austrian Law Requirement) */}
           <div>
-            <h3 className="text-sm font-semibold text-gray-900 mb-4">Impressum</h3>
-            <div className="text-sm text-gray-600 space-y-2">
+            <h3 className="text-sm font-semibold text-brand mb-4">Impressum</h3>
+            <div className="text-sm text-[#596078] space-y-2">
               <p>
                 <strong>{siteConfig.legal.companyName}</strong>
               </p>
@@ -61,14 +66,14 @@ export function Footer() {
                 <strong>Contact:</strong><br />
                 <a 
                   href={`mailto:${siteConfig.contact.email}`} 
-                  className="hover:text-gray-900 underline"
+                  className="hover:text-brand underline"
                 >
                   {siteConfig.contact.email}
                 </a>
                 <br />
                 <a 
                   href={`tel:${siteConfig.contact.phone}`} 
-                  className="hover:text-gray-900"
+                  className="hover:text-brand"
                 >
                   {formatPhoneNumber(siteConfig.contact.phone)}
                 </a>
@@ -91,8 +96,8 @@ export function Footer() {
           </div>
         </div>
 
-        <div className="mt-8 pt-8 border-t border-gray-200">
-          <p className="text-xs text-gray-500 text-center">
+        <div className="mt-8 pt-8 border-t border-[#e6e6e6]">
+          <p className="text-xs text-[#596078] text-center">
             © {new Date().getFullYear()} {siteConfig.name}. All rights reserved.
           </p>
         </div>

@@ -20,6 +20,7 @@ from backend.api_routers.routers.auth_router import get_current_user_dependency
 from backend.database.sqlite_dal import User as UserModel
 from backend.utils.credits import consume_generation_token
 from backend.utils.feedback import generate_quiz_feedback
+from backend.utils.feedback_context import collect_feedback_context
 
 router = APIRouter()
 
@@ -57,7 +58,14 @@ async def create_quiz(
             request.num_questions if request.num_questions and request.num_questions > 0 else None
         )
 
-        quiz_data = generate_quiz(url, requested_questions, request.difficulty)
+        feedback_context = collect_feedback_context(db, user_id=current_user.id)
+
+        quiz_data = generate_quiz(
+            url,
+            requested_questions,
+            request.difficulty,
+            feedback=feedback_context,
+        )
 
         # Store quiz in database
         quiz_topic = QuizTopic(
@@ -174,7 +182,14 @@ async def create_quiz_from_pdf(
                 num_questions if num_questions and num_questions > 0 else None
             )
 
-            quiz_data = generate_quiz_from_pdf(temp_file_path, requested_questions, difficulty)
+            feedback_context = collect_feedback_context(db, user_id=current_user.id)
+
+            quiz_data = generate_quiz_from_pdf(
+                temp_file_path,
+                requested_questions,
+                difficulty,
+                feedback=feedback_context,
+            )
             
             # Store quiz in database
             try:

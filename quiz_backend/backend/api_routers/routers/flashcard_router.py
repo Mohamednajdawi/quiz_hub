@@ -16,6 +16,7 @@ from backend.utils.utils import generate_flashcards, generate_flashcards_from_pd
 from backend.api_routers.routers.auth_router import get_current_user_dependency
 from backend.database.sqlite_dal import User as UserModel
 from backend.utils.credits import consume_generation_token
+from backend.utils.feedback_context import collect_feedback_context
 
 router = APIRouter()
 
@@ -30,7 +31,13 @@ async def create_flashcards(
         # Remove trailing slash if present
         url = str(request.url).rstrip("/")
 
-        flashcard_data = generate_flashcards(url, num_cards=request.num_cards)
+        feedback_context = collect_feedback_context(db, user_id=current_user.id)
+
+        flashcard_data = generate_flashcards(
+            url,
+            num_cards=request.num_cards,
+            feedback=feedback_context,
+        )
 
         # Store flashcards in database
         try:
@@ -104,13 +111,13 @@ async def create_flashcards_from_pdf(
     try:
         temp_file_path = None
         feedback_context = None
+        scoped_topic_ids: list[int] = []
         
         # If content_id is provided, use the stored PDF file
         if content_id is not None:
             from backend.database.sqlite_dal import (
                 StudentProjectContent,
                 StudentProjectQuizReference,
-                QuizAttempt,
             )
             content = db.query(StudentProjectContent).filter(
                 StudentProjectContent.id == content_id
@@ -138,31 +145,7 @@ async def create_flashcards_from_pdf(
                     StudentProjectQuizReference.project_id == project_id
                 )
             associated_quizzes = quiz_query.all()
-            topic_ids = [ref.quiz_topic_id for ref in associated_quizzes if ref.quiz_topic_id]
-
-            if topic_ids:
-                feedback_rows = (
-                    db.query(QuizAttempt.ai_feedback)
-                    .filter(
-                        QuizAttempt.topic_id.in_(topic_ids),
-                        QuizAttempt.ai_feedback.isnot(None),
-                        QuizAttempt.ai_feedback != "",
-                    )
-                    .order_by(QuizAttempt.timestamp.desc())
-                    .limit(3)
-                    .all()
-                )
-
-                feedback_snippets = [
-                    row.ai_feedback.strip()
-                    for row in feedback_rows
-                    if row.ai_feedback and row.ai_feedback.strip()
-                ]
-
-                if feedback_snippets:
-                    combined_feedback = "\n".join(feedback_snippets)
-                    # Keep feedback concise for the prompt
-                    feedback_context = combined_feedback[:1500]
+            scoped_topic_ids = [ref.quiz_topic_id for ref in associated_quizzes if ref.quiz_topic_id]
         else:
             # No content_id provided, require PDF file upload
             if pdf_file is None:
@@ -191,6 +174,15 @@ async def create_flashcards_from_pdf(
                 temp_file_path = temp_file.name
             
         try:
+            if not feedback_context:
+                feedback_context = collect_feedback_context(
+                    db,
+                    user_id=current_user.id,
+                    quiz_topic_ids=scoped_topic_ids or None,
+                )
+            if not feedback_context:
+                feedback_context = collect_feedback_context(db, user_id=current_user.id)
+
             # Generate flashcards from the PDF
             flashcard_data = generate_flashcards_from_pdf(
                 temp_file_path,

@@ -10,13 +10,13 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Alert } from '@/components/ui/Alert';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
-import { ArrowLeft, Upload, FileText, Settings, HelpCircle, BookOpen, FileQuestion, PenTool, Sparkles, ChevronDown, ChevronUp, MessageSquare, Trash2, Eye, X, MoreVertical, Edit2 } from 'lucide-react';
+import { ArrowLeft, Upload, FileText, Settings, HelpCircle, BookOpen, FileQuestion, PenTool, Sparkles, ChevronDown, ChevronUp, MessageSquare, Trash2, Eye, X, MoreVertical, Edit2, GitBranch } from 'lucide-react';
 import Link from 'next/link';
 import { studentProjectsApi, type StudentProject, type ProjectContent, type GenerationJobStatus } from '@/lib/api/studentProjects';
 import { apiClient } from '@/lib/api/client';
 import { format } from 'date-fns';
 import { flashcardApi } from '@/lib/api/flashcards';
-import { essayApi } from '@/lib/api/essay';
+import { useGenerationJobs } from '@/contexts/GenerationJobsContext';
 
 export default function ProjectDetailPage() {
   return (
@@ -54,6 +54,15 @@ interface GeneratedContent {
     question_count: number;
     creation_timestamp?: string;
   }>;
+  mind_maps: Array<{
+    id: number;
+    title: string;
+    central_idea: string;
+    category?: string;
+    subcategory?: string;
+    node_count: number;
+    created_at?: string;
+  }>;
 }
 
 function ContentItem({ 
@@ -62,10 +71,12 @@ function ContentItem({
   onGenerateQuiz, 
   onGenerateFlashcards, 
   onGenerateEssays,
+  onGenerateMindMap,
   onDeleteContent,
   isGeneratingQuiz,
   isGeneratingFlashcards,
   isGeneratingEssays,
+  isGeneratingMindMaps,
   isDeletingContent,
   generationMessage,
 }: {
@@ -74,10 +85,12 @@ function ContentItem({
   onGenerateQuiz: (content: ProjectContent) => void;
   onGenerateFlashcards: () => void;
   onGenerateEssays: () => void;
+  onGenerateMindMap: () => void;
   onDeleteContent: () => void;
   isGeneratingQuiz: boolean;
   isGeneratingFlashcards: boolean;
   isGeneratingEssays: boolean;
+  isGeneratingMindMaps: boolean;
   isDeletingContent: boolean;
   generationMessage: string;
 }) {
@@ -97,8 +110,7 @@ function ContentItem({
 
   const handleViewQuiz = async (quizId: number) => {
     try {
-      // Navigate directly to quiz detail page where editing is available
-      router.push(`/quizzes/${quizId}`);
+      router.push(`/quizzes/${quizId}?projectId=${projectId}`);
     } catch (error) {
       console.error('Failed to load quiz:', error);
     }
@@ -107,27 +119,34 @@ function ContentItem({
   const handleViewFlashcards = async (flashcardId: number) => {
     try {
       const flashcardData = await flashcardApi.getFlashcards(flashcardId);
-      router.push(`/flashcards/view?data=${encodeURIComponent(JSON.stringify(flashcardData))}`);
+      const serialized = encodeURIComponent(JSON.stringify(flashcardData));
+      router.push(`/flashcards/view?data=${serialized}&projectId=${projectId}`);
     } catch (error) {
       console.error('Failed to load flashcards:', error);
     }
   };
 
   const handleViewEssay = async (essayId: number) => {
-    // Navigate directly to the essay detail page where users can answer questions
-    router.push(`/essays/${essayId}`);
+    router.push(`/essays/${essayId}?projectId=${projectId}`);
+  };
+
+  const handleViewMindMap = (mindMapId: number) => {
+    router.push(`/mind-maps/${mindMapId}?projectId=${projectId}`);
   };
 
   const hasGeneratedContent = generatedContent && (
     generatedContent.quizzes.length > 0 || 
     generatedContent.flashcards.length > 0 || 
-    generatedContent.essays.length > 0
+    generatedContent.essays.length > 0 ||
+    generatedContent.mind_maps.length > 0
   );
 
-  const sortByRecency = <T extends { creation_timestamp?: string | null }>(items: T[]) =>
+  const sortByRecency = <T extends { creation_timestamp?: string | null; created_at?: string | null }>(items: T[]) =>
     [...items].sort((a, b) => {
-      const aTime = a.creation_timestamp ? new Date(a.creation_timestamp).getTime() : 0;
-      const bTime = b.creation_timestamp ? new Date(b.creation_timestamp).getTime() : 0;
+      const aSource = a.creation_timestamp ?? a.created_at ?? null;
+      const bSource = b.creation_timestamp ?? b.created_at ?? null;
+      const aTime = aSource ? new Date(aSource).getTime() : 0;
+      const bTime = bSource ? new Date(bSource).getTime() : 0;
       return bTime - aTime;
     });
 
@@ -177,22 +196,22 @@ function ContentItem({
     <Card className="hover:shadow-md transition-shadow">
       <div className="space-y-4">
         {/* PDF Header */}
-        <div className="flex items-start justify-between gap-4">
+        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
           <div className="flex items-start gap-3 flex-1 min-w-0">
             <div className="p-2 bg-red-100 rounded-lg flex-shrink-0">
               <FileText className="w-5 h-5 text-red-600" />
             </div>
             <div className="flex-1 min-w-0">
-              <h4 className="text-base font-semibold text-gray-900 mb-1 truncate">{content.name}</h4>
-              <div className="flex items-center gap-3 text-sm text-gray-600">
+              <h4 className="text-base font-semibold text-gray-900 mb-1 break-words">{content.name}</h4>
+              <div className="flex flex-wrap items-center gap-2 text-sm text-gray-600">
                 <span className="flex items-center gap-1">
                   <span className="font-medium">{content.content_type.toUpperCase()}</span>
                 </span>
-                <span>•</span>
+                <span className="hidden sm:inline">•</span>
                 <span>{Math.round((content.file_size || 0) / 1024)} KB</span>
                 {content.uploaded_at && (
                   <>
-                    <span>•</span>
+                    <span className="hidden sm:inline">•</span>
                     <span className="flex items-center gap-1">
                       <span>Uploaded {format(new Date(content.uploaded_at), 'MMM d')}</span>
                     </span>
@@ -201,7 +220,7 @@ function ContentItem({
               </div>
             </div>
           </div>
-          <div className="flex items-center gap-2 flex-shrink-0">
+          <div className="flex items-center gap-2 flex-shrink-0 flex-wrap sm:flex-nowrap">
             {/* Primary Action: View */}
             {content.content_type === 'pdf' && (
               <Button 
@@ -224,10 +243,10 @@ function ContentItem({
                     alert('Failed to load PDF. Please try again.');
                   }
                 }}
-                className="flex items-center gap-1.5"
+                className="flex items-center gap-1.5 whitespace-nowrap"
               >
                 <Eye className="w-4 h-4" />
-                View
+                <span className="hidden sm:inline">View</span>
               </Button>
             )}
 
@@ -237,10 +256,10 @@ function ContentItem({
                 variant="outline" 
                 size="sm"
                 onClick={() => setShowGenerateMenu(!showGenerateMenu)}
-                className="flex items-center gap-1.5"
+                className="flex items-center gap-1.5 whitespace-nowrap"
               >
                 <Sparkles className="w-4 h-4" />
-                Generate
+                <span className="hidden sm:inline">Generate</span>
                 <ChevronDown className={`w-3 h-3 transition-transform ${showGenerateMenu ? 'rotate-180' : ''}`} />
               </Button>
               {showGenerateMenu && (
@@ -280,6 +299,18 @@ function ContentItem({
                     <PenTool className="w-4 h-4" />
                     <span className="flex-1">{isGeneratingEssays ? generationMessage : 'Essay Q&A'}</span>
                     {isGeneratingEssays && <LoadingSpinner size="sm" />}
+                  </button>
+                  <button
+                    onClick={() => {
+                      onGenerateMindMap();
+                      setShowGenerateMenu(false);
+                    }}
+                    disabled={isGeneratingQuiz || isGeneratingFlashcards || isGeneratingEssays || isGeneratingMindMaps}
+                    className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <GitBranch className="w-4 h-4" />
+                    <span className="flex-1">{isGeneratingMindMaps ? generationMessage : 'Mind Map'}</span>
+                    {isGeneratingMindMaps && <LoadingSpinner size="sm" />}
                   </button>
                 </div>
               )}
@@ -342,7 +373,7 @@ function ContentItem({
               Generated Content
               {generatedContent && (
                 <span className="text-xs text-gray-500">
-                  ({generatedContent.quizzes.length + generatedContent.flashcards.length + generatedContent.essays.length})
+                  ({generatedContent.quizzes.length + generatedContent.flashcards.length + generatedContent.essays.length + generatedContent.mind_maps.length})
                 </span>
               )}
             </span>
@@ -455,11 +486,41 @@ function ContentItem({
                       </div>
                     </div>
                   )}
+
+                  {/* Mind Maps */}
+                  {generatedContent.mind_maps.length > 0 && (
+                    <div>
+                      <h5 className="text-sm font-semibold text-gray-900 mb-2 flex items-center gap-2">
+                        <GitBranch className="w-4 h-4 text-indigo-600" />
+                        Mind Maps ({generatedContent.mind_maps.length})
+                      </h5>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                        {sortByRecency(generatedContent.mind_maps).map((mindMap, index, array) => {
+                          const version = array.length - index;
+                          const isLatest = index === 0;
+                          return (
+                            <button
+                              key={mindMap.id}
+                              onClick={() => handleViewMindMap(mindMap.id)}
+                              className="text-left p-3 bg-indigo-50 hover:bg-indigo-100 rounded-md transition-colors border border-indigo-200"
+                            >
+                              <div className="font-medium text-sm text-gray-900 truncate">{mindMap.title}</div>
+                              <div className="text-xs text-gray-600 mt-1">
+                                {mindMap.central_idea}
+                                {mindMap.node_count ? ` • ${mindMap.node_count} nodes` : ''}
+                              </div>
+                              {renderMeta(mindMap.created_at, version, isLatest)}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
                 </>
               ) : (
                 <div className="text-center py-6 text-sm text-gray-600">
                   <p>No generated content yet.</p>
-                  <p className="text-xs mt-1">Generate quizzes, flashcards, or essays from this PDF to see them here.</p>
+                  <p className="text-xs mt-1">Generate quizzes, flashcards, essays, or mind maps from this PDF to see them here.</p>
                 </div>
               )}
             </div>
@@ -666,14 +727,16 @@ function ProjectDetailContent() {
   const [showProjectMenu, setShowProjectMenu] = useState(false);
   const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [generationStatus, setGenerationStatus] = useState<{
-    type: 'quiz' | 'flashcards' | 'essays' | null;
+    type: 'quiz' | 'flashcards' | 'essays' | 'mind_map' | null;
     messageIndex: number;
   }>({ type: null, messageIndex: 0 });
   const [pendingContentId, setPendingContentId] = useState<number | null>(null);
-  const [activeJobs, setActiveJobs] = useState<Array<{ jobId: number; contentId: number; contentName: string; jobType: 'quiz' | 'essay' }>>([]);
+  const [activeJobs, setActiveJobs] = useState<Array<{ jobId: number; contentId: number; contentName: string; jobType: 'quiz' | 'essay' | 'mind_map' }>>([]);
   const [readyQuizzes, setReadyQuizzes] = useState<Array<{ jobId: number; quizId: number; topic: string; contentName: string }>>([]);
   const [readyEssays, setReadyEssays] = useState<Array<{ jobId: number; essayId: number; topic: string; contentName: string }>>([]);
+  const [readyMindMaps, setReadyMindMaps] = useState<Array<{ jobId: number; mindMapId: number; title: string; contentName: string }>>([]);
   const activeJobsRef = useRef(activeJobs);
+  const { registerJob, startFlashcardGeneration } = useGenerationJobs();
 
   useEffect(() => {
     activeJobsRef.current = activeJobs;
@@ -742,6 +805,13 @@ function ProjectDetailContent() {
       'Preparing detailed answers...',
       'Finalizing content...',
     ],
+    mind_map: [
+      'Scanning for key ideas...',
+      'Grouping related concepts...',
+      'Drawing connections...',
+      'Coloring branches...',
+      'Polishing visual layout...',
+    ],
   } as const;
 
   // Cycle through messages during generation
@@ -802,6 +872,20 @@ function ProjectDetailContent() {
       return getGenerationMessage();
     }
     return 'Flashcards';
+  };
+
+  const isMindMapGenerationActive = (contentId: number) =>
+    (generateMindMapMutation?.isPending && pendingContentId === contentId) ||
+    activeJobs.some((job) => job.contentId === contentId && job.jobType === 'mind_map');
+
+  const getMindMapGenerationLabel = (contentId: number) => {
+    if (generateMindMapMutation?.isPending && pendingContentId === contentId) {
+      return getGenerationMessage();
+    }
+    if (activeJobs.some((job) => job.contentId === contentId && job.jobType === 'mind_map')) {
+      return 'Generating in background...';
+    }
+    return 'Mind Map';
   };
 
   // Request notification permission on mount
@@ -865,7 +949,6 @@ function ProjectDetailContent() {
                 contentName: job.contentName,
               };
               setReadyQuizzes((prev) => [...prev, quizInfo]);
-              
               // Show browser notification if permission granted
               if ('Notification' in window && Notification.permission === 'granted') {
                 new Notification('Quiz Ready!', {
@@ -885,7 +968,6 @@ function ProjectDetailContent() {
                 contentName: job.contentName,
               };
               setReadyEssays((prev) => [...prev, essayInfo]);
-              
               // Show browser notification if permission granted
               if ('Notification' in window && Notification.permission === 'granted') {
                 new Notification('Essay Q&A Ready!', {
@@ -895,6 +977,23 @@ function ProjectDetailContent() {
                 });
               } else if ('Notification' in window && Notification.permission === 'default') {
                 // Request permission for future notifications
+                Notification.requestPermission();
+              }
+            } else if (status.result?.mind_map_id) {
+              const mindMapInfo = {
+                jobId: job.jobId,
+                mindMapId: status.result.mind_map_id,
+                title: status.result.topic,
+                contentName: job.contentName,
+              };
+              setReadyMindMaps((prev) => [...prev, mindMapInfo]);
+              if ('Notification' in window && Notification.permission === 'granted') {
+                new Notification('Mind map ready!', {
+                  body: `"${mindMapInfo.title}" from ${job.contentName} is ready to explore.`,
+                  icon: '/favicon.ico',
+                  tag: `mindmap-${mindMapInfo.mindMapId}`,
+                });
+              } else if ('Notification' in window && Notification.permission === 'default') {
                 Notification.requestPermission();
               }
             }
@@ -925,21 +1024,28 @@ function ProjectDetailContent() {
   }, [activeJobs.length, projectId, queryClient]);
 
   const generateQuizMutation = useMutation({
-    mutationFn: ({ contentId, contentName }: { contentId: number; contentName: string }) => {
+    mutationFn: async ({ contentId, contentName }: { contentId: number; contentName: string }) => {
       setGenerationStatus({ type: 'quiz', messageIndex: 0 });
       setPendingContentId(contentId);
       const desiredQuestions = questionMode === 'custom' ? numQuestions : undefined;
-      return studentProjectsApi.startQuizGenerationJob(projectId, contentId, {
+      const response = await studentProjectsApi.startQuizGenerationJob(projectId, contentId, {
         num_questions: desiredQuestions,
         difficulty,
-      }).then((response) => ({ response, contentId, contentName }));
+      });
+      registerJob({
+        jobId: response.job_id,
+        contentId,
+        contentName,
+        jobType: 'quiz',
+        projectId,
+      });
+      return { response, contentId, contentName };
     },
     onSuccess: ({ response, contentId, contentName }) => {
-      setSuccess('Quiz generation started! We will notify you when it is ready.');
       setError(null);
       setActiveJobs((prev) => [
         ...prev,
-        { jobId: response.job_id, contentId, contentName, jobType: 'quiz' },
+        { jobId: response.job_id, contentId, contentName, jobType: 'quiz' as const },
       ]);
     },
     onError: (error: unknown) => {
@@ -953,52 +1059,92 @@ function ProjectDetailContent() {
   });
 
   const generateFlashcardsMutation = useMutation({
-    mutationFn: (contentId: number) => {
+    mutationFn: ({ contentId, contentName }: { contentId: number; contentName: string }) => {
       setGenerationStatus({ type: 'flashcards', messageIndex: 0 });
       setPendingContentId(contentId);
-      return studentProjectsApi.generateFlashcardsFromContent(projectId, contentId, numCards);
+      return startFlashcardGeneration({
+        projectId,
+        contentId,
+        contentName,
+        numCards,
+      });
     },
-    onSuccess: (data) => {
+    onSuccess: () => {
       setGenerationStatus({ type: null, messageIndex: 0 });
       setPendingContentId(null);
-      setSuccess('Flashcards generated successfully!');
+      setSuccess('Flashcard generation started! We will notify you when it is ready.');
       setError(null);
-      // Invalidate generated content queries for all contents
-      contents?.forEach((c) => {
-        queryClient.invalidateQueries({ queryKey: ['generated-content', projectId, c.id] });
-      });
-      router.push(`/flashcards/view?data=${encodeURIComponent(JSON.stringify(data))}`);
     },
     onError: (error: unknown) => {
       setGenerationStatus({ type: null, messageIndex: 0 });
       setPendingContentId(null);
       setError(
-        error instanceof Error ? error.message : 'Failed to generate flashcards'
+        error instanceof Error ? error.message : 'Failed to start flashcard generation'
       );
       setSuccess(null);
     },
   });
 
   const generateEssaysMutation = useMutation({
-    mutationFn: ({ contentId, contentName }: { contentId: number; contentName: string }) => {
+    mutationFn: async ({ contentId, contentName }: { contentId: number; contentName: string }) => {
       setGenerationStatus({ type: 'essays', messageIndex: 0 });
       setPendingContentId(contentId);
       const desiredQuestions = questionMode === 'custom' ? numQuestions : undefined;
-      return studentProjectsApi.startEssayGenerationJob(projectId, contentId, {
+      const response = await studentProjectsApi.startEssayGenerationJob(projectId, contentId, {
         num_questions: desiredQuestions,
         difficulty,
-      }).then((response) => ({ response, contentId, contentName }));
+      });
+      registerJob({
+        jobId: response.job_id,
+        contentId,
+        contentName,
+        jobType: 'essay',
+        projectId,
+      });
+      return { response, contentId, contentName };
     },
     onSuccess: ({ response, contentId, contentName }) => {
-      setSuccess('Essay generation started! We will notify you when it is ready.');
       setError(null);
       setActiveJobs((prev) => [
         ...prev,
-        { jobId: response.job_id, contentId, contentName, jobType: 'essay' },
+        { jobId: response.job_id, contentId, contentName, jobType: 'essay' as const },
       ]);
     },
     onError: (error: unknown) => {
       setError(error instanceof Error ? error.message : 'Failed to start essay generation');
+      setSuccess(null);
+    },
+    onSettled: () => {
+      setGenerationStatus({ type: null, messageIndex: 0 });
+      setPendingContentId(null);
+    },
+  });
+
+  const generateMindMapMutation = useMutation({
+    mutationFn: async ({ contentId, contentName }: { contentId: number; contentName: string }) => {
+      setGenerationStatus({ type: 'mind_map', messageIndex: 0 });
+      setPendingContentId(contentId);
+      const response = await studentProjectsApi.startMindMapGenerationJob(projectId, contentId, {
+        include_examples: true,
+      });
+      registerJob({
+        jobId: response.job_id,
+        contentId,
+        contentName,
+        jobType: 'mind_map',
+        projectId,
+      });
+      return { response, contentId, contentName };
+    },
+    onSuccess: ({ response, contentId, contentName }) => {
+      setError(null);
+      setActiveJobs((prev) => [
+        ...prev,
+        { jobId: response.job_id, contentId, contentName, jobType: 'mind_map' as const },
+      ]);
+    },
+    onError: (error: unknown) => {
+      setError(error instanceof Error ? error.message : 'Failed to start mind map generation');
       setSuccess(null);
     },
     onSettled: () => {
@@ -1101,7 +1247,7 @@ function ProjectDetailContent() {
                       <button
                         onClick={() => {
                           setShowProjectMenu(false);
-                          if (confirm(`Are you sure you want to delete the project "${project?.name}"? This will delete all PDFs, quizzes, flashcards, and essays in this project. This action cannot be undone.`)) {
+                          if (confirm(`Are you sure you want to delete the project "${project?.name}"? This will delete all PDFs, quizzes, flashcards, essays, and mind maps in this project. This action cannot be undone.`)) {
                             deleteProjectMutation.mutate();
                           }
                         }}
@@ -1135,7 +1281,7 @@ function ProjectDetailContent() {
                 variant="primary"
                 onClick={() => {
                   setReadyQuizzes((prev) => prev.filter((item) => item.jobId !== entry.jobId));
-                  router.push(`/quizzes/${entry.quizId}`);
+                  router.push(`/quizzes/${entry.quizId}?projectId=${projectId}`);
                 }}
               >
                 Open Quiz
@@ -1157,7 +1303,7 @@ function ProjectDetailContent() {
                 variant="primary"
                 onClick={() => {
                   setReadyEssays((prev) => prev.filter((item) => item.jobId !== entry.jobId));
-                  router.push(`/essays/${entry.essayId}`);
+                  router.push(`/essays/${entry.essayId}?projectId=${projectId}`);
                 }}
               >
                 Open Essay Q&A
@@ -1165,9 +1311,32 @@ function ProjectDetailContent() {
             </Alert>
           ))}
 
+          {readyMindMaps.map((entry) => (
+            <Alert key={entry.jobId} type="success" className="mb-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+              <div>
+                <p className="font-medium text-gray-900">
+                  Mind map ready: <span className="text-indigo-700">{entry.title}</span>
+                </p>
+                <p className="text-sm text-gray-700">
+                  Generated from <span className="font-medium">{entry.contentName}</span>. Click below to explore it.
+                </p>
+              </div>
+              <Button
+                variant="primary"
+                onClick={() => {
+                  setReadyMindMaps((prev) => prev.filter((item) => item.jobId !== entry.jobId));
+                  router.push(`/mind-maps/${entry.mindMapId}?projectId=${projectId}`);
+                }}
+              >
+                Open Mind Map
+              </Button>
+            </Alert>
+          ))}
+
           {activeJobs.length > 0 && (() => {
             const quizJobs = activeJobs.filter(job => job.jobType === 'quiz');
             const essayJobs = activeJobs.filter(job => job.jobType === 'essay');
+            const mindMapJobs = activeJobs.filter(job => job.jobType === 'mind_map');
             const totalJobs = activeJobs.length;
             
             return (
@@ -1179,12 +1348,12 @@ function ProjectDetailContent() {
                       : `Generating ${totalJobs} items in the background...`}
                     {totalJobs > 1 && (
                       <span className="text-gray-600">
-                        {' '}({quizJobs.length} quiz{quizJobs.length !== 1 ? 'zes' : ''}, {essayJobs.length} essay{essayJobs.length !== 1 ? 's' : ''})
+                        {' '}({quizJobs.length} quiz{quizJobs.length !== 1 ? 'zes' : ''}, {essayJobs.length} essay{essayJobs.length !== 1 ? 's' : ''}, {mindMapJobs.length} mind map{mindMapJobs.length !== 1 ? 's' : ''})
                       </span>
                     )}
                   </p>
                   <p className="text-sm text-gray-700">
-                    You can keep working while we process these. We'll notify you as soon as each item is ready.
+                    You can keep working while we process these. We will notify you as soon as each item is ready.
                   </p>
                 </div>
               </Alert>
@@ -1194,7 +1363,8 @@ function ProjectDetailContent() {
           {/* Generation Status Alert */}
           {((generateQuizMutation.isPending && pendingContentId !== null) || 
             (generateFlashcardsMutation.isPending && pendingContentId !== null) || 
-            (generateEssaysMutation.isPending && pendingContentId !== null)) ? (
+            (generateEssaysMutation.isPending && pendingContentId !== null) ||
+            (generateMindMapMutation.isPending && pendingContentId !== null)) ? (
             <Alert type="info" className="mb-6">
               <div className="flex items-center gap-3">
                 <LoadingSpinner size="sm" />
@@ -1346,24 +1516,30 @@ function ProjectDetailContent() {
                           contentName: selectedContent.name,
                         })
                       }
-                      onGenerateFlashcards={() => generateFlashcardsMutation.mutate(c.id)}
+                      onGenerateFlashcards={() => generateFlashcardsMutation.mutate({ contentId: c.id, contentName: c.name })}
                       onGenerateEssays={() => generateEssaysMutation.mutate({
                         contentId: c.id,
                         contentName: c.name,
                       })}
+                      onGenerateMindMap={() => generateMindMapMutation.mutate({
+                        contentId: c.id,
+                        contentName: c.name,
+                      })}
                       onDeleteContent={() => {
-                        if (confirm(`Are you sure you want to delete "${c.name}"? This will also delete all quizzes, flashcards, and essays generated from this PDF. This action cannot be undone.`)) {
+                        if (confirm(`Are you sure you want to delete "${c.name}"? This will also delete all quizzes, flashcards, essays, and mind maps generated from this PDF. This action cannot be undone.`)) {
                           deleteContentMutation.mutate(c.id);
                         }
                       }}
                       isGeneratingQuiz={isQuizGenerationActive(c.id)}
                       isGeneratingFlashcards={isFlashcardGenerationActive(c.id)}
                       isGeneratingEssays={isEssayGenerationActive(c.id)}
+                      isGeneratingMindMaps={isMindMapGenerationActive(c.id)}
                       isDeletingContent={deleteContentMutation.isPending}
                       generationMessage={
                         isQuizGenerationActive(c.id) ? getQuizGenerationLabel(c.id) :
                         isFlashcardGenerationActive(c.id) ? getFlashcardGenerationLabel(c.id) :
                         isEssayGenerationActive(c.id) ? getEssayGenerationLabel(c.id) :
+                        isMindMapGenerationActive(c.id) ? getMindMapGenerationLabel(c.id) :
                         'Generate'
                       }
                     />

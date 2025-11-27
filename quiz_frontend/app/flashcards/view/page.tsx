@@ -10,6 +10,9 @@ import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { Alert } from '@/components/ui/Alert';
 import { FlashcardData, FlashcardCard } from '@/lib/types';
 import { RotateCw, ChevronLeft, ChevronRight } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
+
+const FLASHCARD_CACHE_PREFIX = 'quizhub_flashcard_payload_';
 
 // Safe URI decoding function that handles malformed URIs
 function safeDecodeURIComponent(str: string): string {
@@ -47,33 +50,74 @@ function safeDecodeURIComponent(str: string): string {
 function ViewFlashcardsContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
+  const { user } = useAuth();
   const [flashcardData, setFlashcardData] = useState<FlashcardData | null>(null);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isFlipped, setIsFlipped] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const projectId = searchParams.get('projectId');
 
   useEffect(() => {
+    const cacheId = searchParams.get('cacheId');
     const dataParam = searchParams.get('data');
-    if (dataParam) {
+
+    const loadFromCache = () => {
+      if (!cacheId) {
+        return false;
+      }
+      if (!user?.id) {
+        setError('You must be signed in to view this flashcard set.');
+        return true;
+      }
+      const storageKey = `${FLASHCARD_CACHE_PREFIX}${user.id}_${cacheId}`;
+      try {
+        const stored = localStorage.getItem(storageKey);
+        if (!stored) {
+          setError('This flashcard set is no longer available. Please regenerate it.');
+          return true;
+        }
+        const parsed = JSON.parse(stored);
+        const payload: FlashcardData = parsed?.payload?.data ?? parsed?.payload ?? parsed?.data ?? parsed;
+        if (!payload || !Array.isArray(payload.cards) || payload.cards.length === 0) {
+          throw new Error('Invalid flashcard data structure');
+        }
+        setFlashcardData(payload);
+        setError(null);
+      } catch (storageError) {
+        console.error('Failed to load cached flashcards', storageError);
+        setError('We could not load this flashcard set. Please try generating it again.');
+      }
+      return true;
+    };
+
+    const loadFromQuery = () => {
+      if (!dataParam) {
+        return false;
+      }
       try {
         const decoded = safeDecodeURIComponent(dataParam);
         const parsed = JSON.parse(decoded);
-        
-        // Validate the parsed data structure
         if (!parsed || !parsed.cards || !Array.isArray(parsed.cards) || parsed.cards.length === 0) {
           throw new Error('Invalid flashcard data structure');
         }
-        
         setFlashcardData(parsed);
         setError(null);
-      } catch (error) {
-        console.error('Error parsing flashcard data:', error);
+      } catch (parseError) {
+        console.error('Error parsing flashcard data:', parseError);
         setError('Failed to load flashcard data. The data may be corrupted or too large for URL parameters.');
       }
-    } else {
-      setError('No flashcard data provided.');
+      return true;
+    };
+
+    if (loadFromCache()) {
+      return;
     }
-  }, [searchParams]);
+    if (loadFromQuery()) {
+      return;
+    }
+
+    setError('No flashcard data provided.');
+  }, [searchParams, user?.id]);
 
   if (error) {
     return (
@@ -131,6 +175,19 @@ function ViewFlashcardsContent() {
     <Layout>
       <div className="px-4 sm:px-6 lg:px-8 max-w-6xl mx-auto w-full">
         <Card>
+          {projectId && (
+            <div className="mb-4">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => router.push(`/student-hub/${projectId}`)}
+                className="inline-flex items-center gap-2 text-indigo-700 hover:text-indigo-900"
+              >
+                <ChevronLeft className="w-4 h-4" />
+                Back to Project
+              </Button>
+            </div>
+          )}
           <div className="mb-6">
             <h1 className="text-2xl font-bold text-gray-900 mb-2">{flashcardData.topic}</h1>
             <div className="text-sm text-gray-700 mb-4">

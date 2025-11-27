@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { ProtectedRoute } from '@/components/ProtectedRoute';
 import { Layout } from '@/components/Layout';
 import { Card } from '@/components/ui/Card';
@@ -18,9 +18,11 @@ import { useAuth } from '@/contexts/AuthContext';
 function QuizDetailPageContent() {
   const params = useParams();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const queryClient = useQueryClient();
   const { user } = useAuth();
   const quizId = parseInt(params.id as string);
+  const projectId = searchParams.get('projectId');
   const [shareCode, setShareCode] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
@@ -243,6 +245,19 @@ function QuizDetailPageContent() {
     <Layout>
       <div className="px-4 sm:px-6 lg:px-8 max-w-4xl mx-auto">
         <Card>
+          {projectId && (
+            <div className="mb-4">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => router.push(`/student-hub/${projectId}`)}
+                className="inline-flex items-center gap-2 text-indigo-700 hover:text-indigo-900"
+              >
+                <ChevronLeft className="w-4 h-4" />
+                Back to Project
+              </Button>
+            </div>
+          )}
           <div className="mb-6">
             <div className="flex items-center justify-between mb-2">
               <h1 className="text-3xl font-bold text-gray-900">{quiz.topic}</h1>

@@ -16,18 +16,21 @@ import { essayApi } from '@/lib/api/essay';
 import { formatFeedbackToHtml } from '@/lib/utils/formatFeedback';
 import { format } from 'date-fns';
 import { 
-  BarChart3, 
-  TrendingUp, 
-  Clock, 
-  Award, 
-  BookOpen, 
-  FileText, 
-  Plus,
   Activity,
-  Zap,
   ArrowRight,
+  Award, 
+  BarChart3, 
+  BookOpen, 
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  Clock, 
+  FileText, 
+  FileUp,
+  FolderKanban,
+  Plus,
+  Sparkles,
+  TrendingUp, 
+  Zap
 } from 'lucide-react';
 
 function DashboardPageContent() {
@@ -114,6 +117,12 @@ function DashboardPageContent() {
       essayScores,
     };
   }, [analytics, essayAnswers]);
+
+  const userResourceStats = {
+    totalProjects: analytics?.total_projects ?? 0,
+    totalFlashcards: analytics?.total_flashcard_topics ?? 0,
+    totalPdfs: analytics?.total_uploaded_pdfs ?? 0,
+  };
 
   if (isLoading) {
     return (
@@ -241,6 +250,54 @@ function DashboardPageContent() {
           </Card>
         </div>
 
+        {/* Resource Summary */}
+        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 mb-8">
+          <Card className="bg-white border border-slate-200">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-slate-600 mb-1">Projects</p>
+                <p className="text-3xl font-bold text-slate-900">
+                  {userResourceStats.totalProjects}
+                </p>
+                <p className="text-xs text-slate-500 mt-1">Organized study spaces</p>
+              </div>
+              <div className="flex-shrink-0 bg-slate-100 rounded-lg p-3">
+                <FolderKanban className="h-8 w-8 text-slate-600" />
+              </div>
+            </div>
+          </Card>
+
+          <Card className="bg-gradient-to-br from-purple-50 to-purple-100 border-purple-200">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-purple-700 mb-1">Flashcard Sets</p>
+                <p className="text-3xl font-bold text-purple-900">
+                  {userResourceStats.totalFlashcards}
+                </p>
+                <p className="text-xs text-purple-600 mt-1">Generated from your content</p>
+              </div>
+              <div className="flex-shrink-0 bg-purple-200 rounded-lg p-3">
+                <Sparkles className="h-8 w-8 text-purple-700" />
+              </div>
+            </div>
+          </Card>
+
+          <Card className="bg-gradient-to-br from-rose-50 to-rose-100 border-rose-200">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-rose-700 mb-1">Uploaded PDFs</p>
+                <p className="text-3xl font-bold text-rose-900">
+                  {userResourceStats.totalPdfs}
+                </p>
+                <p className="text-xs text-rose-600 mt-1">Ready for AI study help</p>
+              </div>
+              <div className="flex-shrink-0 bg-rose-200 rounded-lg p-3">
+                <FileUp className="h-8 w-8 text-rose-700" />
+              </div>
+            </div>
+          </Card>
+        </div>
+
         {/* Quick Actions */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
           <Card onClick={() => router.push('/quizzes')}>
@@ -269,7 +326,7 @@ function DashboardPageContent() {
             </div>
           </Card>
 
-          <Card onClick={() => router.push('/projects')}>
+          <Card onClick={() => router.push('/student-hub')}>
             <div className="flex items-center gap-4">
               <div className="bg-green-100 rounded-lg p-3">
                 <BookOpen className="h-6 w-6 text-green-600" />

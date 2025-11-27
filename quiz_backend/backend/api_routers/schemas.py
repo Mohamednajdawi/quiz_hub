@@ -236,6 +236,24 @@ class StudentProjectResponse(BaseModel):
     quiz_references: List[int] = []  # List of quiz topic IDs
     flashcard_references: List[int] = []  # List of flashcard topic IDs
     essay_references: List[int] = []  # List of essay topic IDs
+    mind_map_references: List[int] = []  # List of mind map IDs
+
+
+class MindMapResponse(BaseModel):
+    id: int
+    title: str
+    category: Optional[str] = None
+    subcategory: Optional[str] = None
+    central_idea: str
+    summary: Optional[str] = None
+    key_concepts: List[Dict[str, Any]] = []
+    nodes: List[Dict[str, Any]] = []
+    edges: List[Dict[str, Any]] = []
+    connections: List[Dict[str, Any]] = []
+    callouts: List[Dict[str, Any]] = []
+    recommended_next_steps: List[str] = []
+    metadata: Optional[Dict[str, Any]] = None
+    created_at: Optional[datetime.datetime] = None
 
 
 class StudentProjectListResponse(BaseModel):

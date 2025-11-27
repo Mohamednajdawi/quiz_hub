@@ -22,22 +22,25 @@ from backend.database.sqlite_dal import (
     StudentProjectQuizReference,
     StudentProjectFlashcardReference,
     StudentProjectEssayReference,
+    StudentProjectMindMapReference,
     User,
     QuizTopic,
     QuizQuestion,
     FlashcardTopic,
     EssayQATopic,
     EssayQAQuestion,
+    MindMap,
     Subscription,
     GenerationJob,
 )
 from backend.api_routers.routers.auth_router import get_current_user_dependency
 from backend.utils.credits import consume_generation_token
-from backend.utils.utils import generate_quiz_from_pdf, generate_essay_qa_from_pdf
+from backend.utils.utils import generate_quiz_from_pdf, generate_essay_qa_from_pdf, generate_mind_map_from_pdf
 from backend.database.sqlite_dal import User as UserModel
 from backend.config.settings import get_app_config, get_pdf_storage_dir
 from backend.database.db import SessionLocal
 from pydantic import BaseModel
+from backend.utils.feedback_context import collect_feedback_context
 
 router = APIRouter()
 
@@ -72,6 +75,11 @@ class QuizGenerationJobRequest(BaseModel):
 class EssayGenerationJobRequest(BaseModel):
     num_questions: Optional[int] = None
     difficulty: Optional[str] = "medium"
+
+
+class MindMapGenerationJobRequest(BaseModel):
+    focus: Optional[str] = None
+    include_examples: bool = True
 
 
 class GenerationJobStatusResponse(BaseModel):
@@ -206,6 +214,7 @@ async def get_student_projects(
         quiz_refs = db.query(StudentProjectQuizReference).filter(StudentProjectQuizReference.project_id == project.id).all()
         flashcard_refs = db.query(StudentProjectFlashcardReference).filter(StudentProjectFlashcardReference.project_id == project.id).all()
         essay_refs = db.query(StudentProjectEssayReference).filter(StudentProjectEssayReference.project_id == project.id).all()
+        mind_map_refs = db.query(StudentProjectMindMapReference).filter(StudentProjectMindMapReference.project_id == project.id).all()
         
         project_data = {
             "id": project.id,
@@ -217,7 +226,8 @@ async def get_student_projects(
             "contents": contents_data,
             "quiz_references": [ref.quiz_topic_id for ref in quiz_refs],
             "flashcard_references": [ref.flashcard_topic_id for ref in flashcard_refs],
-            "essay_references": [ref.essay_topic_id for ref in essay_refs]
+            "essay_references": [ref.essay_topic_id for ref in essay_refs],
+            "mind_map_references": [ref.mind_map_id for ref in mind_map_refs],
         }
         projects_data.append(project_data)
     
@@ -269,6 +279,7 @@ async def get_student_project(
     quiz_refs = db.query(StudentProjectQuizReference).filter(StudentProjectQuizReference.project_id == project.id).all()
     flashcard_refs = db.query(StudentProjectFlashcardReference).filter(StudentProjectFlashcardReference.project_id == project.id).all()
     essay_refs = db.query(StudentProjectEssayReference).filter(StudentProjectEssayReference.project_id == project.id).all()
+    mind_map_refs = db.query(StudentProjectMindMapReference).filter(StudentProjectMindMapReference.project_id == project.id).all()
     
     project_data = {
         "id": project.id,
@@ -280,7 +291,8 @@ async def get_student_project(
         "contents": contents_data,
         "quiz_references": [ref.quiz_topic_id for ref in quiz_refs],
         "flashcard_references": [ref.flashcard_topic_id for ref in flashcard_refs],
-        "essay_references": [ref.essay_topic_id for ref in essay_refs]
+        "essay_references": [ref.essay_topic_id for ref in essay_refs],
+        "mind_map_references": [ref.mind_map_id for ref in mind_map_refs],
     }
     
     return JSONResponse(content=project_data)
@@ -360,6 +372,8 @@ async def delete_student_project(
         db.query(StudentProjectQuizReference).filter(StudentProjectQuizReference.project_id == project_id).delete()
         db.query(StudentProjectFlashcardReference).filter(StudentProjectFlashcardReference.project_id == project_id).delete()
         db.query(StudentProjectEssayReference).filter(StudentProjectEssayReference.project_id == project_id).delete()
+        db.query(StudentProjectMindMapReference).filter(StudentProjectMindMapReference.project_id == project_id).delete()
+        db.query(MindMap).filter(MindMap.project_id == project_id).delete()
         
         # Then delete content
         db.query(StudentProjectContent).filter(StudentProjectContent.project_id == project_id).delete()
@@ -386,6 +400,8 @@ async def delete_student_project(
             db.query(StudentProjectQuizReference).filter(StudentProjectQuizReference.project_id == project_id).delete()
             db.query(StudentProjectFlashcardReference).filter(StudentProjectFlashcardReference.project_id == project_id).delete()
             db.query(StudentProjectEssayReference).filter(StudentProjectEssayReference.project_id == project_id).delete()
+            db.query(StudentProjectMindMapReference).filter(StudentProjectMindMapReference.project_id == project_id).delete()
+            db.query(MindMap).filter(MindMap.project_id == project_id).delete()
             
             # Then delete content
             db.query(StudentProjectContent).filter(StudentProjectContent.project_id == project_id).delete()
@@ -617,10 +633,28 @@ def _process_quiz_generation_job(job_id: int) -> None:
         requested_questions = payload.get("num_questions")
         difficulty = payload.get("difficulty") or "medium"
 
+        existing_refs = (
+            session.query(StudentProjectQuizReference)
+            .filter(
+                StudentProjectQuizReference.project_id == job.project_id,
+                StudentProjectQuizReference.content_id == job.content_id,
+            )
+            .all()
+        )
+        scoped_topic_ids = [ref.quiz_topic_id for ref in existing_refs if ref.quiz_topic_id]
+        feedback_context = collect_feedback_context(
+            session,
+            user_id=user.id,
+            quiz_topic_ids=scoped_topic_ids or None,
+        )
+        if not feedback_context:
+            feedback_context = collect_feedback_context(session, user_id=user.id)
+
         quiz_data = generate_quiz_from_pdf(
             content.content_url,
             requested_questions if requested_questions and requested_questions > 0 else None,
             difficulty,
+            feedback=feedback_context,
         )
 
         quiz_topic = QuizTopic(
@@ -726,10 +760,28 @@ def _process_essay_generation_job(job_id: int) -> None:
         requested_questions = payload.get("num_questions") or 3
         difficulty = payload.get("difficulty") or "medium"
 
+        existing_refs = (
+            session.query(StudentProjectEssayReference)
+            .filter(
+                StudentProjectEssayReference.project_id == job.project_id,
+                StudentProjectEssayReference.content_id == job.content_id,
+            )
+            .all()
+        )
+        scoped_essay_topic_ids = [ref.essay_topic_id for ref in existing_refs if ref.essay_topic_id]
+        feedback_context = collect_feedback_context(
+            session,
+            user_id=user.id,
+            essay_topic_ids=scoped_essay_topic_ids or None,
+        )
+        if not feedback_context:
+            feedback_context = collect_feedback_context(session, user_id=user.id)
+
         essay_data = generate_essay_qa_from_pdf(
             content.content_url,
             requested_questions,
             difficulty,
+            feedback=feedback_context,
         )
 
         # Create essay topic
@@ -797,6 +849,154 @@ def _process_essay_generation_job(job_id: int) -> None:
                 job.updated_at = datetime.datetime.now()
                 session.commit()
         except Exception:  # pylint: disable=broad-except
+            session.rollback()
+    finally:
+        session.close()
+
+
+def _process_mind_map_generation_job(job_id: int) -> None:
+    session = SessionLocal()
+    try:
+        logging.info("[MIND MAP JOB] Starting mind map generation job %s", job_id)
+        job = session.query(GenerationJob).filter(GenerationJob.id == job_id).first()
+        if not job:
+            logging.error("[MIND MAP JOB] Job %s not found", job_id)
+            return
+
+        logging.debug("[MIND MAP JOB] Job %s found: user_id=%s, project_id=%s, content_id=%s", 
+                     job_id, job.user_id, job.project_id, job.content_id)
+
+        job.status = "in_progress"
+        job.updated_at = datetime.datetime.now()
+        session.commit()
+        logging.debug("[MIND MAP JOB] Job %s status set to 'in_progress'", job_id)
+
+        user = session.query(User).filter(User.id == job.user_id).first()
+        if not user:
+            logging.error("[MIND MAP JOB] User %s not found for job %s", job.user_id, job_id)
+            job.status = "failed"
+            job.error_message = "User not found"
+            job.completed_at = datetime.datetime.now()
+            job.updated_at = datetime.datetime.now()
+            session.commit()
+            return
+
+        logging.debug("[MIND MAP JOB] User %s validated for job %s", user.id, job_id)
+
+        content = session.query(StudentProjectContent).filter(
+            StudentProjectContent.id == job.content_id,
+            StudentProjectContent.project_id == job.project_id,
+        ).first()
+
+        if not content:
+            logging.error("[MIND MAP JOB] Content %s not found for job %s", job.content_id, job_id)
+            job.status = "failed"
+            job.error_message = "Content not found"
+            job.completed_at = datetime.datetime.now()
+            job.updated_at = datetime.datetime.now()
+            session.commit()
+            return
+
+        if content.content_type != "pdf" or not content.content_url:
+            logging.error("[MIND MAP JOB] Invalid content type for job %s: type=%s, url=%s", 
+                         job_id, content.content_type, bool(content.content_url))
+            job.status = "failed"
+            job.error_message = "Only PDF content is supported for mind map generation"
+            job.completed_at = datetime.datetime.now()
+            job.updated_at = datetime.datetime.now()
+            session.commit()
+            return
+
+        logging.info("[MIND MAP JOB] Processing PDF content: %s (content_id=%s)", 
+                    content.content_url, content.id)
+
+        payload = job.payload or {}
+        focus = payload.get("focus")
+        include_examples = payload.get("include_examples", True)
+        logging.debug("[MIND MAP JOB] Job %s payload: focus=%s, include_examples=%s", 
+                     job_id, bool(focus), include_examples)
+
+        feedback_context = collect_feedback_context(session, user_id=user.id)
+        if feedback_context:
+            logging.debug("[MIND MAP JOB] Collected feedback context (length: %d chars)", len(feedback_context))
+
+        logging.info("[MIND MAP JOB] Calling generate_mind_map_from_pdf for job %s", job_id)
+        mind_map_data = generate_mind_map_from_pdf(
+            content.content_url,
+            focus=focus,
+            feedback=feedback_context,
+        )
+
+        nodes_payload = mind_map_data.get("nodes") or []
+        original_node_count = len(nodes_payload)
+        if not include_examples:
+            for node in nodes_payload:
+                node.pop("examples", None)
+            logging.debug("[MIND MAP JOB] Removed examples from %d nodes", original_node_count)
+
+        logging.info("[MIND MAP JOB] Creating MindMap record for job %s", job_id)
+        mind_map = MindMap(
+            user_id=user.id,
+            project_id=job.project_id,
+            content_id=job.content_id,
+            title=mind_map_data.get("topic") or content.name,
+            category=mind_map_data.get("category"),
+            subcategory=mind_map_data.get("subcategory"),
+            central_idea=mind_map_data.get("central_idea") or (mind_map_data.get("topic") or content.name),
+            summary=mind_map_data.get("summary"),
+            key_concepts=mind_map_data.get("key_concepts") or [],
+            nodes=nodes_payload,
+            edges=mind_map_data.get("edges") or [],
+            connections=mind_map_data.get("connections") or [],
+            callouts=mind_map_data.get("callouts") or [],
+            recommended_next_steps=mind_map_data.get("recommended_next_steps") or [],
+            extra_metadata={
+                "focus": focus,
+                "include_examples": include_examples,
+                "source_content_id": job.content_id,
+            },
+            created_at=datetime.datetime.now(),
+            updated_at=datetime.datetime.now(),
+        )
+        session.add(mind_map)
+        session.flush()
+        logging.info("[MIND MAP JOB] MindMap record created with id=%s (title='%s')", 
+                    mind_map.id, mind_map.title)
+
+        mind_map_reference = StudentProjectMindMapReference(
+            project_id=job.project_id,
+            content_id=job.content_id,
+            mind_map_id=mind_map.id,
+            created_at=datetime.datetime.now(),
+        )
+        session.add(mind_map_reference)
+        logging.debug("[MIND MAP JOB] Created mind map reference for project %s, content %s", 
+                     job.project_id, job.content_id)
+
+        consume_generation_token(session, user)
+        logging.debug("[MIND MAP JOB] Consumed generation token for user %s", user.id)
+
+        job.status = "completed"
+        job.result_topic_id = mind_map.id
+        job.completed_at = datetime.datetime.now()
+        job.updated_at = datetime.datetime.now()
+        session.commit()
+
+        logging.info("[MIND MAP JOB] Mind map generation completed successfully: job_id=%s, mind_map_id=%s, nodes=%d, edges=%d", 
+                    job_id, mind_map.id, len(nodes_payload), len(mind_map_data.get("edges", [])))
+    except Exception as exc:  # pylint: disable=broad-except
+        logging.exception("[MIND MAP JOB] Mind map generation failed for job %s: %s", job_id, exc)
+        try:
+            job = session.query(GenerationJob).filter(GenerationJob.id == job_id).first()
+            if job:
+                logging.error("[MIND MAP JOB] Marking job %s as failed with error: %s", job_id, str(exc))
+                job.status = "failed"
+                job.error_message = str(exc)
+                job.completed_at = datetime.datetime.now()
+                job.updated_at = datetime.datetime.now()
+                session.commit()
+        except Exception as inner_exc:  # pylint: disable=broad-except
+            logging.error("[MIND MAP JOB] Failed to update job %s status after error: %s", job_id, str(inner_exc))
             session.rollback()
     finally:
         session.close()
@@ -909,6 +1109,10 @@ async def get_generation_job_status(
             essay = db.query(EssayQATopic).filter(EssayQATopic.id == job.result_topic_id).first()
             if essay:
                 result = {"essay_id": essay.id, "topic": essay.topic}
+        elif job.job_type == "mind_map":
+            mind_map = db.query(MindMap).filter(MindMap.id == job.result_topic_id).first()
+            if mind_map:
+                result = {"mind_map_id": mind_map.id, "topic": mind_map.title}
 
     return GenerationJobStatusResponse(
         job_id=job.id,
@@ -1000,6 +1204,87 @@ async def start_essay_generation_job(
     )
 
 
+@router.post(
+    "/student-projects/{project_id}/content/{content_id}/mind-map-generation",
+    tags=["Student Projects"],
+    status_code=202,
+)
+async def start_mind_map_generation_job(
+    project_id: int,
+    content_id: int,
+    request: MindMapGenerationJobRequest,
+    background_tasks: BackgroundTasks,
+    current_user: UserModel = Depends(get_current_user_dependency),
+    db: Session = Depends(get_db),
+) -> JSONResponse:
+    """Start an asynchronous mind map generation job for a project content."""
+    logging.info("[MIND MAP API] Starting mind map generation request: user_id=%s, project_id=%s, content_id=%s", 
+                current_user.id, project_id, content_id)
+    
+    project = db.query(StudentProject).filter(
+        StudentProject.id == project_id,
+        StudentProject.user_id == current_user.id,
+    ).first()
+
+    if not project:
+        logging.warning("[MIND MAP API] Project %s not found for user %s", project_id, current_user.id)
+        raise HTTPException(status_code=404, detail="Project not found")
+
+    content = db.query(StudentProjectContent).filter(
+        StudentProjectContent.id == content_id,
+        StudentProjectContent.project_id == project_id,
+    ).first()
+
+    if not content:
+        logging.warning("[MIND MAP API] Content %s not found for project %s", content_id, project_id)
+        raise HTTPException(status_code=404, detail="Content not found")
+
+    if content.content_type != "pdf" or not content.content_url:
+        logging.warning("[MIND MAP API] Invalid content type for mind map generation: type=%s, url=%s", 
+                       content.content_type, bool(content.content_url))
+        raise HTTPException(
+            status_code=400,
+            detail="Only PDF content can be used for mind map generation",
+        )
+
+    payload = {
+        "focus": request.focus,
+        "include_examples": request.include_examples,
+    }
+    logging.debug("[MIND MAP API] Request payload: focus=%s, include_examples=%s", 
+                 bool(request.focus), request.include_examples)
+
+    job = GenerationJob(
+        user_id=current_user.id,
+        project_id=project_id,
+        content_id=content_id,
+        job_type="mind_map",
+        status="pending",
+        payload=payload,
+        created_at=datetime.datetime.now(),
+        updated_at=datetime.datetime.now(),
+    )
+    db.add(job)
+    db.commit()
+    db.refresh(job)
+
+    logging.info("[MIND MAP API] Created generation job %s for user %s, project %s, content %s", 
+                job.id, current_user.id, project_id, content_id)
+
+    background_tasks.add_task(_process_mind_map_generation_job, job.id)
+    logging.debug("[MIND MAP API] Enqueued background task for job %s", job.id)
+
+    return JSONResponse(
+        content={
+            "job_id": job.id,
+            "status": job.status,
+            "job_type": job.job_type,
+            "message": "Mind map generation started. We'll notify you when it's ready.",
+        },
+        status_code=202,
+    )
+
+
 @router.delete("/student-projects/{project_id}/content/{content_id}", tags=["Student Projects"])
 async def delete_project_content(
     project_id: int,
@@ -1042,6 +1327,8 @@ async def delete_project_content(
         db.query(StudentProjectQuizReference).filter(StudentProjectQuizReference.content_id == content_id).delete()
         db.query(StudentProjectFlashcardReference).filter(StudentProjectFlashcardReference.content_id == content_id).delete()
         db.query(StudentProjectEssayReference).filter(StudentProjectEssayReference.content_id == content_id).delete()
+        db.query(StudentProjectMindMapReference).filter(StudentProjectMindMapReference.content_id == content_id).delete()
+        db.query(MindMap).filter(MindMap.content_id == content_id).delete()
         
         # Then delete the content
         db.delete(content)
@@ -1062,6 +1349,8 @@ async def delete_project_content(
             logging.warning(f"[STUDENT PROJECT] Trying alternative deletion method for content {content_id}")
             
             # Delete the content directly (references will be handled by cascade or manual cleanup)
+            db.query(StudentProjectMindMapReference).filter(StudentProjectMindMapReference.content_id == content_id).delete()
+            db.query(MindMap).filter(MindMap.content_id == content_id).delete()
             db.delete(content)
             db.commit()
             
@@ -1330,6 +1619,26 @@ async def get_project_generated_content(
                 "reference_created_at": ref.created_at.isoformat() if ref.created_at else None
             })
     
+    # Get mind map references
+    mind_map_references = db.query(StudentProjectMindMapReference).filter(
+        StudentProjectMindMapReference.project_id == project_id
+    ).all()
+
+    mind_maps = []
+    for ref in mind_map_references:
+        mind_map = db.query(MindMap).filter(MindMap.id == ref.mind_map_id).first()
+        if mind_map:
+            mind_maps.append({
+                "id": mind_map.id,
+                "title": mind_map.title,
+                "central_idea": mind_map.central_idea,
+                "category": mind_map.category,
+                "subcategory": mind_map.subcategory,
+                "node_count": len(mind_map.nodes or []),
+                "created_at": mind_map.created_at.isoformat() if mind_map.created_at else None,
+                "reference_created_at": ref.created_at.isoformat() if ref.created_at else None
+            })
+
     return JSONResponse(
         content={
             "project_id": project_id,
@@ -1337,9 +1646,11 @@ async def get_project_generated_content(
             "quizzes": quizzes,
             "flashcards": flashcards,
             "essays": essays,
+            "mind_maps": mind_maps,
             "total_quizzes": len(quizzes),
             "total_flashcards": len(flashcards),
-            "total_essays": len(essays)
+            "total_essays": len(essays),
+            "total_mind_maps": len(mind_maps)
         },
         headers={"Content-Type": "application/json; charset=utf-8"}
     )
@@ -1447,6 +1758,27 @@ async def get_content_generated_content(
                 "creation_timestamp": essay_topic.creation_timestamp.isoformat() if essay_topic.creation_timestamp else None,
                 "reference_created_at": ref.created_at.isoformat() if ref.created_at else None
             })
+
+    # Mind maps for this content
+    mind_map_references = db.query(StudentProjectMindMapReference).filter(
+        StudentProjectMindMapReference.project_id == project_id,
+        StudentProjectMindMapReference.content_id == content_id
+    ).all()
+
+    mind_maps = []
+    for ref in mind_map_references:
+        mind_map = db.query(MindMap).filter(MindMap.id == ref.mind_map_id).first()
+        if mind_map:
+            mind_maps.append({
+                "id": mind_map.id,
+                "title": mind_map.title,
+                "central_idea": mind_map.central_idea,
+                "category": mind_map.category,
+                "subcategory": mind_map.subcategory,
+                "node_count": len(mind_map.nodes or []),
+                "created_at": mind_map.created_at.isoformat() if mind_map.created_at else None,
+                "reference_created_at": ref.created_at.isoformat() if ref.created_at else None
+            })
     
     return JSONResponse(
         content={
@@ -1457,11 +1789,55 @@ async def get_content_generated_content(
             "quizzes": quizzes,
             "flashcards": flashcards,
             "essays": essays,
+            "mind_maps": mind_maps,
             "total_quizzes": len(quizzes),
             "total_flashcards": len(flashcards),
-            "total_essays": len(essays)
+            "total_essays": len(essays),
+            "total_mind_maps": len(mind_maps)
         },
         headers={"Content-Type": "application/json; charset=utf-8"}
+    )
+
+
+@router.get("/mind-maps/{mind_map_id}", tags=["Student Projects"])
+async def get_mind_map(
+    mind_map_id: int,
+    current_user: UserModel = Depends(get_current_user_dependency),
+    db: Session = Depends(get_db)
+) -> JSONResponse:
+    """Fetch a generated mind map."""
+    mind_map = (
+        db.query(MindMap)
+        .join(StudentProject, MindMap.project_id == StudentProject.id)
+        .filter(
+            MindMap.id == mind_map_id,
+            StudentProject.user_id == current_user.id,
+        )
+        .first()
+    )
+
+    if not mind_map:
+        raise HTTPException(status_code=404, detail="Mind map not found")
+
+    return JSONResponse(
+        content={
+            "id": mind_map.id,
+            "project_id": mind_map.project_id,
+            "content_id": mind_map.content_id,
+            "title": mind_map.title,
+            "category": mind_map.category,
+            "subcategory": mind_map.subcategory,
+            "central_idea": mind_map.central_idea,
+            "summary": mind_map.summary,
+            "key_concepts": mind_map.key_concepts or [],
+            "nodes": mind_map.nodes or [],
+            "edges": mind_map.edges or [],
+            "connections": mind_map.connections or [],
+            "callouts": mind_map.callouts or [],
+            "recommended_next_steps": mind_map.recommended_next_steps or [],
+            "metadata": mind_map.extra_metadata or {},
+            "created_at": mind_map.created_at.isoformat() if mind_map.created_at else None,
+        }
     )
 
 

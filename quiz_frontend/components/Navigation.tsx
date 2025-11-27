@@ -2,9 +2,10 @@
 
 import { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
-import { BookOpen, FileText, GraduationCap, Home, BarChart3, LogOut, User, ChevronDown, CreditCard, Sparkles, Shield, MoreVertical, Crown, Settings } from 'lucide-react';
+import { usePathname, useRouter } from 'next/navigation';
+import { BookOpen, FileText, GraduationCap, Home, BarChart3, LogOut, User, ChevronDown, CreditCard, Sparkles, Shield, MoreVertical, Crown, Settings, Menu, X, Bell } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
+import { useNotifications, type AppNotificationType } from '@/contexts/NotificationsContext';
 
 const studyTools = [
   { name: 'Quizzes', href: '/quizzes', icon: GraduationCap },
@@ -16,20 +17,57 @@ const navigation = [
   { name: 'Home', href: '/', icon: Home },
   { name: 'Dashboard', href: '/dashboard', icon: BarChart3 },
   { name: 'Student Hub', href: '/student-hub', icon: FileText },
-  { name: 'Pricing', href: '/pricing', icon: CreditCard },
 ];
 
-const adminNavigation = [
-  { name: 'Admin', href: '/admin', icon: Shield },
-];
+const notificationTypeStyles: Record<AppNotificationType, { iconBg: string; iconColor: string }> = {
+  quiz: { iconBg: 'bg-indigo-50', iconColor: 'text-indigo-600' },
+  flashcards: { iconBg: 'bg-emerald-50', iconColor: 'text-emerald-600' },
+  essay: { iconBg: 'bg-amber-50', iconColor: 'text-amber-600' },
+  mind_map: { iconBg: 'bg-sky-50', iconColor: 'text-sky-600' },
+  info: { iconBg: 'bg-slate-100', iconColor: 'text-slate-600' },
+};
+
+const renderNotificationIcon = (type: AppNotificationType) => {
+  switch (type) {
+    case 'quiz':
+      return GraduationCap;
+    case 'flashcards':
+      return BookOpen;
+    case 'essay':
+      return FileText;
+    case 'mind_map':
+      return Sparkles;
+    default:
+      return Sparkles;
+  }
+};
+
+const formatNotificationTime = (timestamp: string) => {
+  try {
+    const date = new Date(timestamp);
+    return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  } catch {
+    return '';
+  }
+};
 
 export function Navigation() {
   const pathname = usePathname();
+  const router = useRouter();
   const { isAuthenticated, user, logout, isAdmin } = useAuth();
+  const {
+    notifications,
+    unreadCount,
+    markNotificationAsRead,
+    markAllNotificationsAsRead,
+  } = useNotifications();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isNotificationOpen, setIsNotificationOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const userMenuRef = useRef<HTMLDivElement>(null);
+  const notificationRef = useRef<HTMLDivElement>(null);
 
   // Check if any study tool is active
   const isStudyToolActive = studyTools.some(tool => pathname === tool.href || pathname.startsWith(tool.href + '/'));
@@ -54,11 +92,43 @@ export function Navigation() {
       if (userMenuRef.current && !userMenuRef.current.contains(event.target as Node)) {
         setIsUserMenuOpen(false);
       }
+      if (notificationRef.current && !notificationRef.current.contains(event.target as Node)) {
+        setIsNotificationOpen(false);
+      }
     };
 
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
+
+  useEffect(() => {
+    setIsMobileMenuOpen(false);
+    setIsDropdownOpen(false);
+    setIsNotificationOpen(false);
+  }, [pathname]);
+
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth >= 768) {
+        setIsMobileMenuOpen(false);
+      }
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  useEffect(() => {
+    if (isMobileMenuOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [isMobileMenuOpen]);
 
   // Get user initials for avatar
   const getUserInitials = () => {
@@ -75,14 +145,27 @@ export function Navigation() {
     return 'U';
   };
 
+  const handleMobileNavigation = () => {
+    setIsMobileMenuOpen(false);
+    setIsDropdownOpen(false);
+  };
+
+  const handleNotificationClick = (notificationId: string, href?: string) => {
+    markNotificationAsRead(notificationId);
+    setIsNotificationOpen(false);
+    if (href) {
+      router.push(href);
+    }
+  };
+
   return (
-    <nav className="bg-white border-b border-gray-200 sticky top-0 z-40 backdrop-blur-sm bg-white/95">
+    <nav className="bg-white border-b border-[#e6e6e6] sticky top-0 z-40 backdrop-blur-sm bg-white/95 text-brand">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           {/* Logo */}
               <div className="flex-shrink-0 flex items-center">
             <Link href="/" className="flex items-center group">
-              <span className="text-2xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
+              <span className="text-2xl font-bold bg-gradient-to-r from-[#163172] to-[#2756c7] bg-clip-text text-transparent">
                 Quiz Hub
               </span>
             </Link>
@@ -95,7 +178,7 @@ export function Navigation() {
               .filter(item => {
                 // When not authenticated, only show Home and Pricing
                 if (!isAuthenticated) {
-                  return item.href === '/' || item.href === '/pricing';
+                  return item.href === '/';
                 }
                 // When authenticated, show all items
                 return true;
@@ -108,41 +191,19 @@ export function Navigation() {
                     href={item.href}
                     className={`group relative flex items-center px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
                       isActive
-                        ? 'bg-indigo-50 text-indigo-700'
-                        : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'
+                        ? 'bg-[#e6e6e6] text-[#163172]'
+                        : 'text-[#0e1f47] hover:bg-[#f2f2f2]'
                     }`}
                   >
-                    <item.icon className={`w-4 h-4 mr-2 transition-colors ${isActive ? 'text-indigo-600' : 'text-gray-500 group-hover:text-gray-700'}`} />
+                    <item.icon className={`w-4 h-4 mr-2 transition-colors ${isActive ? 'text-[#163172]' : 'text-[#596078] group-hover:text-[#0e1f47]'}`} />
                     <span>{item.name}</span>
                     {isActive && (
-                      <span className="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-1 h-1 bg-indigo-600 rounded-full" />
+                      <span className="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-1 h-1 bg-[#163172] rounded-full" />
                     )}
                   </Link>
                 );
               })}
             
-            {/* Admin Link - Only show if authenticated AND is admin */}
-            {isAuthenticated && isAdmin && adminNavigation.map((item) => {
-              const isActive = pathname === item.href || pathname.startsWith(item.href);
-                  return (
-                    <Link
-                      key={item.name}
-                      href={item.href}
-                  className={`group relative flex items-center px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
-                        isActive
-                      ? 'bg-red-50 text-red-700'
-                      : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'
-                  }`}
-                >
-                  <item.icon className={`w-4 h-4 mr-2 transition-colors ${isActive ? 'text-red-600' : 'text-gray-500 group-hover:text-gray-700'}`} />
-                  <span>{item.name}</span>
-                  {isActive && (
-                    <span className="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-1 h-1 bg-red-600 rounded-full" />
-                  )}
-                    </Link>
-                  );
-                })}
-                
                 {/* Study Tools Dropdown - Only show if authenticated */}
                 {isAuthenticated && (
                   <div className="relative" ref={dropdownRef}>
@@ -150,13 +211,13 @@ export function Navigation() {
                       onClick={() => setIsDropdownOpen(!isDropdownOpen)}
                   className={`group flex items-center px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
                         isStudyToolActive
-                      ? 'bg-indigo-50 text-indigo-700'
-                      : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'
+                      ? 'bg-[#e6e6e6] text-[#163172]'
+                      : 'text-[#0e1f47] hover:bg-[#f2f2f2]'
                       }`}
                     >
-                  <GraduationCap className={`w-4 h-4 mr-2 transition-colors ${isStudyToolActive ? 'text-indigo-600' : 'text-gray-500 group-hover:text-gray-700'}`} />
+                  <GraduationCap className={`w-4 h-4 mr-2 transition-colors ${isStudyToolActive ? 'text-[#163172]' : 'text-[#596078] group-hover:text-[#0e1f47]'}`} />
                   <span>Study Tools</span>
-                  <ChevronDown className={`w-4 h-4 ml-2 transition-all duration-200 ${isDropdownOpen ? 'rotate-180' : ''} ${isStudyToolActive ? 'text-indigo-600' : 'text-gray-500'}`} />
+                  <ChevronDown className={`w-4 h-4 ml-2 transition-all duration-200 ${isDropdownOpen ? 'rotate-180' : ''} ${isStudyToolActive ? 'text-[#163172]' : 'text-[#596078]'}`} />
                     </button>
                     
                     {isDropdownOpen && (
@@ -171,11 +232,11 @@ export function Navigation() {
                                 onClick={() => setIsDropdownOpen(false)}
                             className={`flex items-center px-4 py-2.5 text-sm transition-colors ${
                                   isActive
-                                    ? 'bg-indigo-50 text-indigo-700 font-medium'
-                                : 'text-gray-700 hover:bg-gray-50'
+                                    ? 'bg-[#e6e6e6] text-[#163172] font-medium'
+                                : 'text-[#0e1f47] hover:bg-[#f2f2f2]'
                                 }`}
                               >
-                            <tool.icon className={`w-4 h-4 mr-3 ${isActive ? 'text-indigo-600' : 'text-gray-400'}`} />
+                            <tool.icon className={`w-4 h-4 mr-3 ${isActive ? 'text-[#163172]' : 'text-[#9fa4b4]'}`} />
                                 {tool.name}
                               </Link>
                             );
@@ -188,51 +249,143 @@ export function Navigation() {
               </div>
 
           {/* Right Side - User Actions */}
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
               {isAuthenticated ? (
                 <>
-                {/* User Info - Desktop Only */}
-                <div className="hidden lg:flex items-center gap-3 px-3 py-1.5 rounded-lg bg-gray-50">
-                  {/* Avatar */}
-                  <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-semibold ${
-                    isPro 
-                      ? 'bg-gradient-to-br from-yellow-400 to-orange-500' 
-                      : 'bg-gradient-to-br from-indigo-500 to-purple-600'
-                  }`}>
-                    {isPro ? <Crown className="w-4 h-4" /> : getUserInitials()}
-                  </div>
-                  <div className="flex flex-col min-w-0">
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm font-medium text-gray-900 truncate max-w-[120px]">
-                        {displayName}
+                {/* Notifications */}
+                <div className="relative" ref={notificationRef}>
+                  <button
+                    type="button"
+                    onClick={() => setIsNotificationOpen(prev => !prev)}
+                    className={`flex items-center justify-center w-10 h-10 rounded-lg text-[#0e1f47] hover:bg-[#e6e6e6] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#1e439d] transition-colors ${
+                      isNotificationOpen ? 'bg-[#e6e6e6]' : ''
+                    }`}
+                    aria-label="Notifications"
+                    aria-haspopup="menu"
+                    aria-expanded={isNotificationOpen}
+                  >
+                    <Bell className="w-5 h-5" />
+                    {unreadCount > 0 && (
+                      <span className="absolute top-1 right-1 inline-flex items-center justify-center px-1.5 py-0.5 rounded-full text-[10px] font-semibold bg-red-500 text-white leading-none">
+                        {unreadCount > 9 ? '9+' : unreadCount}
                       </span>
-                      {isPro && (
-                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-gradient-to-r from-yellow-400 to-orange-500 text-white">
-                          Pro
-                        </span>
-                      )}
+                    )}
+                  </button>
+
+                  {isNotificationOpen && (
+                    <div className="absolute right-0 mt-2 w-80 max-w-[90vw] rounded-xl shadow-lg bg-white ring-1 ring-black/5 z-50 overflow-hidden">
+                      <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
+                        <div className="flex flex-col">
+                          <span className="text-sm font-semibold text-gray-900">Notifications</span>
+                          <span className="text-xs text-gray-500">
+                            {unreadCount > 0
+                              ? `${unreadCount} new update${unreadCount === 1 ? '' : 's'}`
+                              : 'You are all caught up'}
+                          </span>
+                        </div>
+                        {notifications.length > 0 && (
+                          <button
+                            type="button"
+                            onClick={markAllNotificationsAsRead}
+                            className="text-xs font-medium text-indigo-600 hover:text-indigo-700"
+                          >
+                            Mark all read
+                          </button>
+                        )}
+                      </div>
+                      <div className="max-h-80 overflow-y-auto">
+                        {notifications.length === 0 ? (
+                          <div className="px-4 py-6 text-center text-sm text-gray-500">
+                            No notifications yet.
+                          </div>
+                        ) : (
+                          notifications.map(notification => {
+                            const IconComponent = renderNotificationIcon(notification.type);
+                            const { iconBg, iconColor } = notificationTypeStyles[notification.type];
+                            return (
+                              <button
+                                type="button"
+                                key={notification.id}
+                                onClick={() => handleNotificationClick(notification.id, notification.href)}
+                                className={`w-full flex items-start gap-3 px-4 py-3 transition-colors ${
+                                  notification.read ? 'bg-white hover:bg-gray-50' : 'bg-indigo-50/60 hover:bg-indigo-50'
+                                }`}
+                              >
+                                <span className={`flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center ${iconBg}`}>
+                                  <IconComponent className={`w-5 h-5 ${iconColor}`} />
+                                </span>
+                                <span className="flex-1 min-w-0 text-left">
+                                  <span className="block text-sm font-semibold text-gray-900 truncate">
+                                    {notification.title}
+                                  </span>
+                                  <span className="block text-xs text-gray-600 truncate">
+                                    {notification.description}
+                                  </span>
+                                  <span className="block text-[11px] text-gray-400 mt-1">
+                                    {formatNotificationTime(notification.createdAt)}
+                                  </span>
+                                </span>
+                                {!notification.read && <span className="w-2 h-2 rounded-full bg-indigo-600 mt-1.5" />}
+                              </button>
+                            );
+                          })
+                        )}
+                      </div>
                     </div>
-                    {!isPro && remainingGenerations !== null && (
-                      <div className="flex items-center gap-1 text-xs text-indigo-600">
-                        <Sparkles className="h-3 w-3" />
-                        <span>{remainingGenerations} left</span>
-                      </div>
-                    )}
-                    {isPro && subscription?.plan_type && (
-                      <div className="text-xs text-gray-500 capitalize">
-                        {subscription.plan_type} Plan
-                        {typeof subscription.remaining_generations === 'number' ? ` (${subscription.remaining_generations} left)` : ''}
-                      </div>
-                    )}
-                  </div>
+                  )}
                 </div>
 
                 {/* User Menu Dropdown */}
                 <div className="relative" ref={userMenuRef}>
                   <button
+                    type="button"
                     onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
-                    className="flex items-center justify-center w-10 h-10 rounded-lg text-gray-700 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors"
+                    className={`hidden lg:flex items-center gap-3 px-3 py-1.5 rounded-lg bg-brand-surface hover:bg-[#eef0fb] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#1e439d] transition-colors ${
+                      isUserMenuOpen ? 'ring-2 ring-offset-2 ring-[#1e439d]' : ''
+                    }`}
+                    aria-haspopup="menu"
+                    aria-expanded={isUserMenuOpen}
+                  >
+                    <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-semibold ${
+                      isPro 
+                        ? 'bg-gradient-to-br from-yellow-400 to-orange-500' 
+                        : 'bg-gradient-to-r from-[#163172] to-[#2756c7]'
+                    }`}>
+                      {isPro ? <Crown className="w-4 h-4" /> : getUserInitials()}
+                    </div>
+                    <div className="flex flex-col min-w-0 text-left">
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-medium text-brand truncate max-w-[120px]">
+                          {displayName}
+                        </span>
+                        {isPro && (
+                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-gradient-to-r from-yellow-400 to-orange-500 text-white">
+                            Pro
+                          </span>
+                        )}
+                      </div>
+                      {!isPro && remainingGenerations !== null && (
+                        <div className="flex items-center gap-1 text-xs text-[#163172]">
+                          <Sparkles className="h-3 w-3" />
+                          <span>{remainingGenerations} left</span>
+                        </div>
+                      )}
+                      {isPro && subscription?.plan_type && (
+                        <div className="text-xs text-gray-500 capitalize">
+                          {subscription.plan_type} Plan
+                          {typeof subscription.remaining_generations === 'number' ? ` (${subscription.remaining_generations} left)` : ''}
+                        </div>
+                      )}
+                    </div>
+                    <MoreVertical className="w-5 h-5 text-[#596078]" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
+                    className="flex lg:hidden items-center justify-center w-10 h-10 rounded-lg text-[#0e1f47] hover:bg-[#e6e6e6] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#1e439d] transition-colors"
                     aria-label="User menu"
+                    aria-haspopup="menu"
+                    aria-expanded={isUserMenuOpen}
                   >
                     <MoreVertical className="w-5 h-5" />
                   </button>
@@ -307,10 +460,20 @@ export function Navigation() {
                           <User className="w-4 h-4 mr-3 text-gray-400" />
                           Profile Settings
                         </Link>
+                        {isAdmin && (
+                          <Link
+                            href="/admin"
+                            onClick={() => setIsUserMenuOpen(false)}
+                            className="flex items-center px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                          >
+                            <Shield className="w-4 h-4 mr-3 text-gray-400" />
+                            Admin Dashboard
+                          </Link>
+                        )}
                         
                         {hasSubscription ? (
                           <Link
-                            href="/pricing?manage=true"
+                            href="/dashboard/billing"
                             onClick={() => setIsUserMenuOpen(false)}
                             className="flex items-center px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
                           >
@@ -349,223 +512,233 @@ export function Navigation() {
                 <div className="flex items-center gap-2">
                   <Link
                     href="/login"
-                  className="px-4 py-2 text-sm font-medium text-gray-700 hover:text-gray-900 transition-colors"
+                  className="px-4 py-2 text-sm font-medium text-[#0e1f47] hover:text-[#163172] transition-colors"
                   >
                     Login
                   </Link>
                   <Link
                     href="/register"
-                  className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors"
+                  className="px-4 py-2 text-sm font-medium text-white bg-[#2756c7] rounded-lg hover:bg-[#1e439d] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#163172] transition-colors"
                   >
                     Sign Up
                   </Link>
                 </div>
               )}
+            <button
+              onClick={() => setIsMobileMenuOpen((prev) => !prev)}
+              className="md:hidden flex items-center justify-center w-10 h-10 rounded-lg text-[#0e1f47] hover:bg-[#e6e6e6] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#1e439d] transition-colors"
+              aria-label="Toggle navigation menu"
+              aria-expanded={isMobileMenuOpen}
+              aria-controls="mobile-navigation"
+            >
+              {isMobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+            </button>
           </div>
         </div>
       </div>
 
       {/* Mobile menu */}
-      <div className="md:hidden border-t border-gray-200">
-        <div className="px-2 pt-2 pb-3 space-y-1">
-          {/* Filter navigation items based on authentication */}
-          {navigation
-            .filter(item => {
-              // When not authenticated, only show Home and Pricing
-              if (!isAuthenticated) {
-                return item.href === '/' || item.href === '/pricing';
-              }
-              // When authenticated, show all items
-              return true;
-            })
-            .map((item) => {
-              const isActive = pathname === item.href || (item.href !== '/' && pathname.startsWith(item.href));
-              return (
+      {isMobileMenuOpen && (
+        <div id="mobile-navigation" className="md:hidden border-t border-gray-200 bg-white shadow-inner">
+          <div className="px-2 pt-2 pb-3 space-y-1">
+            {/* Filter navigation items based on authentication */}
+            {navigation
+              .filter(item => {
+                if (!isAuthenticated) {
+                  return item.href === '/';
+                }
+                return true;
+              })
+              .map((item) => {
+                const isActive = pathname === item.href || (item.href !== '/' && pathname.startsWith(item.href));
+                return (
+                  <Link
+                    key={item.name}
+                    href={item.href}
+                    onClick={handleMobileNavigation}
+                    className={`flex items-center px-3 py-2.5 rounded-lg text-base font-medium transition-colors ${
+                      isActive
+                        ? 'bg-indigo-50 text-indigo-700'
+                        : 'text-gray-700 hover:bg-gray-50'
+                    }`}
+                  >
+                    <item.icon className={`w-5 h-5 mr-3 ${isActive ? 'text-indigo-600' : 'text-gray-400'}`} />
+                    {item.name}
+                  </Link>
+                );
+              })}
+            
+            {/* Study Tools Dropdown for Mobile - Only show if authenticated */}
+            {isAuthenticated && (
+              <div>
+                <button
+                  onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                  className={`flex items-center justify-between w-full px-3 py-2.5 rounded-lg text-base font-medium transition-colors ${
+                    isStudyToolActive
+                      ? 'bg-indigo-50 text-indigo-700'
+                      : 'text-gray-700 hover:bg-gray-50'
+                  }`}
+                  aria-expanded={isDropdownOpen}
+                >
+                  <span className="flex items-center">
+                    <GraduationCap className={`w-5 h-5 mr-3 ${isStudyToolActive ? 'text-indigo-600' : 'text-gray-400'}`} />
+                    Study Tools
+                  </span>
+                  <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${isDropdownOpen ? 'rotate-180' : ''}`} />
+                </button>
+                
+                {isDropdownOpen && (
+                  <div className="pl-4 mt-1 space-y-1">
+                    {studyTools.map((tool) => {
+                      const isActive = pathname === tool.href || pathname.startsWith(tool.href + '/');
+                      return (
+                        <Link
+                          key={tool.name}
+                          href={tool.href}
+                          onClick={handleMobileNavigation}
+                          className={`flex items-center px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                            isActive
+                              ? 'bg-indigo-50 text-indigo-700'
+                              : 'text-gray-600 hover:bg-gray-50'
+                          }`}
+                        >
+                          <tool.icon className={`w-4 h-4 mr-3 ${isActive ? 'text-indigo-600' : 'text-gray-400'}`} />
+                          {tool.name}
+                        </Link>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            )}
+            
+            {isAuthenticated ? (
+              <div className="pt-2 border-t border-gray-200 space-y-1">
+                {/* User Info */}
+                <div className="px-3 py-3 bg-gray-50 rounded-lg">
+                  <div className="flex items-center gap-3">
+                    <div className={`flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center text-white text-sm font-semibold ${
+                      isPro 
+                        ? 'bg-gradient-to-br from-yellow-400 to-orange-500' 
+                        : 'bg-gradient-to-br from-indigo-500 to-purple-600'
+                    }`}>
+                      {isPro ? <Crown className="w-5 h-5" /> : getUserInitials()}
+                    </div>
+                    <div className="flex flex-col min-w-0 flex-1">
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-medium text-gray-900 truncate">
+                          {displayName}
+                        </span>
+                        {isPro && (
+                          <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-semibold bg-gradient-to-r from-yellow-400 to-orange-500 text-white">
+                            Pro
+                          </span>
+                        )}
+                      </div>
+                      {!isPro && remainingGenerations !== null && (
+                        <div className="flex items-center gap-1 mt-1 text-xs text-indigo-600">
+                          <Sparkles className="h-3 w-3" />
+                          <span>{remainingGenerations} free generation{remainingGenerations === 1 ? '' : 's'} left</span>
+                        </div>
+                      )}
+                      {isPro && subscription?.plan_type && (
+                        <div className="text-xs text-gray-500 mt-1 capitalize">
+                          {subscription.plan_type} Plan
+                          {typeof subscription.remaining_generations === 'number' ? ` (${subscription.remaining_generations} left)` : ''}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                  {isPro && subscription && (
+                    <div className="mt-2 px-2 py-1.5 rounded-md bg-gradient-to-r from-yellow-50 to-orange-50 border border-yellow-200">
+                      {subscription.cancel_at_period_end ? (
+                        <div className="text-xs text-orange-600">
+                          Subscription cancels on {subscription.current_period_end ? new Date(subscription.current_period_end).toLocaleDateString() : 'period end'}
+                        </div>
+                      ) : subscription.current_period_end && (
+                        <div className="text-xs text-gray-600">
+                          Renews {new Date(subscription.current_period_end).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+                
                 <Link
-                  key={item.name}
-                  href={item.href}
+                  href="/profile"
+                  onClick={handleMobileNavigation}
                   className={`flex items-center px-3 py-2.5 rounded-lg text-base font-medium transition-colors ${
-                    isActive
+                    pathname.startsWith('/profile')
                       ? 'bg-indigo-50 text-indigo-700'
                       : 'text-gray-700 hover:bg-gray-50'
                   }`}
                 >
-                  <item.icon className={`w-5 h-5 mr-3 ${isActive ? 'text-indigo-600' : 'text-gray-400'}`} />
-                  {item.name}
+                  <User className="w-5 h-5 mr-3 text-gray-400" />
+                  Profile
                 </Link>
-              );
-            })}
-          
-          {/* Admin Link for Mobile */}
-          {isAuthenticated && isAdmin && adminNavigation.map((item) => {
-            const isActive = pathname === item.href || pathname.startsWith(item.href);
-            return (
-              <Link
-                key={item.name}
-                href={item.href}
-                className={`flex items-center px-3 py-2.5 rounded-lg text-base font-medium transition-colors ${
-                  isActive
-                    ? 'bg-red-50 text-red-700'
-                    : 'text-gray-700 hover:bg-gray-50'
-                }`}
-              >
-                <item.icon className={`w-5 h-5 mr-3 ${isActive ? 'text-red-600' : 'text-gray-400'}`} />
-                {item.name}
-              </Link>
-            );
-          })}
-          
-          {/* Study Tools Dropdown for Mobile - Only show if authenticated */}
-          {isAuthenticated && (
-            <div>
-              <button
-                onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                className={`flex items-center justify-between w-full px-3 py-2.5 rounded-lg text-base font-medium transition-colors ${
-                  isStudyToolActive
-                    ? 'bg-indigo-50 text-indigo-700'
-                    : 'text-gray-700 hover:bg-gray-50'
-                }`}
-              >
-                <span className="flex items-center">
-                  <GraduationCap className={`w-5 h-5 mr-3 ${isStudyToolActive ? 'text-indigo-600' : 'text-gray-400'}`} />
-                  Study Tools
-                </span>
-                <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${isDropdownOpen ? 'rotate-180' : ''}`} />
-              </button>
-              
-              {isDropdownOpen && (
-                <div className="pl-4 mt-1 space-y-1">
-                  {studyTools.map((tool) => {
-                    const isActive = pathname === tool.href || pathname.startsWith(tool.href + '/');
-                    return (
-                      <Link
-                        key={tool.name}
-                        href={tool.href}
-                        onClick={() => setIsDropdownOpen(false)}
-                        className={`flex items-center px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-                          isActive
-                            ? 'bg-indigo-50 text-indigo-700'
-                            : 'text-gray-600 hover:bg-gray-50'
-                        }`}
-                      >
-                        <tool.icon className={`w-4 h-4 mr-3 ${isActive ? 'text-indigo-600' : 'text-gray-400'}`} />
-                        {tool.name}
-                      </Link>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
-          )}
-          
-          {isAuthenticated ? (
-            <div className="pt-2 border-t border-gray-200 space-y-1">
-              {/* User Info */}
-              <div className="px-3 py-3 bg-gray-50 rounded-lg">
-                <div className="flex items-center gap-3">
-                  <div className={`flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center text-white text-sm font-semibold ${
-                    isPro 
-                      ? 'bg-gradient-to-br from-yellow-400 to-orange-500' 
-                      : 'bg-gradient-to-br from-indigo-500 to-purple-600'
-                  }`}>
-                    {isPro ? <Crown className="w-5 h-5" /> : getUserInitials()}
-                  </div>
-                  <div className="flex flex-col min-w-0 flex-1">
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm font-medium text-gray-900 truncate">
-                        {displayName}
-                      </span>
-                      {isPro && (
-                        <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-semibold bg-gradient-to-r from-yellow-400 to-orange-500 text-white">
-                          Pro
-                        </span>
-                      )}
-                    </div>
-                    {!isPro && remainingGenerations !== null && (
-                      <div className="flex items-center gap-1 mt-1 text-xs text-indigo-600">
-                        <Sparkles className="h-3 w-3" />
-                        <span>{remainingGenerations} free generation{remainingGenerations === 1 ? '' : 's'} left</span>
-                      </div>
-                    )}
-                    {isPro && subscription?.plan_type && (
-                      <div className="text-xs text-gray-500 mt-1 capitalize">
-                        {subscription.plan_type} Plan
-                        {typeof subscription.remaining_generations === 'number' ? ` (${subscription.remaining_generations} left)` : ''}
-                      </div>
-                    )}
-                  </div>
-                </div>
-                {isPro && subscription && (
-                  <div className="mt-2 px-2 py-1.5 rounded-md bg-gradient-to-r from-yellow-50 to-orange-50 border border-yellow-200">
-                    {subscription.cancel_at_period_end ? (
-                      <div className="text-xs text-orange-600">
-                        Subscription cancels on {subscription.current_period_end ? new Date(subscription.current_period_end).toLocaleDateString() : 'period end'}
-                      </div>
-                    ) : subscription.current_period_end && (
-                      <div className="text-xs text-gray-600">
-                        Renews {new Date(subscription.current_period_end).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-                      </div>
-                    )}
-                  </div>
+                {isAdmin && (
+                  <Link
+                    href="/admin"
+                    onClick={handleMobileNavigation}
+                    className="flex items-center px-3 py-2.5 rounded-lg text-base font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+                  >
+                    <Shield className="w-5 h-5 mr-3 text-gray-400" />
+                    Admin Dashboard
+                  </Link>
                 )}
+                
+                {hasSubscription ? (
+                  <Link
+                    href="/dashboard/billing"
+                    onClick={handleMobileNavigation}
+                    className="flex items-center px-3 py-2.5 rounded-lg text-base font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+                  >
+                    <Settings className="w-5 h-5 mr-3 text-gray-400" />
+                    Manage Subscription
+                  </Link>
+                ) : (
+                  <Link
+                    href="/pricing"
+                    onClick={handleMobileNavigation}
+                    className="flex items-center px-3 py-2.5 rounded-lg text-base font-medium text-indigo-600 hover:bg-indigo-50 transition-colors"
+                  >
+                    <Crown className="w-5 h-5 mr-3" />
+                    Upgrade to Pro
+                  </Link>
+                )}
+                
+                <button
+                  onClick={() => {
+                    handleMobileNavigation();
+                    logout();
+                  }}
+                  className="flex items-center w-full px-3 py-2.5 rounded-lg text-base font-medium text-red-600 hover:bg-red-50 transition-colors"
+                >
+                  <LogOut className="w-5 h-5 mr-3" />
+                  Sign Out
+                </button>
               </div>
-              
-              <Link
-                href="/profile"
-                className={`flex items-center px-3 py-2.5 rounded-lg text-base font-medium transition-colors ${
-                  pathname.startsWith('/profile')
-                    ? 'bg-indigo-50 text-indigo-700'
-                    : 'text-gray-700 hover:bg-gray-50'
-                }`}
-              >
-                <User className="w-5 h-5 mr-3 text-gray-400" />
-                Profile
-              </Link>
-              
-              {hasSubscription ? (
+            ) : (
+              <div className="pt-2 border-t border-gray-200 space-y-1">
                 <Link
-                  href="/pricing?manage=true"
+                  href="/login"
+                  onClick={handleMobileNavigation}
                   className="flex items-center px-3 py-2.5 rounded-lg text-base font-medium text-gray-700 hover:bg-gray-50 transition-colors"
                 >
-                  <Settings className="w-5 h-5 mr-3 text-gray-400" />
-                  Manage Subscription
+                  Login
                 </Link>
-              ) : (
                 <Link
-                  href="/pricing"
-                  className="flex items-center px-3 py-2.5 rounded-lg text-base font-medium text-indigo-600 hover:bg-indigo-50 transition-colors"
+                  href="/register"
+                  onClick={handleMobileNavigation}
+                  className="flex items-center px-3 py-2.5 rounded-lg text-base font-medium text-white bg-indigo-600 hover:bg-indigo-700 transition-colors"
                 >
-                  <Crown className="w-5 h-5 mr-3" />
-                  Upgrade to Pro
+                  Sign Up
                 </Link>
-              )}
-              
-              <button
-                onClick={logout}
-                className="flex items-center w-full px-3 py-2.5 rounded-lg text-base font-medium text-red-600 hover:bg-red-50 transition-colors"
-              >
-                <LogOut className="w-5 h-5 mr-3" />
-                Sign Out
-              </button>
-            </div>
-          ) : (
-            <div className="pt-2 border-t border-gray-200 space-y-1">
-              <Link
-                href="/login"
-                className="flex items-center px-3 py-2.5 rounded-lg text-base font-medium text-gray-700 hover:bg-gray-50 transition-colors"
-              >
-                Login
-              </Link>
-              <Link
-                href="/register"
-                className="flex items-center px-3 py-2.5 rounded-lg text-base font-medium text-white bg-indigo-600 hover:bg-indigo-700 transition-colors"
-              >
-                Sign Up
-              </Link>
-            </div>
-          )}
+              </div>
+            )}
+          </div>
         </div>
-      </div>
+      )}
     </nav>
   );
 }
