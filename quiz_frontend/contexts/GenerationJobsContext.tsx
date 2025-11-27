@@ -20,6 +20,7 @@ interface ActiveFlashcardTask extends FlashcardTaskInput {
   cacheId: string;
   startedAt: string;
   status: FlashcardTaskStatus;
+  errorMessage?: string;
 }
 
 interface TrackedJob {
@@ -35,6 +36,7 @@ interface GenerationJobsContextValue {
   registerJob: (job: Omit<TrackedJob, 'createdAt'>) => void;
   startFlashcardGeneration: (task: FlashcardTaskInput) => Promise<string>;
   flashcardTasks: ActiveFlashcardTask[];
+  dismissFlashcardTask: (cacheId: string) => void;
 }
 
 const GenerationJobsContext = createContext<GenerationJobsContextValue | undefined>(undefined);
@@ -247,10 +249,10 @@ export function GenerationJobsProvider({ children }: { children: ReactNode }) {
           startedAt,
           status: 'pending',
         },
-        ...prev,
+        ...prev.filter((task) => task.cacheId !== cacheId),
       ]);
 
-      const run = async () => {
+      const run = async (): Promise<string> => {
         try {
           const data = await studentProjectsApi.generateFlashcardsFromContent(
             projectId,
@@ -264,6 +266,11 @@ export function GenerationJobsProvider({ children }: { children: ReactNode }) {
             contentName,
             numCards,
           });
+          setFlashcardTasks((prev) =>
+            prev.map((task) =>
+              task.cacheId === cacheId ? { ...task, status: 'completed', errorMessage: undefined } : task
+            )
+          );
           addNotification({
             type: 'flashcards',
             title: 'Flashcards ready',
@@ -271,32 +278,41 @@ export function GenerationJobsProvider({ children }: { children: ReactNode }) {
             href: `/flashcards/view?cacheId=${encodeURIComponent(cacheId)}&projectId=${projectId}`,
             meta: { cacheId, projectId, contentId },
           });
+          return cacheId;
         } catch (error: unknown) {
           console.warn('Flashcard generation failed', error);
           const message =
             (error as any)?.response?.data?.detail ??
             (error instanceof Error ? error.message : 'Failed to generate flashcards');
+          setFlashcardTasks((prev) =>
+            prev.map((task) =>
+              task.cacheId === cacheId ? { ...task, status: 'failed', errorMessage: message } : task
+            )
+          );
           addNotification({
             type: 'info',
             title: 'Flashcard generation failed',
             description: message,
             meta: { cacheId, projectId, contentId },
           });
-        } finally {
-          setFlashcardTasks((prev) => prev.filter((task) => task.cacheId !== cacheId));
+          throw error instanceof Error ? error : new Error(message);
         }
       };
 
-      run();
-      return cacheId;
+      return run();
     },
     [addNotification, persistFlashcardPayload, user?.id]
   );
+
+  const dismissFlashcardTask = useCallback((cacheId: string) => {
+    setFlashcardTasks((prev) => prev.filter((task) => task.cacheId !== cacheId));
+  }, []);
 
   const value: GenerationJobsContextValue = {
     registerJob,
     startFlashcardGeneration,
     flashcardTasks,
+    dismissFlashcardTask,
   };
 
   return (

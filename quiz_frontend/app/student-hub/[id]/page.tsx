@@ -861,7 +861,17 @@ function ProjectDetailContent() {
   const [readyEssays, setReadyEssays] = useState<Array<{ jobId: number; essayId: number; topic: string; contentName: string }>>([]);
   const [readyMindMaps, setReadyMindMaps] = useState<Array<{ jobId: number; mindMapId: number; title: string; contentName: string }>>([]);
   const activeJobsRef = useRef(activeJobs);
-  const { registerJob, startFlashcardGeneration, flashcardTasks } = useGenerationJobs();
+  const { registerJob, startFlashcardGeneration, flashcardTasks, dismissFlashcardTask } = useGenerationJobs();
+  const readyFlashcards = flashcardTasks.filter((task) => task.status === 'completed');
+  const failedFlashcards = flashcardTasks.filter((task) => task.status === 'failed');
+  const handleOpenFlashcardCache = useCallback(
+    (cacheId: string) => {
+      dismissFlashcardTask(cacheId);
+      router.push(`/flashcards/view?cacheId=${encodeURIComponent(cacheId)}&projectId=${projectId}`);
+    },
+    [dismissFlashcardTask, projectId, router]
+  );
+
   const activeJobsStorageKey = useMemo(
     () => (projectId ? `quizhub_active_jobs_${projectId}` : null),
     [projectId]
@@ -1066,17 +1076,9 @@ function ProjectDetailContent() {
     message: backgroundJobMessages[job.jobType],
   }));
 
-  const flashcardStatusItems: GenerationStatusItem[] = flashcardTasks.map((task) => ({
-    id: `flash-${task.cacheId}`,
-    type: 'flashcards',
-    contentName: task.contentName,
-    message: `Creating ${task.numCards} flashcards... you'll get a ping when they're ready.`,
-  }));
-
   const generationStatusItems = [
     ...pendingStatusItems,
     ...activeJobItems,
-    ...flashcardStatusItems,
   ];
 
   // Request notification permission on mount
@@ -1114,7 +1116,11 @@ function ProjectDetailContent() {
 
         statuses.forEach((status, index) => {
           const jobMeta = jobsSnapshot[index];
-          if (status.status === 'completed' && status.result && (status.result.quiz_id || status.result.essay_id)) {
+          if (
+            status.status === 'completed' &&
+            status.result &&
+            (status.result.quiz_id || status.result.essay_id || status.result.mind_map_id)
+          ) {
             completed.push({ job: jobMeta, status });
           } else if (status.status === 'failed') {
             failed.push({ job: jobMeta, status });
@@ -1520,6 +1526,43 @@ function ProjectDetailContent() {
               >
                 Open Mind Map
               </Button>
+            </Alert>
+          ))}
+
+          {readyFlashcards.map((task) => (
+            <Alert key={task.cacheId} type="success" className="mb-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+              <div>
+                <p className="font-medium text-gray-900">
+                  Flashcards ready: <span className="text-indigo-700">{task.contentName}</span>
+                </p>
+                <p className="text-sm text-gray-700">
+                  {task.numCards} cards generated. Click below to review them now.
+                </p>
+              </div>
+              <Button
+                variant="primary"
+                onClick={() => handleOpenFlashcardCache(task.cacheId)}
+              >
+                Open Flashcards
+              </Button>
+            </Alert>
+          ))}
+
+          {failedFlashcards.map((task) => (
+            <Alert key={`${task.cacheId}-failed`} type="error" className="mb-4 flex flex-col gap-2">
+              <div>
+                <p className="font-medium text-gray-900">
+                  Flashcard generation failed for <span className="text-indigo-700">{task.contentName}</span>
+                </p>
+                <p className="text-sm text-gray-700">
+                  {task.errorMessage || 'Something went wrong. Please try again.'}
+                </p>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <Button variant="outline" size="sm" onClick={() => dismissFlashcardTask(task.cacheId)}>
+                  Dismiss
+                </Button>
+              </div>
             </Alert>
           ))}
 
