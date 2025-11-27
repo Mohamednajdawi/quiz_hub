@@ -13,6 +13,9 @@ export interface AdminUser {
   is_active: boolean;
   created_at?: string | null;
   free_tokens?: number | null;
+  input_tokens: number;
+  output_tokens: number;
+  total_tokens: number;
 }
 
 export interface AdminUsersResponse {

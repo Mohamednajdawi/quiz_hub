@@ -8,6 +8,8 @@ from backend.database.sqlite_dal import (
     QuizTopic,
     FlashcardTopic,
     EssayQATopic,
+    TokenUsage,
+    GenerationJob,
 )
 
 
@@ -63,6 +65,42 @@ def get_user_essay_count(db: Session, user_id: str) -> int:
     ).scalar() or 0
 
 
+def get_user_token_usage(db: Session, user_id: str) -> dict:
+    """
+    Get token usage statistics for a user.
+    Returns a dictionary with input_tokens, output_tokens, and total_tokens.
+    """
+    # Get token usage from TokenUsage table (direct generations)
+    token_usage_stats = db.query(
+        func.sum(TokenUsage.input_tokens).label("input_tokens"),
+        func.sum(TokenUsage.output_tokens).label("output_tokens"),
+        func.sum(TokenUsage.total_tokens).label("total_tokens"),
+    ).filter(
+        TokenUsage.user_id == user_id
+    ).first()
+    
+    # Get token usage from GenerationJob table (async jobs)
+    job_token_stats = db.query(
+        func.sum(GenerationJob.input_tokens).label("input_tokens"),
+        func.sum(GenerationJob.output_tokens).label("output_tokens"),
+        func.sum(GenerationJob.total_tokens).label("total_tokens"),
+    ).filter(
+        GenerationJob.user_id == user_id,
+        GenerationJob.input_tokens.isnot(None)
+    ).first()
+    
+    # Combine token statistics
+    input_tokens = (token_usage_stats.input_tokens or 0) + (job_token_stats.input_tokens or 0)
+    output_tokens = (token_usage_stats.output_tokens or 0) + (job_token_stats.output_tokens or 0)
+    total_tokens = (token_usage_stats.total_tokens or 0) + (job_token_stats.total_tokens or 0)
+    
+    return {
+        "input_tokens": int(input_tokens),
+        "output_tokens": int(output_tokens),
+        "total_tokens": int(total_tokens),
+    }
+
+
 def get_all_users_with_stats(db: Session) -> List[dict]:
     """
     Get all users with their account type and quiz counts.
@@ -76,6 +114,7 @@ def get_all_users_with_stats(db: Session) -> List[dict]:
         quiz_count = get_user_quiz_count(db, user.id)
         flashcard_count = get_user_flashcard_count(db, user.id)
         essay_count = get_user_essay_count(db, user.id)
+        token_usage = get_user_token_usage(db, user.id)
         
         result.append({
             "id": user.id,
@@ -90,6 +129,9 @@ def get_all_users_with_stats(db: Session) -> List[dict]:
             "is_active": user.is_active,
             "created_at": user.created_at.isoformat() if user.created_at else None,
             "free_tokens": user.free_tokens,
+            "input_tokens": token_usage["input_tokens"],
+            "output_tokens": token_usage["output_tokens"],
+            "total_tokens": token_usage["total_tokens"],
         })
     
     return result
