@@ -252,7 +252,7 @@ async def create_essay_qa_from_pdf(
                 logging.warning(f"[ESSAY] No project_id provided, skipping reference creation")
 
             # Consume 1 token for this essay generation
-        consume_generation_token(db, current_user, amount=1)
+            consume_generation_token(db, current_user, amount=1)
             
             # Store token usage
             token_usage_record = TokenUsage(

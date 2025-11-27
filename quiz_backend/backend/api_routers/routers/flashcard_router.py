@@ -255,7 +255,7 @@ async def create_flashcards_from_pdf(
                 logging.warning(f"[FLASHCARDS] No project_id provided, skipping reference creation")
 
             # Consume 1 token for this flashcard generation
-        consume_generation_token(db, current_user, amount=1)
+            consume_generation_token(db, current_user, amount=1)
             
             # Store token usage
             token_usage_record = TokenUsage(
