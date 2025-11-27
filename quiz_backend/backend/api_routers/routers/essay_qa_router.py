@@ -86,7 +86,8 @@ async def create_essay_qa(
             )
             db.add(essay_qa_question)
 
-        consume_generation_token(db, current_user)
+        # Consume 1 token for this essay generation
+        consume_generation_token(db, current_user, amount=1)
         
         # Store token usage
         token_usage_record = TokenUsage(
@@ -250,7 +251,8 @@ async def create_essay_qa_from_pdf(
             else:
                 logging.warning(f"[ESSAY] No project_id provided, skipping reference creation")
 
-            consume_generation_token(db, current_user)
+            # Consume 1 token for this essay generation
+        consume_generation_token(db, current_user, amount=1)
             
             # Store token usage
             token_usage_record = TokenUsage(

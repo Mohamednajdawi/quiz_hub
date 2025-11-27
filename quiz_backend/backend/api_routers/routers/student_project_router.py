@@ -686,7 +686,8 @@ def _process_quiz_generation_job(job_id: int) -> None:
         )
         session.add(quiz_reference)
 
-        consume_generation_token(session, user)
+        # Consume 1 token for this generation (quiz/flashcard/essay/mind_map)
+        consume_generation_token(session, user, amount=1)
 
         # Store token usage in the job
         job.input_tokens = token_usage.get("input_tokens", 0)
@@ -833,7 +834,8 @@ def _process_essay_generation_job(job_id: int) -> None:
         )
         session.add(essay_reference)
 
-        consume_generation_token(session, user)
+        # Consume 1 token for this generation (quiz/flashcard/essay/mind_map)
+        consume_generation_token(session, user, amount=1)
 
         # Store token usage in the job
         job.input_tokens = token_usage.get("input_tokens", 0)
@@ -988,7 +990,8 @@ def _process_mind_map_generation_job(job_id: int) -> None:
         logging.debug("[MIND MAP JOB] Created mind map reference for project %s, content %s", 
                      job.project_id, job.content_id)
 
-        consume_generation_token(session, user)
+        # Consume 1 token for this generation (quiz/flashcard/essay/mind_map)
+        consume_generation_token(session, user, amount=1)
         logging.debug("[MIND MAP JOB] Consumed generation token for user %s", user.id)
 
         # Store token usage in the job
@@ -1996,7 +1999,8 @@ PDF Content:
         
         response_text = response.choices[0].message.content if response.choices else "I'm sorry, I couldn't generate a response."
         
-        consume_generation_token(db, current_user)
+        # Consume 1 token for this generation
+        consume_generation_token(db, current_user, amount=1)
         db.commit()
 
         return JSONResponse(

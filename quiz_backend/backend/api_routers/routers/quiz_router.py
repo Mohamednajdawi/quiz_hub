@@ -92,7 +92,8 @@ async def create_quiz(
             )
             db.add(quiz_question)
 
-        consume_generation_token(db, current_user)
+        # Consume 1 token for this quiz generation
+        consume_generation_token(db, current_user, amount=1)
         
         # Store token usage
         token_usage_record = TokenUsage(
@@ -256,7 +257,8 @@ async def create_quiz_from_pdf(
                 )
                 db.add(quiz_reference)
 
-            consume_generation_token(db, current_user)
+            # Consume 1 token for this quiz generation
+        consume_generation_token(db, current_user, amount=1)
             
             # Store token usage
             token_usage_record = TokenUsage(

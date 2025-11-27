@@ -52,8 +52,10 @@ def get_active_subscription(db: Session, user: User) -> Subscription | None:
 
 def count_monthly_generations(db: Session, user: User, subscription: Subscription) -> int:
     """
-    Count the number of generations (quizzes, flashcards, essays) created by the user
-    within the current billing period.
+    Count the number of generations created by the user within the current billing period.
+    
+    Each generation type (quiz, flashcard, essay, mind_map) counts as 1 generation.
+    Returns the total count of all generation types combined.
     """
     now = datetime.now()
     period_start = subscription.current_period_start or (now - timedelta(days=30))
@@ -161,11 +163,18 @@ def check_generation_token_available(db: Session, user: User, amount: int = 1) -
 def consume_generation_token(db: Session, user: User, amount: int = 1) -> None:
     """
     Consume generation tokens for a user.
+    
+    Each generation (quiz, flashcard, essay, mind_map) consumes exactly 1 token.
     Pro users with active subscriptions have a configurable monthly generation allowance.
     Free users consume tokens from their free_tokens balance.
     
     This function uses database-level locking to prevent race conditions when
     multiple requests try to consume tokens concurrently.
+    
+    Args:
+        db: Database session
+        user: User object
+        amount: Number of tokens to consume (default: 1). Each generation type consumes 1 token.
     """
     if amount <= 0:
         return
