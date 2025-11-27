@@ -19,6 +19,10 @@ openai_api_key = os.environ.get("OPENAI_API_KEY") or os.environ.get("OPEN_API_KE
 if not openai_api_key:
     raise EnvironmentError("OPENAI_API_KEY environment variable must be set")
 
+# Note: To enable better token tracking, you can enable Haystack content tracing:
+# Set environment variable: HAYSTACK_CONTENT_TRACING_ENABLED=true
+# This makes metadata (including token usage) available in pipeline results
+
 # Configuration for LLM usage
 LLM_CONFIG = {
     "api_base_url": None,  # None means use default OpenAI endpoint

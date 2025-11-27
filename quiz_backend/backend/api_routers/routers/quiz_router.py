@@ -14,7 +14,7 @@ import logging
 
 from backend.api_routers.schemas import URLRequest
 from backend.database.db import get_db
-from backend.database.sqlite_dal import QuizQuestion, QuizTopic, QuizAttempt
+from backend.database.sqlite_dal import QuizQuestion, QuizTopic, QuizAttempt, TokenUsage
 from backend.utils.utils import generate_quiz, generate_quiz_from_pdf
 from backend.api_routers.routers.auth_router import get_current_user_dependency
 from backend.database.sqlite_dal import User as UserModel
@@ -60,7 +60,7 @@ async def create_quiz(
 
         feedback_context = collect_feedback_context(db, user_id=current_user.id)
 
-        quiz_data = generate_quiz(
+        quiz_data, token_usage = generate_quiz(
             url,
             requested_questions,
             request.difficulty,
@@ -90,6 +90,18 @@ async def create_quiz(
             db.add(quiz_question)
 
         consume_generation_token(db, current_user)
+        
+        # Store token usage
+        token_usage_record = TokenUsage(
+            user_id=current_user.id,
+            generation_type="quiz",
+            topic_id=quiz_topic.id,
+            input_tokens=token_usage.get("input_tokens", 0),
+            output_tokens=token_usage.get("output_tokens", 0),
+            total_tokens=token_usage.get("total_tokens", 0),
+        )
+        db.add(token_usage_record)
+        
         db.commit()
         # Add quiz_id to response
         quiz_data_with_id = {**quiz_data, "quiz_id": quiz_topic.id}
@@ -184,7 +196,7 @@ async def create_quiz_from_pdf(
 
             feedback_context = collect_feedback_context(db, user_id=current_user.id)
 
-            quiz_data = generate_quiz_from_pdf(
+            quiz_data, token_usage = generate_quiz_from_pdf(
                 temp_file_path,
                 requested_questions,
                 difficulty,
@@ -242,6 +254,18 @@ async def create_quiz_from_pdf(
                 db.add(quiz_reference)
 
             consume_generation_token(db, current_user)
+            
+            # Store token usage
+            token_usage_record = TokenUsage(
+                user_id=current_user.id,
+                generation_type="quiz",
+                topic_id=quiz_topic.id,
+                input_tokens=token_usage.get("input_tokens", 0),
+                output_tokens=token_usage.get("output_tokens", 0),
+                total_tokens=token_usage.get("total_tokens", 0),
+            )
+            db.add(token_usage_record)
+            
             db.commit()
             # Add quiz_id to response
             quiz_data_with_id = {**quiz_data, "quiz_id": quiz_topic.id}

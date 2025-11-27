@@ -28,6 +28,11 @@ def _extract_token_usage_from_pipeline_result(result: Dict[str, Any], generator_
     """
     Extract token usage from Haystack pipeline result.
     
+    Haystack doesn't directly expose token usage, but we can try to access it from:
+    1. The generator component's internal state
+    2. Pipeline metadata if tracing is enabled
+    3. The raw OpenAI response if accessible
+    
     Args:
         result: The result dictionary from pipeline.run()
         generator_component_name: Name of the generator component in the pipeline
@@ -36,29 +41,44 @@ def _extract_token_usage_from_pipeline_result(result: Dict[str, Any], generator_
         Dictionary with input_tokens, output_tokens, and total_tokens (all 0 if not found)
     """
     try:
-        # Haystack stores metadata in the result under component name
+        # Method 1: Try to access the generator component from the pipeline
+        # and get its last response
         generator_result = result.get(generator_component_name, {})
         
-        # Try multiple ways to access metadata
+        # Method 2: Check if there's metadata in the result
+        # Haystack may store this in different places depending on version
         metadata = None
         usage = {}
         
-        # Method 1: Check if generator_result has meta attribute
+        # Try accessing metadata from generator result
         if hasattr(generator_result, "meta"):
             metadata = generator_result.meta
-        # Method 2: Check if it's a dict with meta key
         elif isinstance(generator_result, dict):
             metadata = generator_result.get("meta", {})
-        # Method 3: Check if metadata is directly in the result
+            # Also check for direct usage in the result
+            if not metadata and "usage" in generator_result:
+                usage = generator_result.get("usage", {})
+        
+        # Method 3: Check if metadata is in the main result
         if not metadata and isinstance(result, dict):
             metadata = result.get("meta", {})
+            if not usage and "usage" in result:
+                usage = result.get("usage", {})
         
         # Extract usage from metadata
         if isinstance(metadata, dict):
-            usage = metadata.get("usage", {})
+            if not usage:
+                usage = metadata.get("usage", {})
             # Also check for direct usage keys in metadata
             if not usage:
                 usage = {k: v for k, v in metadata.items() if "token" in k.lower()}
+        
+        # Method 4: Try to access from generator's internal _last_response if available
+        # This is a fallback that might work if we can access the generator instance
+        if not usage:
+            # Log the structure for debugging
+            logger.debug(f"Generator result type: {type(generator_result)}, keys: {list(generator_result.keys()) if isinstance(generator_result, dict) else 'N/A'}")
+            logger.debug(f"Result keys: {list(result.keys()) if isinstance(result, dict) else 'N/A'}")
         
         # Try to extract token counts from various possible field names
         input_tokens = (
@@ -84,13 +104,16 @@ def _extract_token_usage_from_pipeline_result(result: Dict[str, Any], generator_
         output_tokens = int(output_tokens) if output_tokens else 0
         total_tokens = int(total_tokens) if total_tokens else (input_tokens + output_tokens)
         
+        if total_tokens == 0:
+            logger.warning(f"Token usage extraction returned 0. Result structure: {type(result)}, Generator result: {type(generator_result)}")
+        
         return {
             "input_tokens": input_tokens,
             "output_tokens": output_tokens,
             "total_tokens": total_tokens,
         }
     except Exception as e:
-        logger.warning(f"Failed to extract token usage from pipeline result: {e}")
+        logger.warning(f"Failed to extract token usage from pipeline result: {e}", exc_info=True)
         return {"input_tokens": 0, "output_tokens": 0, "total_tokens": 0}
 
 _QUIZ_MAX_INPUT_CHARS = 15000
@@ -103,7 +126,7 @@ def generate_quiz(
     num_questions: Optional[int] = None,
     difficulty: str = "medium",
     feedback: Optional[str] = None,
-) -> Dict[str, Any]:
+) -> Tuple[Dict[str, Any], Dict[str, int]]:
     extracted_text = _extract_text_from_url(url)
     return _generate_quiz_from_text(
         extracted_text,
@@ -118,7 +141,7 @@ def generate_quiz_from_pdf(
     num_questions: Optional[int] = None,
     difficulty: str = "medium",
     feedback: Optional[str] = None,
-) -> Dict[str, Any]:
+) -> Tuple[Dict[str, Any], Dict[str, int]]:
     """
     Generate a quiz from a PDF file.
     
@@ -128,7 +151,7 @@ def generate_quiz_from_pdf(
         difficulty: Difficulty level of the questions (easy, medium, hard)
         
     Returns:
-        dict: A dictionary containing the quiz data
+        tuple: (quiz_data, token_usage) where token_usage contains input_tokens, output_tokens, total_tokens
     """
     extractor = PDFTextExtractor()
     extraction_result = extractor.run(file_path=pdf_path)
@@ -349,7 +372,7 @@ def _generate_quiz_from_text(
     num_questions: Optional[int],
     difficulty: str,
     feedback: Optional[str] = None,
-) -> Dict[str, Any]:
+) -> Tuple[Dict[str, Any], Dict[str, int]]:
     chunks = _chunk_text(source_text, _QUIZ_MAX_INPUT_CHARS, _QUIZ_CHUNK_OVERLAP_CHARS)
     if not chunks:
         raise ValueError("Provided content did not contain any usable text segments.")
@@ -362,6 +385,7 @@ def _generate_quiz_from_text(
     )
 
     results: Dict[int, Dict[str, Any]] = {}
+    token_usages: List[Dict[str, int]] = []
     max_workers = min(len(chunks), 3)
 
     with ThreadPoolExecutor(max_workers=max_workers) as executor:
@@ -379,8 +403,9 @@ def _generate_quiz_from_text(
         ]
 
         for future in as_completed(futures):
-            index, quiz_segment = future.result()
+            index, quiz_segment, token_usage = future.result()
             results[index] = quiz_segment
+            token_usages.append(token_usage)
 
     if not results:
         raise ValueError("Quiz generation returned no questions for the provided content.")
@@ -403,12 +428,25 @@ def _generate_quiz_from_text(
     if not auto_question_mode and num_questions:
         combined_questions = combined_questions[:num_questions]
 
-    return {
+    # Aggregate token usage from all chunks
+    total_input_tokens = sum(usage.get("input_tokens", 0) for usage in token_usages)
+    total_output_tokens = sum(usage.get("output_tokens", 0) for usage in token_usages)
+    total_tokens = sum(usage.get("total_tokens", 0) for usage in token_usages)
+
+    quiz_data = {
         "topic": combined_topic,
         "category": combined_category,
         "subcategory": combined_subcategory,
         "questions": combined_questions,
     }
+    
+    token_usage = {
+        "input_tokens": total_input_tokens,
+        "output_tokens": total_output_tokens,
+        "total_tokens": total_tokens,
+    }
+
+    return quiz_data, token_usage
 
 
 def _chunk_text(text: str, max_chars: int, overlap: int) -> List[str]:
@@ -476,7 +514,7 @@ def _generate_quiz_for_chunk(
     auto_question_mode: bool,
     difficulty: str,
     feedback: Optional[str],
-) -> Tuple[int, Dict[str, Any]]:
+) -> Tuple[int, Dict[str, Any], Dict[str, int]]:
     logger.debug("Submitting quiz generation for chunk %s (length=%s characters)", index + 1, len(chunk_text))
 
     prompt_inputs = {
@@ -491,7 +529,125 @@ def _generate_quiz_for_chunk(
     generator = create_generator(temperature=LLM_CONFIG["quiz_temperature"])
     parser = QuizParser()
 
-    replies = generator.run(prompt=prompt)["replies"]
+    generator_result = generator.run(prompt=prompt)
+    replies = generator_result["replies"]
     quiz_segment = parser.run(replies=replies)["quiz"]
+    
+    # Extract token usage - try multiple methods
+    token_usage = _extract_token_usage_from_generator_result(generator_result)
+    
+    # If not found in result, try to access generator's internal state
+    if token_usage["total_tokens"] == 0:
+        token_usage = _extract_token_usage_from_generator_instance(generator)
 
-    return index, quiz_segment
+    return index, quiz_segment, token_usage
+
+
+def _extract_token_usage_from_generator_instance(generator) -> Dict[str, int]:
+    """
+    Try to extract token usage from the generator instance's internal state.
+    Haystack's OpenAIGenerator may store the last OpenAI response internally.
+    
+    Args:
+        generator: The OpenAIGenerator instance
+        
+    Returns:
+        Dictionary with input_tokens, output_tokens, and total_tokens (all 0 if not found)
+    """
+    try:
+        # Try to access internal attributes where Haystack might store the response
+        # Common attribute names: _last_response, _response, last_response, response
+        for attr_name in ["_last_response", "_response", "last_response", "response"]:
+            if hasattr(generator, attr_name):
+                response = getattr(generator, attr_name)
+                if response and hasattr(response, "usage"):
+                    usage = response.usage
+                    if usage:
+                        return {
+                            "input_tokens": getattr(usage, "prompt_tokens", 0) or 0,
+                            "output_tokens": getattr(usage, "completion_tokens", 0) or 0,
+                            "total_tokens": getattr(usage, "total_tokens", 0) or 0,
+                        }
+                # Also try if response is a dict
+                if isinstance(response, dict) and "usage" in response:
+                    usage = response["usage"]
+                    return {
+                        "input_tokens": usage.get("prompt_tokens", 0) or 0,
+                        "output_tokens": usage.get("completion_tokens", 0) or 0,
+                        "total_tokens": usage.get("total_tokens", 0) or 0,
+                    }
+    except Exception as e:
+        logger.debug(f"Failed to extract token usage from generator instance: {e}")
+    
+    return {"input_tokens": 0, "output_tokens": 0, "total_tokens": 0}
+
+
+def _extract_token_usage_from_generator_result(generator_result: Dict[str, Any]) -> Dict[str, int]:
+    """
+    Extract token usage from Haystack generator result.
+    
+    Since Haystack doesn't expose token usage directly, we need to access it from:
+    1. The generator's internal _last_response attribute (if accessible)
+    2. Metadata in the result
+    3. The generator instance's internal state
+    
+    Args:
+        generator_result: The result dictionary from generator.run()
+        
+    Returns:
+        Dictionary with input_tokens, output_tokens, and total_tokens (all 0 if not found)
+    """
+    try:
+        # Method 1: Check for metadata in the generator result
+        metadata = generator_result.get("meta", {})
+        if not metadata and hasattr(generator_result, "meta"):
+            metadata = generator_result.meta
+        
+        # Extract usage from metadata
+        usage = {}
+        if isinstance(metadata, dict):
+            usage = metadata.get("usage", {})
+            # Also check for direct usage keys in metadata
+            if not usage:
+                usage = {k: v for k, v in metadata.items() if "token" in k.lower()}
+        
+        # Method 2: Check if usage is directly in the result
+        if not usage and isinstance(generator_result, dict):
+            if "usage" in generator_result:
+                usage = generator_result.get("usage", {})
+        
+        # Try to extract token counts from various possible field names
+        input_tokens = (
+            usage.get("prompt_tokens") or 
+            usage.get("input_tokens") or 
+            usage.get("prompt_tokens_used") or
+            0
+        )
+        output_tokens = (
+            usage.get("completion_tokens") or 
+            usage.get("output_tokens") or 
+            usage.get("completion_tokens_used") or
+            0
+        )
+        total_tokens = (
+            usage.get("total_tokens") or 
+            usage.get("total_tokens_used") or
+            (input_tokens + output_tokens)
+        )
+        
+        # Ensure we have integers
+        input_tokens = int(input_tokens) if input_tokens else 0
+        output_tokens = int(output_tokens) if output_tokens else 0
+        total_tokens = int(total_tokens) if total_tokens else (input_tokens + output_tokens)
+        
+        if total_tokens == 0:
+            logger.debug(f"Token usage extraction returned 0. Generator result keys: {list(generator_result.keys()) if isinstance(generator_result, dict) else 'N/A'}")
+        
+        return {
+            "input_tokens": input_tokens,
+            "output_tokens": output_tokens,
+            "total_tokens": total_tokens,
+        }
+    except Exception as e:
+        logger.warning(f"Failed to extract token usage from generator result: {e}", exc_info=True)
+        return {"input_tokens": 0, "output_tokens": 0, "total_tokens": 0}

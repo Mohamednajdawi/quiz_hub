@@ -650,7 +650,7 @@ def _process_quiz_generation_job(job_id: int) -> None:
         if not feedback_context:
             feedback_context = collect_feedback_context(session, user_id=user.id)
 
-        quiz_data = generate_quiz_from_pdf(
+        quiz_data, token_usage = generate_quiz_from_pdf(
             content.content_url,
             requested_questions if requested_questions and requested_questions > 0 else None,
             difficulty,
@@ -686,6 +686,13 @@ def _process_quiz_generation_job(job_id: int) -> None:
         session.add(quiz_reference)
 
         consume_generation_token(session, user)
+
+        # Store token usage in the job
+        job.input_tokens = token_usage.get("input_tokens", 0)
+        job.output_tokens = token_usage.get("output_tokens", 0)
+        job.total_tokens = token_usage.get("total_tokens", 0)
+        logging.info("[GEN JOB] Quiz token usage: input=%d, output=%d, total=%d", 
+                    job.input_tokens, job.output_tokens, job.total_tokens)
 
         job.status = "completed"
         job.result_topic_id = quiz_topic.id
