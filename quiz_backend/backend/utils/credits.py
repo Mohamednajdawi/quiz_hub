@@ -110,23 +110,89 @@ def count_monthly_generations(db: Session, user: User, subscription: Subscriptio
     return quiz_count + flashcard_count + essay_count + mind_map_count
 
 
+def check_generation_token_available(db: Session, user: User, amount: int = 1) -> None:
+    """
+    Check if generation tokens are available without consuming them.
+    This should be called BEFORE creating content to prevent race conditions.
+    
+    Raises HTTPException if tokens are not available.
+    """
+    if amount <= 0:
+        return
+
+    # Lock the user row to prevent concurrent modifications
+    locked_user = db.query(User).filter(User.id == user.id).with_for_update().first()
+    if not locked_user:
+        raise HTTPException(
+            status_code=HTTPStatus.NOT_FOUND,
+            detail="User not found",
+        )
+    
+    # Refresh the user object to get the latest state
+    db.refresh(locked_user)
+
+    # Check if user has active subscription
+    subscription = get_active_subscription(db, locked_user)
+    if subscription:
+        # Pro users have a monthly generation limit defined in configuration
+        # Use database locking to get accurate count
+        monthly_generations = count_monthly_generations(db, locked_user, subscription)
+        pro_monthly_limit = get_pro_generation_limit()
+        
+        # Check if adding this generation would exceed the limit
+        if monthly_generations + amount > pro_monthly_limit:
+            raise HTTPException(
+                status_code=HTTPStatus.PAYMENT_REQUIRED,
+                detail=_pro_limit_message(),
+            )
+        return
+
+    # For free users, check tokens
+    if locked_user.free_tokens is None:
+        return
+
+    if locked_user.free_tokens < amount:
+        raise HTTPException(
+            status_code=HTTPStatus.PAYMENT_REQUIRED,
+            detail=_payment_required_message(),
+        )
+
+
 def consume_generation_token(db: Session, user: User, amount: int = 1) -> None:
     """
     Consume generation tokens for a user.
     Pro users with active subscriptions have a configurable monthly generation allowance.
     Free users consume tokens from their free_tokens balance.
+    
+    This function uses database-level locking to prevent race conditions when
+    multiple requests try to consume tokens concurrently.
     """
     if amount <= 0:
         return
 
+    # Lock the user row to prevent concurrent modifications
+    # This ensures thread-safe token consumption
+    locked_user = db.query(User).filter(User.id == user.id).with_for_update().first()
+    if not locked_user:
+        raise HTTPException(
+            status_code=HTTPStatus.NOT_FOUND,
+            detail="User not found",
+        )
+    
+    # Refresh the user object to get the latest state
+    db.refresh(locked_user)
+
     # Check if user has active subscription
-    subscription = get_active_subscription(db, user)
+    subscription = get_active_subscription(db, locked_user)
     if subscription:
         # Pro users have a monthly generation limit defined in configuration
-        monthly_generations = count_monthly_generations(db, user, subscription)
+        # Count generations with the locked user to ensure consistency
+        # Add the current amount being consumed to account for the generation being created
+        monthly_generations = count_monthly_generations(db, locked_user, subscription)
         pro_monthly_limit = get_pro_generation_limit()
         
-        if monthly_generations >= pro_monthly_limit:
+        # Check if adding this generation would exceed the limit
+        if monthly_generations + amount > pro_monthly_limit:
             raise HTTPException(
                 status_code=HTTPStatus.PAYMENT_REQUIRED,
                 detail=_pro_limit_message(),
@@ -135,18 +201,18 @@ def consume_generation_token(db: Session, user: User, amount: int = 1) -> None:
         return
 
     # For free users, check and consume tokens
-    if user.free_tokens is None:
+    if locked_user.free_tokens is None:
         return
 
-    if user.free_tokens < amount:
+    if locked_user.free_tokens < amount:
         raise HTTPException(
             status_code=HTTPStatus.PAYMENT_REQUIRED,
             detail=_payment_required_message(),
         )
 
-    user.free_tokens -= amount
-    if user.free_tokens < 0:
-        user.free_tokens = 0
+    locked_user.free_tokens -= amount
+    if locked_user.free_tokens < 0:
+        locked_user.free_tokens = 0
 
-    db.add(user)
+    db.add(locked_user)
 
