@@ -651,10 +651,8 @@ def _extract_token_usage_from_generator_result(generator_result: Dict[str, Any])
     """
     Extract token usage from Haystack generator result.
     
-    Since Haystack doesn't expose token usage directly, we need to access it from:
-    1. The generator's internal _last_response attribute (if accessible)
-    2. Metadata in the result
-    3. The generator instance's internal state
+    With tracing enabled, Haystack returns meta as a list of response objects,
+    each containing usage information.
     
     Args:
         generator_result: The result dictionary from generator.run()
@@ -664,13 +662,29 @@ def _extract_token_usage_from_generator_result(generator_result: Dict[str, Any])
     """
     try:
         # Method 1: Check for metadata in the generator result
-        metadata = generator_result.get("meta", {})
+        # With tracing enabled, meta is a list of response objects
+        metadata = generator_result.get("meta")
         if not metadata and hasattr(generator_result, "meta"):
             metadata = generator_result.meta
         
-        # Extract usage from metadata
         usage = {}
-        if isinstance(metadata, dict):
+        
+        # Handle meta as a list (tracing enabled)
+        if isinstance(metadata, list) and len(metadata) > 0:
+            # Get the first item (usually the main response)
+            first_meta = metadata[0]
+            if isinstance(first_meta, dict) and "usage" in first_meta:
+                usage = first_meta.get("usage", {})
+            elif hasattr(first_meta, "usage"):
+                usage_obj = first_meta.usage
+                if usage_obj:
+                    usage = {
+                        "prompt_tokens": getattr(usage_obj, "prompt_tokens", 0) or 0,
+                        "completion_tokens": getattr(usage_obj, "completion_tokens", 0) or 0,
+                        "total_tokens": getattr(usage_obj, "total_tokens", 0) or 0,
+                    }
+        # Handle meta as a dict (fallback)
+        elif isinstance(metadata, dict):
             usage = metadata.get("usage", {})
             # Also check for direct usage keys in metadata
             if not usage:
@@ -707,6 +721,9 @@ def _extract_token_usage_from_generator_result(generator_result: Dict[str, Any])
         
         if total_tokens == 0:
             logger.debug(f"Token usage extraction returned 0. Generator result keys: {list(generator_result.keys()) if isinstance(generator_result, dict) else 'N/A'}")
+            if isinstance(generator_result, dict) and "meta" in generator_result:
+                meta = generator_result["meta"]
+                logger.debug(f"Meta type: {type(meta)}, Meta content: {str(meta)[:200] if meta else 'None'}")
         
         return {
             "input_tokens": input_tokens,
