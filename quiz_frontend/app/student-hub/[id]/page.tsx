@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { ProtectedRoute } from '@/components/ProtectedRoute';
@@ -65,6 +65,129 @@ interface GeneratedContent {
   }>;
 }
 
+type GenerationType = 'quiz' | 'flashcards' | 'essay' | 'mind_map';
+type BackgroundGenerationType = Exclude<GenerationType, 'flashcards'>;
+
+interface PendingGeneration {
+  id: string;
+  type: GenerationType;
+  contentId: number;
+  contentName: string;
+  messageIndex: number;
+}
+
+interface GenerationStatusItem {
+  id: string;
+  type: GenerationType;
+  contentName: string;
+  message: string;
+}
+
+type PendingContext = { pendingId?: string };
+
+const generationTypeMeta: Record<
+  GenerationType,
+  { label: string; icon: typeof FileQuestion; loaderClass: string; accent: string }
+> = {
+  quiz: {
+    label: 'Quiz',
+    icon: FileQuestion,
+    loaderClass: 'quiz',
+    accent: 'text-indigo-600',
+  },
+  flashcards: {
+    label: 'Flashcards',
+    icon: Sparkles,
+    loaderClass: 'flashcards',
+    accent: 'text-cyan-600',
+  },
+  essay: {
+    label: 'Essay Q&A',
+    icon: PenTool,
+    loaderClass: 'essay',
+    accent: 'text-orange-600',
+  },
+  mind_map: {
+    label: 'Mind Map',
+    icon: GitBranch,
+    loaderClass: 'mindmap',
+    accent: 'text-emerald-600',
+  },
+};
+
+const backgroundJobMessages: Record<BackgroundGenerationType, string> = {
+  quiz: 'AI is finalizing this quiz in the background.',
+  essay: 'Writing thoughtful answers so everything feels polished.',
+  mind_map: 'Drawing branches and styling your mind map right now.',
+};
+
+const generationMessages: Record<GenerationType, string[]> = {
+  quiz: [
+    'Analyzing PDF content...',
+    'Extracting key concepts...',
+    'Generating questions...',
+    'Creating answer options...',
+    'Finalizing quiz...',
+  ],
+  flashcards: [
+    'Reading document...',
+    'Identifying important points...',
+    'Creating flashcard pairs...',
+    'Organizing content...',
+    'Almost done...',
+  ],
+  essay: [
+    'Processing document...',
+    'Understanding context...',
+    'Formulating essay questions...',
+    'Preparing detailed answers...',
+    'Finalizing content...',
+  ],
+  mind_map: [
+    'Scanning for key ideas...',
+    'Grouping related concepts...',
+    'Drawing connections...',
+    'Coloring branches...',
+    'Polishing visual layout...',
+  ],
+};
+
+function GenerationStatusList({ items }: { items: GenerationStatusItem[] }) {
+  if (!items.length) {
+    return null;
+  }
+
+  return (
+    <div className="mb-6 space-y-3">
+      {items.map((item) => {
+        const meta = generationTypeMeta[item.type];
+        const Icon = meta.icon;
+
+        return (
+          <div
+            key={item.id}
+            className="flex items-start gap-4 rounded-2xl border border-gray-100 bg-white/90 p-4 shadow-sm ring-1 ring-gray-50"
+          >
+            <div className="relative flex h-12 w-12 flex-none items-center justify-center">
+              <div className={`generation-loader ${meta.loaderClass}`} />
+              <div className="relative flex h-9 w-9 items-center justify-center rounded-full bg-white shadow">
+                <Icon className={`h-5 w-5 ${meta.accent}`} />
+              </div>
+            </div>
+            <div className="flex-1">
+              <p className="text-sm font-semibold text-gray-900">
+                {meta.label} is generating for{' '}
+                <span className="text-indigo-700">{item.contentName}</span>
+              </p>
+              <p className="text-xs text-gray-600">{item.message}</p>
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 function ContentItem({ 
   content, 
   projectId, 
@@ -78,7 +201,10 @@ function ContentItem({
   isGeneratingEssays,
   isGeneratingMindMaps,
   isDeletingContent,
-  generationMessage,
+  quizLabel,
+  flashcardLabel,
+  essayLabel,
+  mindMapLabel,
 }: {
   content: ProjectContent;
   projectId: number;
@@ -92,7 +218,10 @@ function ContentItem({
   isGeneratingEssays: boolean;
   isGeneratingMindMaps: boolean;
   isDeletingContent: boolean;
-  generationMessage: string;
+  quizLabel: string;
+  flashcardLabel: string;
+  essayLabel: string;
+  mindMapLabel: string;
 }) {
   const router = useRouter();
   const [expanded, setExpanded] = useState(false);
@@ -269,11 +398,11 @@ function ContentItem({
                       onGenerateQuiz(content);
                       setShowGenerateMenu(false);
                     }}
-                    disabled={isGeneratingQuiz || isGeneratingFlashcards || isGeneratingEssays}
+                    disabled={isGeneratingQuiz}
                     className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     <FileQuestion className="w-4 h-4" />
-                    <span className="flex-1">{isGeneratingQuiz ? generationMessage : 'Quiz'}</span>
+                    <span className="flex-1">{isGeneratingQuiz ? quizLabel : 'Quiz'}</span>
                     {isGeneratingQuiz && <LoadingSpinner size="sm" />}
                   </button>
                   <button
@@ -281,11 +410,11 @@ function ContentItem({
                       onGenerateFlashcards();
                       setShowGenerateMenu(false);
                     }}
-                    disabled={isGeneratingQuiz || isGeneratingFlashcards || isGeneratingEssays}
+                    disabled={isGeneratingFlashcards}
                     className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     <Sparkles className="w-4 h-4" />
-                    <span className="flex-1">{isGeneratingFlashcards ? generationMessage : 'Flashcards'}</span>
+                    <span className="flex-1">{isGeneratingFlashcards ? flashcardLabel : 'Flashcards'}</span>
                     {isGeneratingFlashcards && <LoadingSpinner size="sm" />}
                   </button>
                   <button
@@ -293,11 +422,11 @@ function ContentItem({
                       onGenerateEssays();
                       setShowGenerateMenu(false);
                     }}
-                    disabled={isGeneratingQuiz || isGeneratingFlashcards || isGeneratingEssays}
+                    disabled={isGeneratingEssays}
                     className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     <PenTool className="w-4 h-4" />
-                    <span className="flex-1">{isGeneratingEssays ? generationMessage : 'Essay Q&A'}</span>
+                    <span className="flex-1">{isGeneratingEssays ? essayLabel : 'Essay Q&A'}</span>
                     {isGeneratingEssays && <LoadingSpinner size="sm" />}
                   </button>
                   <button
@@ -305,11 +434,11 @@ function ContentItem({
                       onGenerateMindMap();
                       setShowGenerateMenu(false);
                     }}
-                    disabled={isGeneratingQuiz || isGeneratingFlashcards || isGeneratingEssays || isGeneratingMindMaps}
+                    disabled={isGeneratingMindMaps}
                     className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     <GitBranch className="w-4 h-4" />
-                    <span className="flex-1">{isGeneratingMindMaps ? generationMessage : 'Mind Map'}</span>
+                    <span className="flex-1">{isGeneratingMindMaps ? mindMapLabel : 'Mind Map'}</span>
                     {isGeneratingMindMaps && <LoadingSpinner size="sm" />}
                   </button>
                 </div>
@@ -726,17 +855,13 @@ function ProjectDetailContent() {
   const [success, setSuccess] = useState<string | null>(null);
   const [showProjectMenu, setShowProjectMenu] = useState(false);
   const [showSettingsModal, setShowSettingsModal] = useState(false);
-  const [generationStatus, setGenerationStatus] = useState<{
-    type: 'quiz' | 'flashcards' | 'essays' | 'mind_map' | null;
-    messageIndex: number;
-  }>({ type: null, messageIndex: 0 });
-  const [pendingContentId, setPendingContentId] = useState<number | null>(null);
+  const [pendingGenerations, setPendingGenerations] = useState<PendingGeneration[]>([]);
   const [activeJobs, setActiveJobs] = useState<Array<{ jobId: number; contentId: number; contentName: string; jobType: 'quiz' | 'essay' | 'mind_map' }>>([]);
   const [readyQuizzes, setReadyQuizzes] = useState<Array<{ jobId: number; quizId: number; topic: string; contentName: string }>>([]);
   const [readyEssays, setReadyEssays] = useState<Array<{ jobId: number; essayId: number; topic: string; contentName: string }>>([]);
   const [readyMindMaps, setReadyMindMaps] = useState<Array<{ jobId: number; mindMapId: number; title: string; contentName: string }>>([]);
   const activeJobsRef = useRef(activeJobs);
-  const { registerJob, startFlashcardGeneration } = useGenerationJobs();
+  const { registerJob, startFlashcardGeneration, flashcardTasks } = useGenerationJobs();
 
   useEffect(() => {
     activeJobsRef.current = activeJobs;
@@ -783,80 +908,82 @@ function ProjectDetailContent() {
   });
 
   // Predefined generation messages
-  const generationMessages = {
-    quiz: [
-      'Analyzing PDF content...',
-      'Extracting key concepts...',
-      'Generating questions...',
-      'Creating answer options...',
-      'Finalizing quiz...',
-    ],
-    flashcards: [
-      'Reading document...',
-      'Identifying important points...',
-      'Creating flashcard pairs...',
-      'Organizing content...',
-      'Almost done...',
-    ],
-    essays: [
-      'Processing document...',
-      'Understanding context...',
-      'Formulating essay questions...',
-      'Preparing detailed answers...',
-      'Finalizing content...',
-    ],
-    mind_map: [
-      'Scanning for key ideas...',
-      'Grouping related concepts...',
-      'Drawing connections...',
-      'Coloring branches...',
-      'Polishing visual layout...',
-    ],
-  } as const;
-
-  // Cycle through messages during generation
   useEffect(() => {
-    if (!generationStatus.type) return;
+    if (!pendingGenerations.length) {
+      return;
+    }
 
-    const messages = generationMessages[generationStatus.type];
     const interval = setInterval(() => {
-      setGenerationStatus((prev) => ({
-        ...prev,
-        messageIndex: (prev.messageIndex + 1) % messages.length,
-      }));
-    }, 2000); // Change message every 2 seconds
+      setPendingGenerations((prev) =>
+        prev.map((entry) => ({
+          ...entry,
+          messageIndex: (entry.messageIndex + 1) % generationMessages[entry.type].length,
+        }))
+      );
+    }, 2000);
 
     return () => clearInterval(interval);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [generationStatus.type]);
+  }, [pendingGenerations.length]);
 
-  const getGenerationMessage = () => {
-    if (!generationStatus.type) return 'Generating...';
-    const messages = generationMessages[generationStatus.type];
-    return messages[generationStatus.messageIndex] || 'Generating...';
+  const addPendingGeneration = useCallback(
+    (type: GenerationType, contentId: number, contentName: string) => {
+      const id = `${type}-${contentId}-${Date.now()}`;
+      setPendingGenerations((prev) => [
+        ...prev,
+        { id, type, contentId, contentName, messageIndex: 0 },
+      ]);
+      return id;
+    },
+    []
+  );
+
+  const removePendingGeneration = useCallback((id: string) => {
+    setPendingGenerations((prev) => prev.filter((entry) => entry.id !== id));
+  }, []);
+
+  const clearPendingFromContext = (context?: PendingContext) => {
+    if (context?.pendingId) {
+      removePendingGeneration(context.pendingId);
+    }
   };
 
+  const getPendingMessageFor = (type: GenerationType, contentId: number) => {
+    const entry = pendingGenerations.find(
+      (item) => item.type === type && item.contentId === contentId
+    );
+    if (!entry) {
+      return null;
+    }
+    const messages = generationMessages[type];
+    return messages[entry.messageIndex] ?? 'Generating...';
+  };
+
+  const hasPendingGeneration = (type: GenerationType, contentId: number) =>
+    pendingGenerations.some((entry) => entry.type === type && entry.contentId === contentId);
+
   const isQuizGenerationActive = (contentId: number) =>
-    (generateQuizMutation.isPending && pendingContentId === contentId) ||
-    activeJobs.some((job) => job.contentId === contentId);
+    hasPendingGeneration('quiz', contentId) ||
+    activeJobs.some((job) => job.contentId === contentId && job.jobType === 'quiz');
 
   const getQuizGenerationLabel = (contentId: number) => {
-    if (generateQuizMutation.isPending && pendingContentId === contentId) {
-      return getGenerationMessage();
+    const pending = getPendingMessageFor('quiz', contentId);
+    if (pending) {
+      return pending;
     }
-    if (activeJobs.some((job) => job.contentId === contentId)) {
+    if (activeJobs.some((job) => job.contentId === contentId && job.jobType === 'quiz')) {
       return 'Generating in background...';
     }
     return 'Quiz';
   };
 
   const isEssayGenerationActive = (contentId: number) =>
-    (generateEssaysMutation.isPending && pendingContentId === contentId) ||
+    hasPendingGeneration('essay', contentId) ||
     activeJobs.some((job) => job.contentId === contentId && job.jobType === 'essay');
 
   const getEssayGenerationLabel = (contentId: number) => {
-    if (generateEssaysMutation.isPending && pendingContentId === contentId) {
-      return getGenerationMessage();
+    const pending = getPendingMessageFor('essay', contentId);
+    if (pending) {
+      return pending;
     }
     if (activeJobs.some((job) => job.contentId === contentId && job.jobType === 'essay')) {
       return 'Generating in background...';
@@ -865,28 +992,61 @@ function ProjectDetailContent() {
   };
 
   const isFlashcardGenerationActive = (contentId: number) =>
-    generateFlashcardsMutation.isPending && pendingContentId === contentId;
+    hasPendingGeneration('flashcards', contentId) ||
+    flashcardTasks.some((task) => task.contentId === contentId);
 
   const getFlashcardGenerationLabel = (contentId: number) => {
-    if (generateFlashcardsMutation.isPending && pendingContentId === contentId) {
-      return getGenerationMessage();
+    const pending = getPendingMessageFor('flashcards', contentId);
+    if (pending) {
+      return pending;
+    }
+    if (flashcardTasks.some((task) => task.contentId === contentId)) {
+      return 'Generating in background...';
     }
     return 'Flashcards';
   };
 
   const isMindMapGenerationActive = (contentId: number) =>
-    (generateMindMapMutation?.isPending && pendingContentId === contentId) ||
+    hasPendingGeneration('mind_map', contentId) ||
     activeJobs.some((job) => job.contentId === contentId && job.jobType === 'mind_map');
 
   const getMindMapGenerationLabel = (contentId: number) => {
-    if (generateMindMapMutation?.isPending && pendingContentId === contentId) {
-      return getGenerationMessage();
+    const pending = getPendingMessageFor('mind_map', contentId);
+    if (pending) {
+      return pending;
     }
     if (activeJobs.some((job) => job.contentId === contentId && job.jobType === 'mind_map')) {
       return 'Generating in background...';
     }
     return 'Mind Map';
   };
+
+  const pendingStatusItems: GenerationStatusItem[] = pendingGenerations.map((entry) => ({
+    id: entry.id,
+    type: entry.type,
+    contentName: entry.contentName,
+    message: generationMessages[entry.type][entry.messageIndex],
+  }));
+
+  const activeJobItems: GenerationStatusItem[] = activeJobs.map((job) => ({
+    id: `job-${job.jobId}`,
+    type: job.jobType,
+    contentName: job.contentName,
+    message: backgroundJobMessages[job.jobType],
+  }));
+
+  const flashcardStatusItems: GenerationStatusItem[] = flashcardTasks.map((task) => ({
+    id: `flash-${task.cacheId}`,
+    type: 'flashcards',
+    contentName: task.contentName,
+    message: `Creating ${task.numCards} flashcards... you'll get a ping when they're ready.`,
+  }));
+
+  const generationStatusItems = [
+    ...pendingStatusItems,
+    ...activeJobItems,
+    ...flashcardStatusItems,
+  ];
 
   // Request notification permission on mount
   useEffect(() => {
@@ -1025,8 +1185,6 @@ function ProjectDetailContent() {
 
   const generateQuizMutation = useMutation({
     mutationFn: async ({ contentId, contentName }: { contentId: number; contentName: string }) => {
-      setGenerationStatus({ type: 'quiz', messageIndex: 0 });
-      setPendingContentId(contentId);
       const desiredQuestions = questionMode === 'custom' ? numQuestions : undefined;
       const response = await studentProjectsApi.startQuizGenerationJob(projectId, contentId, {
         num_questions: desiredQuestions,
@@ -1041,43 +1199,44 @@ function ProjectDetailContent() {
       });
       return { response, contentId, contentName };
     },
-    onSuccess: ({ response, contentId, contentName }) => {
+    onMutate: ({ contentId, contentName }) => {
+      const pendingId = addPendingGeneration('quiz', contentId, contentName);
+      return { pendingId };
+    },
+    onSuccess: ({ response, contentId, contentName }, _variables, context?: PendingContext) => {
+      clearPendingFromContext(context);
       setError(null);
       setActiveJobs((prev) => [
         ...prev,
         { jobId: response.job_id, contentId, contentName, jobType: 'quiz' as const },
       ]);
     },
-    onError: (error: unknown) => {
+    onError: (error: unknown, _variables, context?: PendingContext) => {
+      clearPendingFromContext(context);
       setError(error instanceof Error ? error.message : 'Failed to start quiz generation');
       setSuccess(null);
-    },
-    onSettled: () => {
-      setGenerationStatus({ type: null, messageIndex: 0 });
-      setPendingContentId(null);
     },
   });
 
   const generateFlashcardsMutation = useMutation({
-    mutationFn: ({ contentId, contentName }: { contentId: number; contentName: string }) => {
-      setGenerationStatus({ type: 'flashcards', messageIndex: 0 });
-      setPendingContentId(contentId);
-      return startFlashcardGeneration({
+    mutationFn: ({ contentId, contentName }: { contentId: number; contentName: string }) =>
+      startFlashcardGeneration({
         projectId,
         contentId,
         contentName,
         numCards,
-      });
+      }),
+    onMutate: ({ contentId, contentName }) => {
+      const pendingId = addPendingGeneration('flashcards', contentId, contentName);
+      return { pendingId };
     },
-    onSuccess: () => {
-      setGenerationStatus({ type: null, messageIndex: 0 });
-      setPendingContentId(null);
+    onSuccess: (_data, _variables, context?: PendingContext) => {
+      clearPendingFromContext(context);
       setSuccess('Flashcard generation started! We will notify you when it is ready.');
       setError(null);
     },
-    onError: (error: unknown) => {
-      setGenerationStatus({ type: null, messageIndex: 0 });
-      setPendingContentId(null);
+    onError: (error: unknown, _variables, context?: PendingContext) => {
+      clearPendingFromContext(context);
       setError(
         error instanceof Error ? error.message : 'Failed to start flashcard generation'
       );
@@ -1087,8 +1246,6 @@ function ProjectDetailContent() {
 
   const generateEssaysMutation = useMutation({
     mutationFn: async ({ contentId, contentName }: { contentId: number; contentName: string }) => {
-      setGenerationStatus({ type: 'essays', messageIndex: 0 });
-      setPendingContentId(contentId);
       const desiredQuestions = questionMode === 'custom' ? numQuestions : undefined;
       const response = await studentProjectsApi.startEssayGenerationJob(projectId, contentId, {
         num_questions: desiredQuestions,
@@ -1103,27 +1260,27 @@ function ProjectDetailContent() {
       });
       return { response, contentId, contentName };
     },
-    onSuccess: ({ response, contentId, contentName }) => {
+    onMutate: ({ contentId, contentName }) => {
+      const pendingId = addPendingGeneration('essay', contentId, contentName);
+      return { pendingId };
+    },
+    onSuccess: ({ response, contentId, contentName }, _variables, context?: PendingContext) => {
+      clearPendingFromContext(context);
       setError(null);
       setActiveJobs((prev) => [
         ...prev,
         { jobId: response.job_id, contentId, contentName, jobType: 'essay' as const },
       ]);
     },
-    onError: (error: unknown) => {
+    onError: (error: unknown, _variables, context?: PendingContext) => {
+      clearPendingFromContext(context);
       setError(error instanceof Error ? error.message : 'Failed to start essay generation');
       setSuccess(null);
-    },
-    onSettled: () => {
-      setGenerationStatus({ type: null, messageIndex: 0 });
-      setPendingContentId(null);
     },
   });
 
   const generateMindMapMutation = useMutation({
     mutationFn: async ({ contentId, contentName }: { contentId: number; contentName: string }) => {
-      setGenerationStatus({ type: 'mind_map', messageIndex: 0 });
-      setPendingContentId(contentId);
       const response = await studentProjectsApi.startMindMapGenerationJob(projectId, contentId, {
         include_examples: true,
       });
@@ -1136,20 +1293,22 @@ function ProjectDetailContent() {
       });
       return { response, contentId, contentName };
     },
-    onSuccess: ({ response, contentId, contentName }) => {
+    onMutate: ({ contentId, contentName }) => {
+      const pendingId = addPendingGeneration('mind_map', contentId, contentName);
+      return { pendingId };
+    },
+    onSuccess: ({ response, contentId, contentName }, _variables, context?: PendingContext) => {
+      clearPendingFromContext(context);
       setError(null);
       setActiveJobs((prev) => [
         ...prev,
         { jobId: response.job_id, contentId, contentName, jobType: 'mind_map' as const },
       ]);
     },
-    onError: (error: unknown) => {
+    onError: (error: unknown, _variables, context?: PendingContext) => {
+      clearPendingFromContext(context);
       setError(error instanceof Error ? error.message : 'Failed to start mind map generation');
       setSuccess(null);
-    },
-    onSettled: () => {
-      setGenerationStatus({ type: null, messageIndex: 0 });
-      setPendingContentId(null);
     },
   });
 
@@ -1333,48 +1492,7 @@ function ProjectDetailContent() {
             </Alert>
           ))}
 
-          {activeJobs.length > 0 && (() => {
-            const quizJobs = activeJobs.filter(job => job.jobType === 'quiz');
-            const essayJobs = activeJobs.filter(job => job.jobType === 'essay');
-            const mindMapJobs = activeJobs.filter(job => job.jobType === 'mind_map');
-            const totalJobs = activeJobs.length;
-            
-            return (
-              <Alert type="info" className="mb-6">
-                <div className="flex flex-col gap-1">
-                  <p className="font-medium text-gray-900">
-                    {totalJobs === 1
-                      ? `Generating 1 ${activeJobs[0].jobType === 'quiz' ? 'quiz' : 'essay'} in the background...`
-                      : `Generating ${totalJobs} items in the background...`}
-                    {totalJobs > 1 && (
-                      <span className="text-gray-600">
-                        {' '}({quizJobs.length} quiz{quizJobs.length !== 1 ? 'zes' : ''}, {essayJobs.length} essay{essayJobs.length !== 1 ? 's' : ''}, {mindMapJobs.length} mind map{mindMapJobs.length !== 1 ? 's' : ''})
-                      </span>
-                    )}
-                  </p>
-                  <p className="text-sm text-gray-700">
-                    You can keep working while we process these. We will notify you as soon as each item is ready.
-                  </p>
-                </div>
-              </Alert>
-            );
-          })()}
-          
-          {/* Generation Status Alert */}
-          {((generateQuizMutation.isPending && pendingContentId !== null) || 
-            (generateFlashcardsMutation.isPending && pendingContentId !== null) || 
-            (generateEssaysMutation.isPending && pendingContentId !== null) ||
-            (generateMindMapMutation.isPending && pendingContentId !== null)) ? (
-            <Alert type="info" className="mb-6">
-              <div className="flex items-center gap-3">
-                <LoadingSpinner size="sm" />
-                <div>
-                  <p className="font-medium text-gray-900">{getGenerationMessage()}</p>
-                  <p className="text-sm text-gray-600 mt-1">This may take a few moments...</p>
-                </div>
-              </div>
-            </Alert>
-          ) : null}
+          <GenerationStatusList items={generationStatusItems} />
 
           {/* Settings Modal */}
           <SettingsModal
@@ -1535,13 +1653,10 @@ function ProjectDetailContent() {
                       isGeneratingEssays={isEssayGenerationActive(c.id)}
                       isGeneratingMindMaps={isMindMapGenerationActive(c.id)}
                       isDeletingContent={deleteContentMutation.isPending}
-                      generationMessage={
-                        isQuizGenerationActive(c.id) ? getQuizGenerationLabel(c.id) :
-                        isFlashcardGenerationActive(c.id) ? getFlashcardGenerationLabel(c.id) :
-                        isEssayGenerationActive(c.id) ? getEssayGenerationLabel(c.id) :
-                        isMindMapGenerationActive(c.id) ? getMindMapGenerationLabel(c.id) :
-                        'Generate'
-                      }
+                      quizLabel={getQuizGenerationLabel(c.id)}
+                      flashcardLabel={getFlashcardGenerationLabel(c.id)}
+                      essayLabel={getEssayGenerationLabel(c.id)}
+                      mindMapLabel={getMindMapGenerationLabel(c.id)}
                     />
                   ))}
                 </div>

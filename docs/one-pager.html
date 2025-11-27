@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Quiz Hub – Product One-Pager</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap');
+    :root {
+      --bg: #0b1221;
+      --card: #111b2f;
+      --muted: #8892b0;
+      --accent: linear-gradient(135deg, #4f46e5, #7c3aed);
+      --accent-solid: #6d5dfc;
+      --border: rgba(255,255,255,0.08);
+    }
+    * { box-sizing: border-box; }
+    body {
+      font-family: 'Inter', sans-serif;
+      margin: 0;
+      padding: 0;
+      color: white;
+      background: var(--bg);
+    }
+    .container {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 3rem 1.5rem 4rem;
+    }
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 24px;
+      padding: 2.5rem;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.4);
+    }
+    h1 {
+      font-size: 2.5rem;
+      margin: 0;
+    }
+    h2 {
+      font-size: 1.4rem;
+      margin-top: 2.5rem;
+      margin-bottom: 0.8rem;
+      color: #e5e7ff;
+    }
+    p {
+      color: var(--muted);
+      line-height: 1.7;
+    }
+    ul {
+      margin: 0;
+      padding-left: 1.2rem;
+      color: var(--muted);
+    }
+    li { margin-bottom: 0.6rem; }
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      padding: 0.4rem 0.8rem;
+      border-radius: 999px;
+      font-size: 0.85rem;
+      color: white;
+      background: rgba(255,255,255,0.08);
+      margin-right: 0.5rem;
+    }
+    .cta {
+      margin-top: 2rem;
+      padding: 1.2rem 1.5rem;
+      background: rgba(79,70,229,0.15);
+      border: 1px solid rgba(79,70,229,0.5);
+      border-radius: 18px;
+    }
+    .cta strong { color: white; }
+    .highlight {
+      background: var(--accent);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    @media print {
+      body { background: white; color: #111; }
+      .card { background: white; color: #111; box-shadow: none; border: 1px solid #eee; }
+      .cta { background: #f5f5ff; border-color: #dcdcff; color: #111; }
+      .highlight { -webkit-text-fill-color: initial; color: #4f46e5; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="card">
+      <div class="pill">Quiz Hub &mdash; AI Study OS</div>
+      <h1>Turn readings into <span class="highlight">collaborative study rituals</span>.</h1>
+      <p>Upload once, generate many: quizzes, flashcards, essay drills, PDF chat, and the new visual mind maps that make every topic click.</p>
+
+      <section>
+        <h2>Snapshot</h2>
+        <ul>
+          <li><strong>What we build:</strong> An AI-native study hub that transforms dense PDFs & links into interactive, sharable learning kits.</li>
+          <li><strong>Who we serve:</strong> Students, tutors, cohort-based bootcamps, and academic support teams who are done with manual content prep.</li>
+          <li><strong>Why it matters:</strong> Every asset is aligned to the learner’s weak spots, tracks usage tokens, and lives inside one Student Hub timeline. Quiz Hub helps students study smarter while elevating AI to achieve better outcomes.</li>
+        </ul>
+      </section>
+
+      <section>
+        <h2>The Problem</h2>
+        <p>
+          Digital classrooms exploded, but prep is still manual. Educators burn hours turning PDFs into quizzes & visuals, while learners juggle disjointed tools
+          and rarely collaborate outside live sessions. Sharing assessments is clunky—no simple way to publish a quiz link, collect attempts, and spot trends without spreadsheets.
+        </p>
+      </section>
+
+      <section>
+        <h2>Our Solution</h2>
+        <ul>
+          <li><strong>Auto-built study kits:</strong> Feed Quiz Hub any PDF or link and instantly spin up quizzes, flashcards, essay drills, and visual mind maps. Regenerations focus on the exact gaps.</li>
+          <li><strong>Visual knowledge maps:</strong> Color-coded, left-to-right canvases with expandable layers for workshops and async storytelling.</li>
+          <li><strong>Sharable quizzes with live results:</strong> Publish with a share code so anyone can take it—no login. Creators watch results roll in and export leaderboards.</li>
+          <li><strong>Unified Student Hub:</strong> Projects keep uploads, generated content, and PDF chats in one feed, complete with job alerts and suggested next steps.</li>
+          <li><strong>Feedback-aware loop:</strong> Automated reminders resurface weak topics; mind maps include actionable next steps for guided revision.</li>
+        </ul>
+      </section>
+
+      <section>
+        <h2>What We’re Looking For</h2>
+        <ul>
+          <li><strong>Feedback:</strong> Educators, cohort operators, learning designers who can stress-test the experience.</li>
+          <li><strong>Partners:</strong> Bootcamps, tutoring networks, success centers eager to co-launch sharable quiz galleries & mind map libraries.</li>
+          <li><strong>Customers:</strong> Teams ready to onboard students now—we provision projects, share demo quiz codes, and tailor onboarding in under a week.</li>
+          <li><strong>Investors:</strong> Builders who believe AI-native learning platforms can turn static readings into collaborative study rituals.</li>
+        </ul>
+      </section>
+
+      <div class="cta">
+        <strong>Next step:</strong> Request a demo kit with live mind map examples plus a sharable quiz code your team can try immediately.
+      </div>
+    </div>
+  </div>
+</body>
+</html>
+

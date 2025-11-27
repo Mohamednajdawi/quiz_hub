@@ -7,12 +7,19 @@ import { useNotifications } from '@/contexts/NotificationsContext';
 import { studentProjectsApi, type GenerationJobStatus } from '@/lib/api/studentProjects';
 
 type TrackedJobType = 'quiz' | 'essay' | 'mind_map';
+type FlashcardTaskStatus = 'pending' | 'completed' | 'failed';
 
 interface FlashcardTaskInput {
   projectId: number;
   contentId: number;
   contentName: string;
   numCards: number;
+}
+
+interface ActiveFlashcardTask extends FlashcardTaskInput {
+  cacheId: string;
+  startedAt: string;
+  status: FlashcardTaskStatus;
 }
 
 interface TrackedJob {
@@ -27,6 +34,7 @@ interface TrackedJob {
 interface GenerationJobsContextValue {
   registerJob: (job: Omit<TrackedJob, 'createdAt'>) => void;
   startFlashcardGeneration: (task: FlashcardTaskInput) => Promise<string>;
+  flashcardTasks: ActiveFlashcardTask[];
 }
 
 const GenerationJobsContext = createContext<GenerationJobsContextValue | undefined>(undefined);
@@ -48,7 +56,7 @@ export function GenerationJobsProvider({ children }: { children: ReactNode }) {
   const queryClient = useQueryClient();
   const [trackedJobs, setTrackedJobs] = useState<TrackedJob[]>([]);
   const jobsRef = useRef<TrackedJob[]>([]);
-  const flashcardTasksRef = useRef<Record<string, FlashcardTaskInput>>({});
+  const [flashcardTasks, setFlashcardTasks] = useState<ActiveFlashcardTask[]>([]);
 
   const storageKey = useMemo(
     () => (user?.id ? `quizhub_generation_jobs_${user.id}` : null),
@@ -228,7 +236,19 @@ export function GenerationJobsProvider({ children }: { children: ReactNode }) {
         throw new Error('You must be signed in to generate flashcards.');
       }
       const cacheId = generateCacheId();
-      flashcardTasksRef.current[cacheId] = { projectId, contentId, contentName, numCards };
+      const startedAt = new Date().toISOString();
+      setFlashcardTasks((prev) => [
+        {
+          cacheId,
+          projectId,
+          contentId,
+          contentName,
+          numCards,
+          startedAt,
+          status: 'pending',
+        },
+        ...prev,
+      ]);
 
       const run = async () => {
         try {
@@ -263,7 +283,7 @@ export function GenerationJobsProvider({ children }: { children: ReactNode }) {
             meta: { cacheId, projectId, contentId },
           });
         } finally {
-          delete flashcardTasksRef.current[cacheId];
+          setFlashcardTasks((prev) => prev.filter((task) => task.cacheId !== cacheId));
         }
       };
 
@@ -276,6 +296,7 @@ export function GenerationJobsProvider({ children }: { children: ReactNode }) {
   const value: GenerationJobsContextValue = {
     registerJob,
     startFlashcardGeneration,
+    flashcardTasks,
   };
 
   return (

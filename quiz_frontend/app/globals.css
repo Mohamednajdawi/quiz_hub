@@ -105,3 +105,45 @@ body {
 .rotate-y-180 {
   transform: rotateY(180deg);
 }
+
+.generation-loader {
+  position: absolute;
+  inset: 0;
+  border-radius: 9999px;
+  padding: 2px;
+  animation: generation-spin 1.4s linear infinite;
+  background: conic-gradient(#e0e7ff, #c4b5fd, #e0e7ff);
+}
+
+.generation-loader::after {
+  content: '';
+  position: absolute;
+  inset: 4px;
+  background: #ffffff;
+  border-radius: 9999px;
+}
+
+.generation-loader.quiz {
+  background: conic-gradient(#6366f1, #a855f7, #6366f1);
+}
+
+.generation-loader.flashcards {
+  background: conic-gradient(#0ea5e9, #22d3ee, #0ea5e9);
+}
+
+.generation-loader.essay {
+  background: conic-gradient(#f97316, #facc15, #f97316);
+}
+
+.generation-loader.mindmap {
+  background: conic-gradient(#10b981, #34d399, #10b981);
+}
+
+@keyframes generation-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
