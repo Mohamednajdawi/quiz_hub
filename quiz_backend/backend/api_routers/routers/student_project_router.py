@@ -777,7 +777,7 @@ def _process_essay_generation_job(job_id: int) -> None:
         if not feedback_context:
             feedback_context = collect_feedback_context(session, user_id=user.id)
 
-        essay_data = generate_essay_qa_from_pdf(
+        essay_data, token_usage = generate_essay_qa_from_pdf(
             content.content_url,
             requested_questions,
             difficulty,
@@ -826,6 +826,13 @@ def _process_essay_generation_job(job_id: int) -> None:
         session.add(essay_reference)
 
         consume_generation_token(session, user)
+
+        # Store token usage in the job
+        job.input_tokens = token_usage.get("input_tokens", 0)
+        job.output_tokens = token_usage.get("output_tokens", 0)
+        job.total_tokens = token_usage.get("total_tokens", 0)
+        logging.info("[GEN JOB] Essay token usage: input=%d, output=%d, total=%d", 
+                    job.input_tokens, job.output_tokens, job.total_tokens)
 
         job.status = "completed"
         job.result_topic_id = essay_topic.id
@@ -921,7 +928,7 @@ def _process_mind_map_generation_job(job_id: int) -> None:
             logging.debug("[MIND MAP JOB] Collected feedback context (length: %d chars)", len(feedback_context))
 
         logging.info("[MIND MAP JOB] Calling generate_mind_map_from_pdf for job %s", job_id)
-        mind_map_data = generate_mind_map_from_pdf(
+        mind_map_data, token_usage = generate_mind_map_from_pdf(
             content.content_url,
             focus=focus,
             feedback=feedback_context,
@@ -975,6 +982,13 @@ def _process_mind_map_generation_job(job_id: int) -> None:
 
         consume_generation_token(session, user)
         logging.debug("[MIND MAP JOB] Consumed generation token for user %s", user.id)
+
+        # Store token usage in the job
+        job.input_tokens = token_usage.get("input_tokens", 0)
+        job.output_tokens = token_usage.get("output_tokens", 0)
+        job.total_tokens = token_usage.get("total_tokens", 0)
+        logging.info("[MIND MAP JOB] Token usage: input=%d, output=%d, total=%d", 
+                    job.input_tokens, job.output_tokens, job.total_tokens)
 
         job.status = "completed"
         job.result_topic_id = mind_map.id

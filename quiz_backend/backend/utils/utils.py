@@ -23,6 +23,76 @@ from backend.pipelines.content_pipelines import (
 
 logger = logging.getLogger(__name__)
 
+
+def _extract_token_usage_from_pipeline_result(result: Dict[str, Any], generator_component_name: str = "generator") -> Dict[str, int]:
+    """
+    Extract token usage from Haystack pipeline result.
+    
+    Args:
+        result: The result dictionary from pipeline.run()
+        generator_component_name: Name of the generator component in the pipeline
+        
+    Returns:
+        Dictionary with input_tokens, output_tokens, and total_tokens (all 0 if not found)
+    """
+    try:
+        # Haystack stores metadata in the result under component name
+        generator_result = result.get(generator_component_name, {})
+        
+        # Try multiple ways to access metadata
+        metadata = None
+        usage = {}
+        
+        # Method 1: Check if generator_result has meta attribute
+        if hasattr(generator_result, "meta"):
+            metadata = generator_result.meta
+        # Method 2: Check if it's a dict with meta key
+        elif isinstance(generator_result, dict):
+            metadata = generator_result.get("meta", {})
+        # Method 3: Check if metadata is directly in the result
+        if not metadata and isinstance(result, dict):
+            metadata = result.get("meta", {})
+        
+        # Extract usage from metadata
+        if isinstance(metadata, dict):
+            usage = metadata.get("usage", {})
+            # Also check for direct usage keys in metadata
+            if not usage:
+                usage = {k: v for k, v in metadata.items() if "token" in k.lower()}
+        
+        # Try to extract token counts from various possible field names
+        input_tokens = (
+            usage.get("prompt_tokens") or 
+            usage.get("input_tokens") or 
+            usage.get("prompt_tokens_used") or
+            0
+        )
+        output_tokens = (
+            usage.get("completion_tokens") or 
+            usage.get("output_tokens") or 
+            usage.get("completion_tokens_used") or
+            0
+        )
+        total_tokens = (
+            usage.get("total_tokens") or 
+            usage.get("total_tokens_used") or
+            (input_tokens + output_tokens)
+        )
+        
+        # Ensure we have integers
+        input_tokens = int(input_tokens) if input_tokens else 0
+        output_tokens = int(output_tokens) if output_tokens else 0
+        total_tokens = int(total_tokens) if total_tokens else (input_tokens + output_tokens)
+        
+        return {
+            "input_tokens": input_tokens,
+            "output_tokens": output_tokens,
+            "total_tokens": total_tokens,
+        }
+    except Exception as e:
+        logger.warning(f"Failed to extract token usage from pipeline result: {e}")
+        return {"input_tokens": 0, "output_tokens": 0, "total_tokens": 0}
+
 _QUIZ_MAX_INPUT_CHARS = 15000
 _QUIZ_CHUNK_OVERLAP_CHARS = 1000
 _QUIZ_PROMPT_TEMPLATE = Template(QUIZ_GENERATION_PROMPT, trim_blocks=True, lstrip_blocks=True)
@@ -79,7 +149,7 @@ def generate_flashcards(
     url: str,
     num_cards: int = 10,
     feedback: Optional[str] = None,
-) -> Dict[str, Any]:
+) -> Tuple[Dict[str, Any], Dict[str, int]]:
     """
     Generate flashcards from a URL.
     
@@ -88,9 +158,9 @@ def generate_flashcards(
         num_cards: Number of flashcards to generate (default: 10)
         
     Returns:
-        dict: A dictionary containing the flashcard data
+        tuple: (flashcard_data, token_usage) where token_usage contains input_tokens, output_tokens, total_tokens
     """
-    return url_flashcard_generation_pipeline.run(
+    result = url_flashcard_generation_pipeline.run(
         {
             "link_content_fetcher": {"urls": [url]},
             "prompt_builder": {
@@ -98,14 +168,17 @@ def generate_flashcards(
                 "feedback": feedback or "",
             },
         }
-    )["flashcard_parser"]["flashcards"]
+    )
+    flashcards = result["flashcard_parser"]["flashcards"]
+    token_usage = _extract_token_usage_from_pipeline_result(result)
+    return flashcards, token_usage
 
 
 def generate_flashcards_from_pdf(
     pdf_path: str,
     num_cards: int = 10,
     feedback: str | None = None,
-) -> Dict[str, Any]:
+) -> Tuple[Dict[str, Any], Dict[str, int]]:
     """
     Generate flashcards from a PDF file.
     
@@ -115,9 +188,9 @@ def generate_flashcards_from_pdf(
         feedback: Optional string that highlights learner weaknesses to prioritize
         
     Returns:
-        dict: A dictionary containing the flashcard data
+        tuple: (flashcard_data, token_usage) where token_usage contains input_tokens, output_tokens, total_tokens
     """
-    return pdf_flashcard_generation_pipeline.run(
+    result = pdf_flashcard_generation_pipeline.run(
         {
             "pdf_extractor": {"file_path": pdf_path},
             "prompt_builder": {
@@ -125,7 +198,10 @@ def generate_flashcards_from_pdf(
                 "feedback": feedback or "",
             },
         }
-    )["flashcard_parser"]["flashcards"]
+    )
+    flashcards = result["flashcard_parser"]["flashcards"]
+    token_usage = _extract_token_usage_from_pipeline_result(result)
+    return flashcards, token_usage
 
 
 def generate_essay_qa(
@@ -133,7 +209,7 @@ def generate_essay_qa(
     num_questions: int = 3,
     difficulty: str = "medium",
     feedback: Optional[str] = None,
-) -> Dict[str, Any]:
+) -> Tuple[Dict[str, Any], Dict[str, int]]:
     """
     Generate essay-type questions with detailed answers from a URL.
     
@@ -143,9 +219,9 @@ def generate_essay_qa(
         difficulty: Difficulty level of the questions (easy, medium, hard)
         
     Returns:
-        dict: A dictionary containing the Essay QA data
+        tuple: (essay_qa_data, token_usage) where token_usage contains input_tokens, output_tokens, total_tokens
     """
-    return url_essay_qa_generation_pipeline.run(
+    result = url_essay_qa_generation_pipeline.run(
         {
             "link_content_fetcher": {"urls": [url]},
             "prompt_builder": {
@@ -154,7 +230,10 @@ def generate_essay_qa(
                 "feedback": feedback or "",
             },
         }
-    )["essay_qa_parser"]["essay_qa"]
+    )
+    essay_qa = result["essay_qa_parser"]["essay_qa"]
+    token_usage = _extract_token_usage_from_pipeline_result(result)
+    return essay_qa, token_usage
 
 
 def generate_essay_qa_from_pdf(
@@ -162,7 +241,7 @@ def generate_essay_qa_from_pdf(
     num_questions: int = 3,
     difficulty: str = "medium",
     feedback: Optional[str] = None,
-) -> Dict[str, Any]:
+) -> Tuple[Dict[str, Any], Dict[str, int]]:
     """
     Generate essay-type questions with detailed answers from a PDF file.
     
@@ -172,9 +251,9 @@ def generate_essay_qa_from_pdf(
         difficulty: Difficulty level of the questions (easy, medium, hard)
         
     Returns:
-        dict: A dictionary containing the Essay QA data
+        tuple: (essay_qa_data, token_usage) where token_usage contains input_tokens, output_tokens, total_tokens
     """
-    return pdf_essay_qa_generation_pipeline.run(
+    result = pdf_essay_qa_generation_pipeline.run(
         {
             "pdf_extractor": {"file_path": pdf_path},
             "prompt_builder": {
@@ -183,14 +262,17 @@ def generate_essay_qa_from_pdf(
                 "feedback": feedback or "",
             },
         }
-    )["essay_qa_parser"]["essay_qa"]
+    )
+    essay_qa = result["essay_qa_parser"]["essay_qa"]
+    token_usage = _extract_token_usage_from_pipeline_result(result)
+    return essay_qa, token_usage
 
 
 def generate_mind_map_from_pdf(
     pdf_path: str,
     focus: Optional[str] = None,
     feedback: Optional[str] = None,
-) -> Dict[str, Any]:
+) -> Tuple[Dict[str, Any], Dict[str, int]]:
     """
     Generate a structured mind map JSON from a PDF file.
 
@@ -198,6 +280,9 @@ def generate_mind_map_from_pdf(
         pdf_path: Path to the PDF file.
         focus: Optional hint about what to emphasize.
         feedback: Optional learner feedback context.
+        
+    Returns:
+        tuple: (mind_map_data, token_usage) where token_usage contains input_tokens, output_tokens, total_tokens
     """
     logging.info("[MIND MAP GEN] Starting mind map generation from PDF: %s", pdf_path)
     if focus:
@@ -217,17 +302,19 @@ def generate_mind_map_from_pdf(
     try:
         result = pdf_mind_map_generation_pipeline.run(payload)
         mind_map = result["mind_map_parser"]["mind_map"]
+        token_usage = _extract_token_usage_from_pipeline_result(result)
         
         node_count = len(mind_map.get("nodes", []))
         edge_count = len(mind_map.get("edges", []))
         logging.info(
-            "[MIND MAP GEN] Successfully generated mind map: topic='%s', nodes=%d, edges=%d",
+            "[MIND MAP GEN] Successfully generated mind map: topic='%s', nodes=%d, edges=%d, tokens=%d",
             mind_map.get("topic", "N/A"),
             node_count,
             edge_count,
+            token_usage.get("total_tokens", 0),
         )
         
-        return mind_map
+        return mind_map, token_usage
     except Exception as e:
         logging.error("[MIND MAP GEN] Failed to generate mind map from PDF %s: %s", pdf_path, str(e))
         raise

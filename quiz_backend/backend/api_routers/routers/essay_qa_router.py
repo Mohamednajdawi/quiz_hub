@@ -11,7 +11,7 @@ import logging
 
 from backend.api_routers.schemas import EssayQARequest, StoreEssayAnswerRequest, StoreEssayAnswersRequest
 from backend.database.db import get_db
-from backend.database.sqlite_dal import EssayQATopic, EssayQAQuestion
+from backend.database.sqlite_dal import EssayQATopic, EssayQAQuestion, TokenUsage
 from backend.utils.utils import generate_essay_qa, generate_essay_qa_from_pdf
 from backend.api_routers.routers.auth_router import get_current_user_dependency
 from backend.database.sqlite_dal import User as UserModel
@@ -40,7 +40,7 @@ async def create_essay_qa(
 
         feedback_context = collect_feedback_context(db, user_id=current_user.id)
 
-        essay_qa_data = generate_essay_qa(
+        essay_qa_data, token_usage = generate_essay_qa(
             url,
             request.num_questions,
             request.difficulty,
@@ -87,6 +87,18 @@ async def create_essay_qa(
             db.add(essay_qa_question)
 
         consume_generation_token(db, current_user)
+        
+        # Store token usage
+        token_usage_record = TokenUsage(
+            user_id=current_user.id,
+            generation_type="essay_qa",
+            topic_id=essay_qa_topic.id,
+            input_tokens=token_usage.get("input_tokens", 0),
+            output_tokens=token_usage.get("output_tokens", 0),
+            total_tokens=token_usage.get("total_tokens", 0),
+        )
+        db.add(token_usage_record)
+        
         db.commit()
         return JSONResponse(
             content=essay_qa_data,
@@ -177,7 +189,7 @@ async def create_essay_qa_from_pdf(
             feedback_context = collect_feedback_context(db, user_id=current_user.id)
 
             # Generate Essay QA from the PDF
-            essay_qa_data = generate_essay_qa_from_pdf(
+            essay_qa_data, token_usage = generate_essay_qa_from_pdf(
                 temp_file_path,
                 num_questions,
                 difficulty,
@@ -239,6 +251,18 @@ async def create_essay_qa_from_pdf(
                 logging.warning(f"[ESSAY] No project_id provided, skipping reference creation")
 
             consume_generation_token(db, current_user)
+            
+            # Store token usage
+            token_usage_record = TokenUsage(
+                user_id=current_user.id,
+                generation_type="essay_qa",
+                topic_id=essay_qa_topic.id,
+                input_tokens=token_usage.get("input_tokens", 0),
+                output_tokens=token_usage.get("output_tokens", 0),
+                total_tokens=token_usage.get("total_tokens", 0),
+            )
+            db.add(token_usage_record)
+            
             db.commit()
             return JSONResponse(
                 content=essay_qa_data,

@@ -28,6 +28,9 @@ export interface AdminStats {
   total_quizzes: number;
   total_flashcards: number;
   total_essays: number;
+  total_input_tokens: number;
+  total_output_tokens: number;
+  total_tokens: number;
 }
 
 export interface AdminCheckResponse {

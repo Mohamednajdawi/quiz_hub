@@ -359,6 +359,9 @@ class GenerationJob(Base):
     payload = Column(JSON, nullable=True)
     result_topic_id = Column(Integer, nullable=True)
     error_message = Column(Text, nullable=True)
+    input_tokens = Column(Integer, nullable=True)
+    output_tokens = Column(Integer, nullable=True)
+    total_tokens = Column(Integer, nullable=True)
     created_at = Column(DateTime, default=datetime.datetime.now)
     updated_at = Column(DateTime, default=datetime.datetime.now, onupdate=datetime.datetime.now)
     completed_at = Column(DateTime, nullable=True)
@@ -366,6 +369,21 @@ class GenerationJob(Base):
     user = relationship("User")
     project = relationship("StudentProject")
     content = relationship("StudentProjectContent")
+
+
+class TokenUsage(Base):
+    __tablename__ = "token_usage"
+
+    id = Column(Integer, primary_key=True)
+    user_id = Column(String(255), ForeignKey("users.id"), nullable=False)
+    generation_type = Column(String(50), nullable=False)  # quiz, flashcard, essay_qa, mind_map
+    topic_id = Column(Integer, nullable=True)  # ID of the generated content
+    input_tokens = Column(Integer, nullable=False)
+    output_tokens = Column(Integer, nullable=False)
+    total_tokens = Column(Integer, nullable=False)
+    created_at = Column(DateTime, default=datetime.datetime.now)
+
+    user = relationship("User")
 
 
 class Referral(Base):

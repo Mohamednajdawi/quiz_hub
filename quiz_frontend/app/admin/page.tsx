@@ -182,6 +182,53 @@ function AdminDashboardContent() {
           </div>
         )}
 
+        {/* Token Usage Stats */}
+        {stats && (
+          <div className="grid grid-cols-1 gap-6 sm:grid-cols-3 mb-8">
+            <Card>
+              <div className="flex items-center">
+                <div className="flex-shrink-0 bg-cyan-100 rounded-md p-3">
+                  <FileText className="h-6 w-6 text-cyan-600" />
+                </div>
+                <div className="ml-4">
+                  <p className="text-sm font-medium text-gray-700">Input Tokens</p>
+                  <p className="text-2xl font-semibold text-gray-900">
+                    {stats.total_input_tokens.toLocaleString()}
+                  </p>
+                </div>
+              </div>
+            </Card>
+
+            <Card>
+              <div className="flex items-center">
+                <div className="flex-shrink-0 bg-teal-100 rounded-md p-3">
+                  <FileText className="h-6 w-6 text-teal-600" />
+                </div>
+                <div className="ml-4">
+                  <p className="text-sm font-medium text-gray-700">Output Tokens</p>
+                  <p className="text-2xl font-semibold text-gray-900">
+                    {stats.total_output_tokens.toLocaleString()}
+                  </p>
+                </div>
+              </div>
+            </Card>
+
+            <Card>
+              <div className="flex items-center">
+                <div className="flex-shrink-0 bg-emerald-100 rounded-md p-3">
+                  <FileText className="h-6 w-6 text-emerald-600" />
+                </div>
+                <div className="ml-4">
+                  <p className="text-sm font-medium text-gray-700">Total Tokens</p>
+                  <p className="text-2xl font-semibold text-gray-900">
+                    {stats.total_tokens.toLocaleString()}
+                  </p>
+                </div>
+              </div>
+            </Card>
+          </div>
+        )}
+
         {/* Users Table */}
         <Card>
           <CardHeader title="All Users" />

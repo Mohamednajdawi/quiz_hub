@@ -11,7 +11,7 @@ import logging
 
 from backend.api_routers.schemas import FlashcardRequest
 from backend.database.db import get_db
-from backend.database.sqlite_dal import FlashcardTopic, FlashcardCard
+from backend.database.sqlite_dal import FlashcardTopic, FlashcardCard, TokenUsage
 from backend.utils.utils import generate_flashcards, generate_flashcards_from_pdf
 from backend.api_routers.routers.auth_router import get_current_user_dependency
 from backend.database.sqlite_dal import User as UserModel
@@ -33,7 +33,7 @@ async def create_flashcards(
 
         feedback_context = collect_feedback_context(db, user_id=current_user.id)
 
-        flashcard_data = generate_flashcards(
+        flashcard_data, token_usage = generate_flashcards(
             url,
             num_cards=request.num_cards,
             feedback=feedback_context,
@@ -79,6 +79,18 @@ async def create_flashcards(
             db.add(flashcard_card)
 
         consume_generation_token(db, current_user)
+        
+        # Store token usage
+        token_usage_record = TokenUsage(
+            user_id=current_user.id,
+            generation_type="flashcard",
+            topic_id=flashcard_topic.id,
+            input_tokens=token_usage.get("input_tokens", 0),
+            output_tokens=token_usage.get("output_tokens", 0),
+            total_tokens=token_usage.get("total_tokens", 0),
+        )
+        db.add(token_usage_record)
+        
         db.commit()
         return JSONResponse(
             content=flashcard_data,
@@ -184,7 +196,7 @@ async def create_flashcards_from_pdf(
                 feedback_context = collect_feedback_context(db, user_id=current_user.id)
 
             # Generate flashcards from the PDF
-            flashcard_data = generate_flashcards_from_pdf(
+            flashcard_data, token_usage = generate_flashcards_from_pdf(
                 temp_file_path,
                 num_cards=num_cards,
                 feedback=feedback_context,
@@ -242,6 +254,18 @@ async def create_flashcards_from_pdf(
                 logging.warning(f"[FLASHCARDS] No project_id provided, skipping reference creation")
 
             consume_generation_token(db, current_user)
+            
+            # Store token usage
+            token_usage_record = TokenUsage(
+                user_id=current_user.id,
+                generation_type="flashcard",
+                topic_id=flashcard_topic.id,
+                input_tokens=token_usage.get("input_tokens", 0),
+                output_tokens=token_usage.get("output_tokens", 0),
+                total_tokens=token_usage.get("total_tokens", 0),
+            )
+            db.add(token_usage_record)
+            
             db.commit()
             return JSONResponse(
                 content=flashcard_data,
