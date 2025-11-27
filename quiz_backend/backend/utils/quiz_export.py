@@ -4,6 +4,8 @@ import io
 import json
 from typing import Iterable, List, Sequence, Tuple
 
+import re
+
 from docx import Document
 from docx.shared import Pt
 from reportlab.lib.pagesizes import LETTER
@@ -13,20 +15,30 @@ from reportlab.platypus import Paragraph, SimpleDocTemplate, Spacer
 from backend.database.sqlite_dal import QuizQuestion, QuizTopic
 
 
+OPTION_PREFIX_PATTERN = re.compile(r"^[A-Za-z]\s*[\.\)\-:]\s+")
+
+
+def _clean_option_text(option: str) -> str:
+    stripped = option.strip()
+    if OPTION_PREFIX_PATTERN.match(stripped):
+        stripped = OPTION_PREFIX_PATTERN.sub("", stripped, count=1).strip()
+    return stripped
+
+
 def _normalize_options(options: Sequence[str] | str | None) -> List[str]:
     if options is None:
         return []
     if isinstance(options, list):
-        return [str(option) for option in options]
+        return [_clean_option_text(str(option)) for option in options]
     if isinstance(options, str):
         try:
             parsed = json.loads(options)
             if isinstance(parsed, list):
-                return [str(option) for option in parsed]
+                return [_clean_option_text(str(option)) for option in parsed]
         except json.JSONDecodeError:
             pass
-        return [options]
-    return [str(options)]
+        return [_clean_option_text(options)]
+    return [_clean_option_text(str(options))]
 
 
 def _resolve_correct_answer(question: QuizQuestion, options: List[str]) -> Tuple[str, str]:
