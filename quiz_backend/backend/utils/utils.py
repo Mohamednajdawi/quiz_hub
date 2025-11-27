@@ -24,7 +24,7 @@ from backend.pipelines.content_pipelines import (
 logger = logging.getLogger(__name__)
 
 
-def _extract_token_usage_from_pipeline_result(result: Dict[str, Any], generator_component_name: str = "generator") -> Dict[str, int]:
+def _extract_token_usage_from_pipeline_result(result: Dict[str, Any], generator_component_name: str = "generator", pipeline_instance=None) -> Dict[str, int]:
     """
     Extract token usage from Haystack pipeline result.
     
@@ -73,10 +73,32 @@ def _extract_token_usage_from_pipeline_result(result: Dict[str, Any], generator_
             if not usage:
                 usage = {k: v for k, v in metadata.items() if "token" in k.lower()}
         
-        # Method 4: Try to access from generator's internal _last_response if available
-        # This is a fallback that might work if we can access the generator instance
+        # Method 4: Try to access from generator's internal state via pipeline instance
+        if not usage and pipeline_instance:
+            try:
+                generator_component = pipeline_instance.get_component(generator_component_name)
+                if generator_component:
+                    # Try to access internal OpenAI response
+                    for attr in ["_last_response", "_response", "last_response"]:
+                        if hasattr(generator_component, attr):
+                            response = getattr(generator_component, attr)
+                            if response:
+                                if hasattr(response, "usage"):
+                                    usage_obj = response.usage
+                                    usage = {
+                                        "prompt_tokens": getattr(usage_obj, "prompt_tokens", 0) or 0,
+                                        "completion_tokens": getattr(usage_obj, "completion_tokens", 0) or 0,
+                                        "total_tokens": getattr(usage_obj, "total_tokens", 0) or 0,
+                                    }
+                                    break
+                                elif isinstance(response, dict) and "usage" in response:
+                                    usage = response["usage"]
+                                    break
+            except Exception as e:
+                logger.debug(f"Could not access generator from pipeline: {e}")
+        
+        # Method 5: Log the structure for debugging if still no usage found
         if not usage:
-            # Log the structure for debugging
             logger.debug(f"Generator result type: {type(generator_result)}, keys: {list(generator_result.keys()) if isinstance(generator_result, dict) else 'N/A'}")
             logger.debug(f"Result keys: {list(result.keys()) if isinstance(result, dict) else 'N/A'}")
         
@@ -105,7 +127,16 @@ def _extract_token_usage_from_pipeline_result(result: Dict[str, Any], generator_
         total_tokens = int(total_tokens) if total_tokens else (input_tokens + output_tokens)
         
         if total_tokens == 0:
-            logger.warning(f"Token usage extraction returned 0. Result structure: {type(result)}, Generator result: {type(generator_result)}")
+            # Log detailed structure for debugging
+            logger.warning(f"Token usage extraction returned 0. Result structure: {type(result)}")
+            if isinstance(result, dict):
+                logger.warning(f"Result keys: {list(result.keys())}")
+            logger.warning(f"Generator result type: {type(generator_result)}")
+            if isinstance(generator_result, dict):
+                logger.warning(f"Generator result keys: {list(generator_result.keys())}")
+                # Log first few characters of values for debugging
+                for key, value in list(generator_result.items())[:5]:
+                    logger.warning(f"  {key}: {type(value)} - {str(value)[:100] if value else 'None'}")
         
         return {
             "input_tokens": input_tokens,
@@ -193,7 +224,7 @@ def generate_flashcards(
         }
     )
     flashcards = result["flashcard_parser"]["flashcards"]
-    token_usage = _extract_token_usage_from_pipeline_result(result)
+    token_usage = _extract_token_usage_from_pipeline_result(result, pipeline_instance=url_flashcard_generation_pipeline)
     return flashcards, token_usage
 
 
@@ -223,7 +254,7 @@ def generate_flashcards_from_pdf(
         }
     )
     flashcards = result["flashcard_parser"]["flashcards"]
-    token_usage = _extract_token_usage_from_pipeline_result(result)
+    token_usage = _extract_token_usage_from_pipeline_result(result, pipeline_instance=pdf_flashcard_generation_pipeline)
     return flashcards, token_usage
 
 
@@ -255,7 +286,7 @@ def generate_essay_qa(
         }
     )
     essay_qa = result["essay_qa_parser"]["essay_qa"]
-    token_usage = _extract_token_usage_from_pipeline_result(result)
+    token_usage = _extract_token_usage_from_pipeline_result(result, pipeline_instance=url_essay_qa_generation_pipeline)
     return essay_qa, token_usage
 
 
@@ -287,7 +318,7 @@ def generate_essay_qa_from_pdf(
         }
     )
     essay_qa = result["essay_qa_parser"]["essay_qa"]
-    token_usage = _extract_token_usage_from_pipeline_result(result)
+    token_usage = _extract_token_usage_from_pipeline_result(result, pipeline_instance=pdf_essay_qa_generation_pipeline)
     return essay_qa, token_usage
 
 
@@ -325,7 +356,7 @@ def generate_mind_map_from_pdf(
     try:
         result = pdf_mind_map_generation_pipeline.run(payload)
         mind_map = result["mind_map_parser"]["mind_map"]
-        token_usage = _extract_token_usage_from_pipeline_result(result)
+        token_usage = _extract_token_usage_from_pipeline_result(result, pipeline_instance=pdf_mind_map_generation_pipeline)
         
         node_count = len(mind_map.get("nodes", []))
         edge_count = len(mind_map.get("edges", []))
@@ -557,25 +588,45 @@ def _extract_token_usage_from_generator_instance(generator) -> Dict[str, int]:
     try:
         # Try to access internal attributes where Haystack might store the response
         # Common attribute names: _last_response, _response, last_response, response
-        for attr_name in ["_last_response", "_response", "last_response", "response"]:
+        # Also try accessing the OpenAI client directly
+        for attr_name in ["_last_response", "_response", "last_response", "response", "_last_raw_response"]:
             if hasattr(generator, attr_name):
                 response = getattr(generator, attr_name)
-                if response and hasattr(response, "usage"):
-                    usage = response.usage
-                    if usage:
-                        return {
-                            "input_tokens": getattr(usage, "prompt_tokens", 0) or 0,
-                            "output_tokens": getattr(usage, "completion_tokens", 0) or 0,
-                            "total_tokens": getattr(usage, "total_tokens", 0) or 0,
-                        }
-                # Also try if response is a dict
-                if isinstance(response, dict) and "usage" in response:
-                    usage = response["usage"]
-                    return {
-                        "input_tokens": usage.get("prompt_tokens", 0) or 0,
-                        "output_tokens": usage.get("completion_tokens", 0) or 0,
-                        "total_tokens": usage.get("total_tokens", 0) or 0,
-                    }
+                if response:
+                    # Check if it's an OpenAI response object
+                    if hasattr(response, "usage"):
+                        usage = response.usage
+                        if usage:
+                            return {
+                                "input_tokens": getattr(usage, "prompt_tokens", 0) or 0,
+                                "output_tokens": getattr(usage, "completion_tokens", 0) or 0,
+                                "total_tokens": getattr(usage, "total_tokens", 0) or 0,
+                            }
+                    # Also try if response is a dict
+                    if isinstance(response, dict):
+                        if "usage" in response:
+                            usage = response["usage"]
+                            return {
+                                "input_tokens": usage.get("prompt_tokens", 0) or usage.get("input_tokens", 0) or 0,
+                                "output_tokens": usage.get("completion_tokens", 0) or usage.get("output_tokens", 0) or 0,
+                                "total_tokens": usage.get("total_tokens", 0) or 0,
+                            }
+        
+        # Try accessing the OpenAI client's last response
+        for client_attr in ["_client", "_api_client", "client"]:
+            if hasattr(generator, client_attr):
+                client = getattr(generator, client_attr)
+                if client and hasattr(client, "chat"):
+                    # Try to get last response from chat completions
+                    if hasattr(client.chat.completions, "_last_response"):
+                        response = client.chat.completions._last_response
+                        if response and hasattr(response, "usage"):
+                            usage = response.usage
+                            return {
+                                "input_tokens": getattr(usage, "prompt_tokens", 0) or 0,
+                                "output_tokens": getattr(usage, "completion_tokens", 0) or 0,
+                                "total_tokens": getattr(usage, "total_tokens", 0) or 0,
+                            }
     except Exception as e:
         logger.debug(f"Failed to extract token usage from generator instance: {e}")
     
