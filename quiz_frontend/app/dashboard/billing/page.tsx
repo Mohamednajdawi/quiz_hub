@@ -265,7 +265,13 @@ export function BillingContent() {
                   <dd className="font-medium text-gray-900">{renewalText}</dd>
                 </div>
                 <div className="flex justify-between">
-                  <dt>Monthly quota</dt>
+                  <dt>Monthly limit</dt>
+                  <dd className="font-medium text-gray-900">
+                    {subscription?.monthly_limit ?? '—'} generations
+                  </dd>
+                </div>
+                <div className="flex justify-between">
+                  <dt>Used this month</dt>
                   <dd className="font-medium text-gray-900">
                     {subscription?.monthly_generations ?? '—'} generations
                   </dd>

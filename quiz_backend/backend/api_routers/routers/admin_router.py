@@ -3,7 +3,7 @@ from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 
 from backend.database.db import get_db
-from backend.database.sqlite_dal import User, TokenUsage, GenerationJob
+from backend.database.sqlite_dal import User, TokenUsage, GenerationJob, MindMap
 from backend.api_routers.routers.auth_router import get_current_user_dependency
 from backend.utils.admin import is_admin_user, get_all_users_with_stats
 from sqlalchemy import func
@@ -82,6 +82,7 @@ async def get_admin_stats(
         total_quizzes = sum(u["quiz_count"] for u in users_data)
         total_flashcards = sum(u.get("flashcard_count", 0) for u in users_data)
         total_essays = sum(u.get("essay_count", 0) for u in users_data)
+        total_mind_maps = sum(u.get("mind_map_count", 0) for u in users_data)
         active_users = sum(1 for u in users_data if u["is_active"])
         
         # Calculate token usage statistics
@@ -115,6 +116,7 @@ async def get_admin_stats(
                 "total_quizzes": total_quizzes,
                 "total_flashcards": total_flashcards,
                 "total_essays": total_essays,
+                "total_mind_maps": total_mind_maps,
                 "total_input_tokens": int(total_input_tokens),
                 "total_output_tokens": int(total_output_tokens),
                 "total_tokens": int(total_tokens),

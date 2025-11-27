@@ -156,7 +156,7 @@ function StudentHubContent() {
                         </span>
                         <span className="inline-flex items-center gap-1 px-2 py-1 bg-white rounded-md text-xs font-medium text-gray-700 border border-amber-200">
                           <Zap className="w-3 h-3 text-yellow-600" />
-                          200 AI Generations
+                          100 AI Generations
                         </span>
                         <span className="inline-flex items-center gap-1 px-2 py-1 bg-white rounded-md text-xs font-medium text-gray-700 border border-amber-200">
                           <Sparkles className="w-3 h-3 text-purple-600" />

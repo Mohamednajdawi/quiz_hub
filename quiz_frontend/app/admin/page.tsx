@@ -81,7 +81,7 @@ function AdminDashboardContent() {
 
         {/* Stats Overview */}
         {stats && (
-          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-7 mb-8">
+          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-8 mb-8">
             <Card>
               <div className="flex items-center">
                 <div className="flex-shrink-0 bg-indigo-100 rounded-md p-3">
@@ -179,6 +179,20 @@ function AdminDashboardContent() {
                 </div>
               </div>
             </Card>
+
+            <Card>
+              <div className="flex items-center">
+                <div className="flex-shrink-0 bg-teal-100 rounded-md p-3">
+                  <Layers className="h-6 w-6 text-teal-600" />
+                </div>
+                <div className="ml-4">
+                  <p className="text-sm font-medium text-gray-700">Mind Maps</p>
+                  <p className="text-2xl font-semibold text-gray-900">
+                    {stats.total_mind_maps}
+                  </p>
+                </div>
+              </div>
+            </Card>
           </div>
         )}
 
@@ -272,6 +286,9 @@ function AdminDashboardContent() {
                     Essays
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
+                    Mind Maps
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
                     Input Tokens
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
@@ -291,7 +308,7 @@ function AdminDashboardContent() {
               <tbody className="bg-white divide-y divide-gray-200">
                 {filteredUsers.length === 0 ? (
                   <tr>
-                    <td colSpan={11} className="px-6 py-8 text-center text-sm text-gray-500">
+                    <td colSpan={12} className="px-6 py-8 text-center text-sm text-gray-500">
                       {searchQuery ? 'No users found matching your search.' : 'No users found.'}
                     </td>
                   </tr>
@@ -354,6 +371,9 @@ function UserRow({ user }: { user: AdminUser }) {
       </td>
       <td className="px-6 py-4 whitespace-nowrap">
         <div className="text-sm text-gray-900">{user.essay_count}</div>
+      </td>
+      <td className="px-6 py-4 whitespace-nowrap">
+        <div className="text-sm text-gray-900">{user.mind_map_count || 0}</div>
       </td>
       <td className="px-6 py-4 whitespace-nowrap">
         <div className="text-sm text-gray-900 font-mono">

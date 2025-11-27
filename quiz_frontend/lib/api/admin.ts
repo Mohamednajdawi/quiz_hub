@@ -10,6 +10,7 @@ export interface AdminUser {
   quiz_count: number;
   flashcard_count: number;
   essay_count: number;
+  mind_map_count: number;
   is_active: boolean;
   created_at?: string | null;
   free_tokens?: number | null;
@@ -31,6 +32,7 @@ export interface AdminStats {
   total_quizzes: number;
   total_flashcards: number;
   total_essays: number;
+  total_mind_maps: number;
   total_input_tokens: number;
   total_output_tokens: number;
   total_tokens: number;

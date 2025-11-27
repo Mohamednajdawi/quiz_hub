@@ -7,7 +7,11 @@ limits:
     max_projects: 3
   pro_tier:
     max_projects: -1 # Unlimited
-    monthly_generations: 200
+    # ⚠️ SINGLE SOURCE OF TRUTH: Configure pro tier monthly generation limit here
+    # This value is used throughout the application. If you change this, also update:
+    # - The "features" list below in pricing.tiers (pro tier)
+    # - The frontend display in quiz_frontend/app/student-hub/page.tsx (if hardcoded)
+    monthly_generations: 100
 
 pricing:
   currency: "EUR"
@@ -42,7 +46,7 @@ pricing:
       tagline: "For students who rely on Quiz Hub daily"
       description: "Ideal for Students and Teachers who rely on Quiz Hub daily."
       features:
-        - "200 AI generations and chats per month"
+        - "100 AI generations and chats per month"
         - "Unlimited projects in Student Hub"
         - "Export Flashcards to Anki format"
         - "Export Quizzes and Essays to PDF format"

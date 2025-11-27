@@ -9,6 +9,10 @@ from typing import Any, Dict, Optional, Tuple
 import yaml
 
 
+# Pro tier monthly generation limit - configure in app_config.yaml
+# This is the fallback default if not specified in config file
+PRO_MONTHLY_GENERATIONS_DEFAULT = 100
+
 DEFAULT_CONFIG: Dict[str, Any] = {
     "free_generation_quota": 10,
     "limits": {
@@ -17,7 +21,9 @@ DEFAULT_CONFIG: Dict[str, Any] = {
         },
         "pro_tier": {
             "max_projects": -1,
-            "monthly_generations": 200,
+            # monthly_generations should be configured in app_config.yaml
+            # This default is only used if the config file doesn't specify it
+            "monthly_generations": PRO_MONTHLY_GENERATIONS_DEFAULT,
         },
     },
     "pricing": {
@@ -156,6 +162,12 @@ def get_free_generation_quota() -> int:
 
 
 def get_pro_generation_limit() -> int:
+    """
+    Get the pro tier monthly generation limit.
+    
+    Configure this value in app_config.yaml under limits.pro_tier.monthly_generations
+    If not specified in config file, uses PRO_MONTHLY_GENERATIONS_DEFAULT constant.
+    """
     config = get_app_config()
     limits = config.get("limits") or {}
     pro_limits = limits.get("pro_tier") or {}
@@ -163,11 +175,19 @@ def get_pro_generation_limit() -> int:
 
     try:
         if limit_value is None:
-            raise ValueError("missing pro tier monthly_generations")
+            logging.warning(
+                "Pro tier monthly_generations not found in config. "
+                f"Using default: {PRO_MONTHLY_GENERATIONS_DEFAULT}. "
+                "Configure in app_config.yaml under limits.pro_tier.monthly_generations"
+            )
+            return PRO_MONTHLY_GENERATIONS_DEFAULT
         return int(limit_value)
-    except (TypeError, ValueError):
-        default_limits = DEFAULT_CONFIG.get("limits", {}).get("pro_tier", {})
-        return int(default_limits.get("monthly_generations", 200))
+    except (TypeError, ValueError) as e:
+        logging.warning(
+            f"Invalid pro tier monthly_generations value: {limit_value}. "
+            f"Using default: {PRO_MONTHLY_GENERATIONS_DEFAULT}. Error: {e}"
+        )
+        return PRO_MONTHLY_GENERATIONS_DEFAULT
 
 
 def get_subscription_plans_config() -> Dict[str, Dict[str, Any]]:

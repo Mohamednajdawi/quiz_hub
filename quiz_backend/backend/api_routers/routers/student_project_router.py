@@ -32,6 +32,7 @@ from backend.database.sqlite_dal import (
     MindMap,
     Subscription,
     GenerationJob,
+    TokenUsage,
 )
 from backend.api_routers.routers.auth_router import get_current_user_dependency
 from backend.utils.credits import consume_generation_token
@@ -996,6 +997,18 @@ def _process_mind_map_generation_job(job_id: int) -> None:
         job.total_tokens = token_usage.get("total_tokens", 0)
         logging.info("[MIND MAP JOB] Token usage: input=%d, output=%d, total=%d", 
                     job.input_tokens, job.output_tokens, job.total_tokens)
+
+        # Store token usage in TokenUsage table (like flashcard generation)
+        token_usage_record = TokenUsage(
+            user_id=user.id,
+            generation_type="mind_map",
+            topic_id=mind_map.id,
+            input_tokens=token_usage.get("input_tokens", 0),
+            output_tokens=token_usage.get("output_tokens", 0),
+            total_tokens=token_usage.get("total_tokens", 0),
+        )
+        session.add(token_usage_record)
+        logging.debug("[MIND MAP JOB] Created TokenUsage record for mind_map id=%s", mind_map.id)
 
         job.status = "completed"
         job.result_topic_id = mind_map.id
