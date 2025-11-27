@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { ProtectedRoute } from '@/components/ProtectedRoute';
@@ -862,10 +862,41 @@ function ProjectDetailContent() {
   const [readyMindMaps, setReadyMindMaps] = useState<Array<{ jobId: number; mindMapId: number; title: string; contentName: string }>>([]);
   const activeJobsRef = useRef(activeJobs);
   const { registerJob, startFlashcardGeneration, flashcardTasks } = useGenerationJobs();
+  const activeJobsStorageKey = useMemo(
+    () => (projectId ? `quizhub_active_jobs_${projectId}` : null),
+    [projectId]
+  );
 
   useEffect(() => {
     activeJobsRef.current = activeJobs;
   }, [activeJobs]);
+
+  useEffect(() => {
+    if (!activeJobsStorageKey) {
+      return;
+    }
+    try {
+      const storedJobs = typeof window !== 'undefined' ? localStorage.getItem(activeJobsStorageKey) : null;
+      if (storedJobs) {
+        const parsed = JSON.parse(storedJobs) as Array<{ jobId: number; contentId: number; contentName: string; jobType: 'quiz' | 'essay' | 'mind_map' }>;
+        setActiveJobs(parsed);
+        activeJobsRef.current = parsed;
+      }
+    } catch (error) {
+      console.warn('Failed to restore active jobs from storage', error);
+    }
+  }, [activeJobsStorageKey]);
+
+  useEffect(() => {
+    if (!activeJobsStorageKey || typeof window === 'undefined') {
+      return;
+    }
+    try {
+      localStorage.setItem(activeJobsStorageKey, JSON.stringify(activeJobs));
+    } catch (error) {
+      console.warn('Failed to persist active jobs', error);
+    }
+  }, [activeJobs, activeJobsStorageKey]);
 
   const { data: project, isLoading: projectLoading } = useQuery<StudentProject>({
     queryKey: ['student-project', projectId],
