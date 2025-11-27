@@ -6,7 +6,14 @@ from sqlalchemy.orm import Session
 from sqlalchemy import and_
 
 from backend.config import get_free_generation_quota, get_pro_generation_limit
-from backend.database.sqlite_dal import User, Subscription, QuizTopic, FlashcardTopic, EssayQATopic
+from backend.database.sqlite_dal import (
+    User,
+    Subscription,
+    QuizTopic,
+    FlashcardTopic,
+    EssayQATopic,
+    MindMap,
+)
 
 
 def _payment_required_message() -> str:
@@ -91,7 +98,16 @@ def count_monthly_generations(db: Session, user: User, subscription: Subscriptio
         )
     ).count()
     
-    return quiz_count + flashcard_count + essay_count
+    # Count mind maps created in this period
+    mind_map_count = db.query(MindMap).filter(
+        and_(
+            MindMap.user_id == user.id,
+            MindMap.created_at >= period_start,
+            MindMap.created_at <= period_end,
+        )
+    ).count()
+
+    return quiz_count + flashcard_count + essay_count + mind_map_count
 
 
 def consume_generation_token(db: Session, user: User, amount: int = 1) -> None:
