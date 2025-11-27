@@ -54,19 +54,33 @@ def _extract_token_usage_from_pipeline_result(result: Dict[str, Any], generator_
         if hasattr(generator_result, "meta"):
             metadata = generator_result.meta
         elif isinstance(generator_result, dict):
-            metadata = generator_result.get("meta", {})
+            metadata = generator_result.get("meta")
             # Also check for direct usage in the result
             if not metadata and "usage" in generator_result:
                 usage = generator_result.get("usage", {})
         
         # Method 3: Check if metadata is in the main result
         if not metadata and isinstance(result, dict):
-            metadata = result.get("meta", {})
+            metadata = result.get("meta")
             if not usage and "usage" in result:
                 usage = result.get("usage", {})
         
         # Extract usage from metadata
-        if isinstance(metadata, dict):
+        # Haystack with tracing enabled returns meta as a list of response objects
+        if isinstance(metadata, list) and len(metadata) > 0:
+            # Get the first item (usually the main response)
+            first_meta = metadata[0]
+            if isinstance(first_meta, dict) and "usage" in first_meta:
+                usage = first_meta.get("usage", {})
+            elif hasattr(first_meta, "usage"):
+                usage_obj = first_meta.usage
+                if usage_obj:
+                    usage = {
+                        "prompt_tokens": getattr(usage_obj, "prompt_tokens", 0) or 0,
+                        "completion_tokens": getattr(usage_obj, "completion_tokens", 0) or 0,
+                        "total_tokens": getattr(usage_obj, "total_tokens", 0) or 0,
+                    }
+        elif isinstance(metadata, dict):
             if not usage:
                 usage = metadata.get("usage", {})
             # Also check for direct usage keys in metadata
