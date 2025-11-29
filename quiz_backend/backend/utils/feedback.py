@@ -38,6 +38,7 @@ def generate_quiz_feedback(
     percentage: float,
     time_taken_seconds: int,
     question_details: Iterable[dict],
+    source_material: Optional[str] = None,
 ) -> Optional[str]:
     """
     Generate a one-paragraph feedback summary for a quiz attempt.
@@ -54,6 +55,8 @@ def generate_quiz_feedback(
             - correct_answer (str | None)
             - user_answer (str | None)
             - is_correct (bool)
+        source_material: Optional source material text (PDF content, URL content) that the quiz was generated from.
+                        If provided, will be used to give specific reading recommendations.
 
     Returns:
         A single-paragraph feedback string, or None if generation fails or API key missing.
@@ -161,8 +164,21 @@ def generate_quiz_feedback(
     study_seed_lines = [
         f"- Flashcards focus: {weak_topic_name_list}",
         f"- Targeted quizzes focus: {focus_text}",
-        "- Deep reading focus: revisit the source material sections tied to the above weak topics.",
     ]
+    
+    # Add source material context if available
+    source_material_context = ""
+    if source_material:
+        # Truncate source material to reasonable length (2000 chars) to avoid token limits
+        truncated_source = source_material[:2000] + ("..." if len(source_material) > 2000 else "")
+        source_material_context = f"\n\nSource Material Context (for reference):\n{truncated_source}"
+        study_seed_lines.append(
+            "- Deep reading focus: Use the source material context below to identify specific sections to review for the weak topics."
+        )
+    else:
+        study_seed_lines.append(
+            "- Deep reading focus: revisit the source material sections tied to the above weak topics."
+        )
 
     summary_text_lines = [
         f"Quiz topic: {topic_name}",
@@ -175,7 +191,7 @@ def generate_quiz_feedback(
         f"Adaptive difficulty recommendation: {recommended_difficulty_level.upper()} — {recommended_difficulty_reason}",
         f"Question insights:\n{question_context}",
     ]
-    summary_text = "\n".join(summary_text_lines)
+    summary_text = "\n".join(summary_text_lines) + source_material_context
 
     try:
         response = client.chat.completions.create(
@@ -193,7 +209,7 @@ def generate_quiz_feedback(
                         "Study Plan:\n"
                         "- Flashcards: <Personalized card practice tied to weak topics>\n"
                         "- Targeted Quizzes: <Specific quiz actions tied to weak topics>\n"
-                        "- Deep Reading: <Specific reading/review guidance>\n"
+                        "- Deep Reading: <Specific reading/review guidance. If source material context is provided, reference specific sections, paragraphs, or concepts from it. For example: 'Review the section on [specific topic] in the source material, particularly the discussion about [specific concept].' If no source material is provided, give general guidance.>\n"
                         "Adaptive Difficulty: <State the recommended difficulty level provided in the context and why.>\n"
                         "Requirements:\n"
                         "- Bold key skills, topics, or action verbs using **double asterisks**.\n"
@@ -203,6 +219,7 @@ def generate_quiz_feedback(
                         "- Work the provided study plan seeds into your guidance naturally.\n"
                         "- Never reference question numbers (like 'Question 2'); instead, restate the topic/skill names provided in the context.\n"
                         "- Each Study Plan bullet should start with 'Focus on' followed by the topic name (e.g., 'Focus on **photosynthesis basics** by...').\n"
+                        "- If source material context is provided, use it to give specific, actionable reading recommendations. Reference actual content from the source material when relevant.\n"
                     ),
                 },
                 {

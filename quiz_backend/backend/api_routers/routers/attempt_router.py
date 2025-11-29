@@ -14,11 +14,79 @@ from backend.database.sqlite_dal import (
     QuizTopic,
     StudentProject,
     StudentProjectContent,
+    StudentProjectQuizReference,
     User,
 )
 from backend.utils.feedback import generate_quiz_feedback
+from backend.components.custom_components import PDFTextExtractor
 
 router = APIRouter()
+
+
+def _retrieve_source_material_for_quiz(
+    db: Session,
+    topic_id: int,
+) -> Optional[str]:
+    """
+    Retrieve source material text for a quiz topic.
+    
+    Tries to find the source material by:
+    1. Looking for StudentProjectQuizReference linking to StudentProjectContent
+    2. Extracting text from the PDF file if it exists
+    
+    Args:
+        db: Database session
+        topic_id: Quiz topic ID
+        
+    Returns:
+        Source material text if found, None otherwise
+    """
+    try:
+        # Try to find the quiz reference to a student project content
+        quiz_ref = (
+            db.query(StudentProjectQuizReference)
+            .filter(StudentProjectQuizReference.quiz_topic_id == topic_id)
+            .first()
+        )
+        
+        if not quiz_ref:
+            return None
+        
+        # Get the content
+        content = (
+            db.query(StudentProjectContent)
+            .filter(StudentProjectContent.id == quiz_ref.content_id)
+            .first()
+        )
+        
+        if not content:
+            return None
+        
+        # If it's a PDF, extract text
+        if content.content_type == "pdf" and content.content_url:
+            import os
+            if os.path.exists(content.content_url):
+                try:
+                    extractor = PDFTextExtractor()
+                    extraction_result = extractor.run(file_path=content.content_url)
+                    extracted_text = extraction_result.get("text", "")
+                    if extracted_text.strip():
+                        return extracted_text
+                except Exception as extract_error:
+                    logging.warning(
+                        "[FEEDBACK] Failed to extract text from PDF %s: %s",
+                        content.content_url,
+                        extract_error
+                    )
+        
+        # If it's text content, return it directly
+        if content.content_text:
+            return content.content_text
+        
+        return None
+    except Exception as e:
+        logging.warning("[FEEDBACK] Error retrieving source material: %s", e)
+        return None
 
 
 def _normalize_answer_index(raw_value, options_length: int) -> Optional[int]:
@@ -206,6 +274,9 @@ async def record_quiz_result(request: QuizAttemptResultRequest, db: Session = De
     # Determine topic name for feedback context
     topic_name = topic.topic if topic else request.source_info or "URL/PDF Quiz"
 
+    # Retrieve source material if available
+    source_material = _retrieve_source_material_for_quiz(db, request.topic_id)
+
     # Generate AI feedback if possible
     ai_feedback: Optional[str] = None
     try:
@@ -222,6 +293,7 @@ async def record_quiz_result(request: QuizAttemptResultRequest, db: Session = De
             percentage=quiz_attempt.percentage_score,
             time_taken_seconds=request.time_taken_seconds,
             question_details=question_details,
+            source_material=source_material,
         )
     except Exception as feedback_error:  # pylint: disable=broad-except
         logging.error("[QUIZ FEEDBACK] Failed to prepare feedback context: %s", feedback_error)

@@ -687,6 +687,14 @@ async def submit_shared_quiz(
                 }
             )
 
+        # Try to retrieve source material for shared quizzes (may not always be available)
+        source_material = None
+        try:
+            from backend.api_routers.routers.attempt_router import _retrieve_source_material_for_quiz
+            source_material = _retrieve_source_material_for_quiz(db, quiz.id)
+        except Exception as source_error:
+            logging.debug("[QUIZ FEEDBACK] Could not retrieve source material for shared quiz: %s", source_error)
+        
         ai_feedback = generate_quiz_feedback(
             topic_name=quiz.topic,
             score=score,
@@ -694,6 +702,7 @@ async def submit_shared_quiz(
             percentage=percentage_score,
             time_taken_seconds=submission.time_taken_seconds,
             question_details=question_details,
+            source_material=source_material,
         )
     except Exception as feedback_error:  # pylint: disable=broad-except
         logging.error("[QUIZ FEEDBACK] Shared quiz feedback generation failed: %s", feedback_error)
