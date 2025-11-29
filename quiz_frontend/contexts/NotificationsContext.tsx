@@ -48,7 +48,7 @@ export function NotificationsProvider({ children }: { children: ReactNode }) {
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
   const [hasHydrated, setHasHydrated] = useState(false);
 
-  const storageKey = useMemo(() => (user?.id ? `quizhub_notifications_${user.id}` : null), [user?.id]);
+  const storageKey = useMemo(() => (user?.id ? `progrezz_notifications_${user.id}` : null), [user?.id]);
 
   // Hydrate notifications when user changes
   useEffect(() => {

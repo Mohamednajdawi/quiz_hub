@@ -1,7 +1,7 @@
-# Psychological UI/UX Improvements Applied to Quiz Hub
+# Psychological UI/UX Improvements Applied to Progrezz
 
 ## 🧠 Overview
-This document outlines the psychological principles applied to improve user experience and engagement in Quiz Hub.
+This document outlines the psychological principles applied to improve user experience and engagement in Progrezz.
 
 ---
 

@@ -373,8 +373,8 @@ function PricingPageContent() {
             <div className="px-6 pb-6">
               <div className="text-sm text-[#596078]">
                 <p>
-                  Email <a className="text-[#2756c7] hover:underline" href="mailto:support@quizhub.com">support@quizhub.com</a> for billing questions, or reach out to
-                  <a className="text-[#2756c7] hover:underline" href="mailto:sales@quizhub.com"> sales@quizhub.com</a> if you are planning a rollout for your institution.
+                  Email <a className="text-[#2756c7] hover:underline" href="mailto:support@progrezz.com">support@progrezz.com</a> for billing questions, or reach out to
+                  <a className="text-[#2756c7] hover:underline" href="mailto:sales@progrezz.com"> sales@progrezz.com</a> if you are planning a rollout for your institution.
                 </p>
               </div>
             </div>

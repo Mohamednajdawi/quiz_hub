@@ -176,7 +176,7 @@ export default function Home() {
   const feedbackLoopSteps = [
     {
       title: '1. Take a quiz or essay',
-      description: 'Run a fast attempt and let QuizHub capture every mistake automatically.',
+      description: 'Run a fast attempt and let Progrezz capture every mistake automatically.',
       icon: ClipboardList,
     },
     {
@@ -299,7 +299,7 @@ export default function Home() {
                 Every generation learns from the last
               </h2>
               <p className="text-lg text-gray-600 max-w-3xl mx-auto">
-                QuizHub feeds your latest AI feedback directly into new quizzes, flashcards, and essays so practice always targets the exact topics you missed.
+                Progrezz feeds your latest AI feedback directly into new quizzes, flashcards, and essays so practice always targets the exact topics you missed.
               </p>
             </div>
             <div className="relative">
@@ -347,7 +347,7 @@ export default function Home() {
                   <ul className="space-y-2 mb-6 text-sm text-gray-600">
                     <li className="flex items-center text-sm text-gray-600">
                       <CheckCircle2 className="w-4 h-4 text-indigo-600 mr-2 flex-shrink-0" />
-                      Pick difficulty or let QuizHub choose for you
+                      Pick difficulty or let Progrezz choose for you
                     </li>
                     <li className="flex items-center text-sm text-gray-600">
                       <CheckCircle2 className="w-4 h-4 text-indigo-600 mr-2 flex-shrink-0" />

@@ -1,4 +1,4 @@
-# Quiz Hub - Social Media Content
+# Progrezz - Social Media Content
 
 Ready-to-use social media posts for different platforms.
 
@@ -8,13 +8,13 @@ Ready-to-use social media posts for different platforms.
 
 ### Post 1: Introduction
 ```
-🚀 Introducing Quiz Hub - AI-powered study assistant that turns PDFs into quizzes, flashcards, and study materials in seconds.
+🚀 Introducing Progrezz - AI-powered study assistant that turns PDFs into quizzes, flashcards, and study materials in seconds.
 
 ✨ Free tier available
 📚 Perfect for students & educators
 🎯 Start learning smarter today
 
-→ quizhub.com
+→ progrezz.com
 
 #EdTech #AI #Learning
 ```
@@ -23,7 +23,7 @@ Ready-to-use social media posts for different platforms.
 ```
 Stop spending hours creating study materials. 
 
-Quiz Hub generates:
+Progrezz generates:
 ✅ Interactive quizzes
 ✅ Flashcard sets
 ✅ Essay questions
@@ -31,20 +31,20 @@ Quiz Hub generates:
 
 All from your PDFs and URLs. In seconds.
 
-Try free → quizhub.com
+Try free → progrezz.com
 
 #StudyTips #Productivity
 ```
 
 ### Post 3: Use Case
 ```
-"Quiz Hub saved me 10+ hours this semester"
+"Progrezz saved me 10+ hours this semester"
 
 Upload textbook chapters → Get instant quizzes → Track your progress → Ace your exams
 
 That's the power of AI-assisted learning.
 
-Start free → quizhub.com
+Start free → progrezz.com
 
 #StudentLife #EdTech
 ```
@@ -59,7 +59,7 @@ Built with:
 
 Modern tech stack. Lightning-fast performance. Enterprise-grade security.
 
-quizhub.com
+progrezz.com
 
 #WebDev #TechStack
 ```
@@ -70,13 +70,13 @@ quizhub.com
 
 ### Post 1: Professional Introduction
 ```
-I'm excited to introduce Quiz Hub - an AI-powered educational platform that's transforming how students study.
+I'm excited to introduce Progrezz - an AI-powered educational platform that's transforming how students study.
 
 The Problem:
 Students spend hours creating study materials instead of actually studying.
 
 The Solution:
-Quiz Hub uses AI to automatically generate quizzes, flashcards, and essay questions from PDFs and web articles - in seconds.
+Progrezz uses AI to automatically generate quizzes, flashcards, and essay questions from PDFs and web articles - in seconds.
 
 Key Features:
 • AI content generation (quizzes, flashcards, essays)
@@ -91,14 +91,14 @@ Perfect for:
 • Educators creating course content
 • Study groups collaborating
 
-Try it free: quizhub.com
+Try it free: progrezz.com
 
 #EdTech #AI #Education #Startup
 ```
 
 ### Post 2: Technical Deep Dive
 ```
-How we built Quiz Hub - a technical overview:
+How we built Progrezz - a technical overview:
 
 Architecture:
 • Backend: FastAPI (Python) with SQLAlchemy ORM
@@ -124,18 +124,18 @@ The result: A scalable, secure, and performant platform that helps students lear
 
 Built by students, for students.
 
-quizhub.com
+progrezz.com
 
 #SoftwareEngineering #WebDevelopment #TechStack
 ```
 
 ### Post 3: Use Case Story
 ```
-Real story: How Quiz Hub helped a student prepare for finals
+Real story: How Progrezz helped a student prepare for finals
 
 Sarah had 15 PDF chapters to review for her biology final. Creating practice questions would take days.
 
-With Quiz Hub:
+With Progrezz:
 • Uploaded all PDFs to Student Hub
 • Generated 15 quiz sets (one per chapter)
 • Studied with interactive flashcards
@@ -147,7 +147,7 @@ Result: Better grades, less stress
 
 That's the power of AI-assisted learning.
 
-Try Quiz Hub free: quizhub.com
+Try Progrezz free: progrezz.com
 
 #StudentSuccess #EdTech #AI
 ```
@@ -161,7 +161,7 @@ Try Quiz Hub free: quizhub.com
 Caption:
 Transform your study routine! 📚✨
 
-Quiz Hub turns any PDF or article into:
+Progrezz turns any PDF or article into:
 🎯 Interactive quizzes
 📝 Flashcard sets
 ✍️ Essay questions
@@ -177,13 +177,13 @@ Start learning smarter → Link in bio 👆
 ### Post 2: Before/After
 ```
 Caption:
-Before Quiz Hub: 😫
+Before Progrezz: 😫
 • Hours creating study materials
 • Manual flashcard creation
 • No progress tracking
 • Stressful exam prep
 
-After Quiz Hub: 😎
+After Progrezz: 😎
 • Seconds to generate content
 • AI-optimized flashcards
 • Detailed analytics
@@ -208,7 +208,7 @@ Payments: Stripe
 
 Fast. Secure. Scalable.
 
-quizhub.com → Link in bio 👆
+progrezz.com → Link in bio 👆
 
 #WebDev #TechStack #Programming #SoftwareEngineering
 ```
@@ -221,13 +221,13 @@ quizhub.com → Link in bio 👆
 ```
 Hey everyone! 👋
 
-We're excited to introduce Quiz Hub - an AI-powered study platform that's helping students learn more effectively.
+We're excited to introduce Progrezz - an AI-powered study platform that's helping students learn more effectively.
 
 What does it do?
 Upload a PDF or paste a URL → Get instant quizzes, flashcards, and study materials powered by AI.
 
 Why we built it:
-We noticed students spending too much time creating study materials and not enough time actually studying. Quiz Hub solves that.
+We noticed students spending too much time creating study materials and not enough time actually studying. Progrezz solves that.
 
 Features:
 ✅ AI-generated quizzes, flashcards, and essays
@@ -237,7 +237,7 @@ Features:
 
 Perfect for students, educators, and study groups.
 
-Try it free: quizhub.com
+Try it free: progrezz.com
 
 Have questions? Drop them in the comments! 👇
 ```
@@ -259,7 +259,7 @@ Perfect for:
 • Quick fact-checking
 • Deepening understanding
 
-Try it now: quizhub.com
+Try it now: progrezz.com
 
 What feature would you like to see next? Let us know! 💬
 ```
@@ -277,16 +277,16 @@ What feature would you like to see next? Let us know! 💬
 "Students waste time making flashcards and quizzes instead of studying."
 
 [0:15-0:25] Solution
-"Quiz Hub uses AI to generate study materials from your PDFs in seconds."
+"Progrezz uses AI to generate study materials from your PDFs in seconds."
 
 [0:25-0:30] CTA
-"Start learning smarter. Free at quizhub.com"
+"Start learning smarter. Free at progrezz.com"
 ```
 
 ### 60-Second Feature Demo
 ```
 [0:00-0:10] Intro
-"Here's how Quiz Hub transforms your study routine"
+"Here's how Progrezz transforms your study routine"
 
 [0:10-0:20] Upload
 "Upload a PDF or paste a URL"
@@ -298,7 +298,7 @@ What feature would you like to see next? Let us know! 💬
 "Study with interactive tools, track progress, organize everything"
 
 [0:50-0:60] CTA
-"Try Quiz Hub free. Link in description."
+"Try Progrezz free. Link in description."
 ```
 
 ---
@@ -307,7 +307,7 @@ What feature would you like to see next? Let us know! 💬
 
 - "Transform Your Study Routine with AI"
 - "Stop Creating Study Materials. Start Studying."
-- "Quiz Hub: Your AI Study Assistant is Here"
+- "Progrezz: Your AI Study Assistant is Here"
 - "20 Free AI Generations - No Credit Card Required"
 - "How to Study Smarter, Not Harder"
 - "New Feature: AI Chat with Your Documents"

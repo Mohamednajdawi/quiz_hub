@@ -166,7 +166,7 @@ export function Navigation() {
               <div className="flex-shrink-0 flex items-center">
             <Link href="/" className="flex items-center group">
               <span className="text-2xl font-bold bg-gradient-to-r from-[#163172] to-[#2756c7] bg-clip-text text-transparent">
-                Quiz Hub
+                Progrezz
               </span>
             </Link>
           </div>

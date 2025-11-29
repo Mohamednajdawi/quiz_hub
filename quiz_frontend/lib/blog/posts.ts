@@ -34,7 +34,7 @@ export const blogPosts: BlogPost[] = [
     title: '12 Game-Changing AI Study Features That Transform the Student Learning Experience',
     description:
       'Go beyond simple quiz generators with adaptive learning, AI explanations, mind maps, exam simulators, and more. Here are 12 features that turn study tools into AI-powered learning assistants.',
-    author: 'QuizHub Editorial Team',
+    author: 'Progrezz Editorial Team',
     publishedAt: '2025-11-25',
     readingTime: '9 min read',
     tags: ['AI learning', 'Study tips', 'Product'],
@@ -139,7 +139,7 @@ export const blogPosts: BlogPost[] = [
       'When every tool—quizzes, flashcards, essays, games, and chats—feeds into one adaptive feedback loop, learners get a study partner that grows with them. Build that experience, and you will never be “just another quiz app” again.',
     cta: {
       title: 'Ready to build the feedback-aware study loop?',
-      description: 'QuizHub already stitches quizzes, flashcards, essays, and analytics into one adaptive experience. Spin up your first project in under a minute.',
+      description: 'Progrezz already stitches quizzes, flashcards, essays, and analytics into one adaptive experience. Spin up your first project in under a minute.',
       primaryLabel: 'Start generating now',
       primaryHref: '/register',
       secondaryLabel: 'Explore the platform',

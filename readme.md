@@ -1,6 +1,6 @@
-# Quiz Hub - AI-Powered Educational Platform
+# Progrezz - AI-Powered Educational Platform
 
-**Quiz Hub** is an AI-powered educational platform that transforms study materials (PDFs, web articles) into interactive learning tools. It helps students, educators, and learners create personalized study content automatically using AI.
+**Progrezz** is an AI-powered educational platform that transforms study materials (PDFs, web articles) into interactive learning tools. It helps students, educators, and learners create personalized study content automatically using AI.
 
 ## 📋 Table of Contents
 
@@ -249,7 +249,7 @@ STRIPE_ENTERPRISE_PRICE_ID=price_...
 
 3. **Webhook Secret**: https://dashboard.stripe.com/webhooks
    - Add endpoint: `https://your-backend-domain.com/payments/webhooks`
-   - **Your production URL**: `https://quizhub-production-1ddf.up.railway.app/payments/webhooks`
+   - **Your production URL**: `https://progrezz-production-1ddf.up.railway.app/payments/webhooks`
    - Select events:
      - ✅ `checkout.session.completed` ⭐ **REQUIRED for Checkout**
      - ✅ `payment_intent.succeeded`
@@ -347,7 +347,7 @@ stripe listen --forward-to localhost:8000/payments/webhooks
 
 4. **Get Backend URL**:
    - Service → Settings → Domains
-   - Copy the URL (e.g., `https://quizhub-production-1ddf.up.railway.app`)
+   - Copy the URL (e.g., `https://progrezz-production-1ddf.up.railway.app`)
 
 #### Frontend Deployment
 

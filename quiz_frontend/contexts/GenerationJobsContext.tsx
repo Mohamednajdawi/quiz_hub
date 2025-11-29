@@ -42,8 +42,8 @@ interface GenerationJobsContextValue {
 const GenerationJobsContext = createContext<GenerationJobsContextValue | undefined>(undefined);
 
 const MAX_JOB_HISTORY = 25;
-const FLASHCARD_CACHE_PREFIX = 'quizhub_flashcard_payload_';
-const FLASHCARD_CACHE_INDEX_PREFIX = 'quizhub_flashcard_payload_index_';
+const FLASHCARD_CACHE_PREFIX = 'progrezz_flashcard_payload_';
+const FLASHCARD_CACHE_INDEX_PREFIX = 'progrezz_flashcard_payload_index_';
 
 const generateCacheId = () => {
   if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
@@ -61,7 +61,7 @@ export function GenerationJobsProvider({ children }: { children: ReactNode }) {
   const [flashcardTasks, setFlashcardTasks] = useState<ActiveFlashcardTask[]>([]);
 
   const storageKey = useMemo(
-    () => (user?.id ? `quizhub_generation_jobs_${user.id}` : null),
+    () => (user?.id ? `progrezz_generation_jobs_${user.id}` : null),
     [user?.id]
   );
 

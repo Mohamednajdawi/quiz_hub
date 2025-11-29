@@ -873,7 +873,7 @@ function ProjectDetailContent() {
   );
 
   const activeJobsStorageKey = useMemo(
-    () => (projectId ? `quizhub_active_jobs_${projectId}` : null),
+    () => (projectId ? `progrezz_active_jobs_${projectId}` : null),
     [projectId]
   );
 

@@ -12,7 +12,7 @@ import { FlashcardData, FlashcardCard } from '@/lib/types';
 import { RotateCw, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 
-const FLASHCARD_CACHE_PREFIX = 'quizhub_flashcard_payload_';
+const FLASHCARD_CACHE_PREFIX = 'progrezz_flashcard_payload_';
 
 // Safe URI decoding function that handles malformed URIs
 function safeDecodeURIComponent(str: string): string {

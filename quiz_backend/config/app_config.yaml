@@ -23,7 +23,7 @@ pricing:
       name: "Starter"
       price: "€0"
       price_suffix: ""
-      tagline: "Perfect for trying Quiz Hub"
+      tagline: "Perfect for trying Progrezz"
       description: "Every new account starts on the Starter plan with just enough capacity to explore the platform."
       features:
         - "{free_generation_quota} AI generations or chats included"
@@ -43,8 +43,8 @@ pricing:
       price_annual: "€90"
       price_suffix_annual: " / year"
       annual_savings: "Save €18 per year (€7.50/month)"
-      tagline: "For students who rely on Quiz Hub daily"
-      description: "Ideal for Students and Teachers who rely on Quiz Hub daily."
+      tagline: "For students who rely on Progrezz daily"
+      description: "Ideal for Students and Teachers who rely on Progrezz daily."
       features:
         - "100 AI generations and chats per month"
         - "Unlimited projects in Student Hub"
@@ -72,7 +72,7 @@ pricing:
         - "SLA-backed support"
       cta:
         label: "Talk to Sales"
-        href: "mailto:sales@quizhub.com?subject=Quiz%20Hub%20Teams"
+        href: "mailto:sales@progrezz.com?subject=Progrezz%20Teams"
         variant: "outline"
       highlighted: false
 

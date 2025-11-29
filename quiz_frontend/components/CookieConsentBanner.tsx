@@ -56,7 +56,7 @@ export function CookieConsentBanner() {
               <PreferenceToggle
                 id="analytics-consent"
                 label="Analytics"
-                description="Help us understand how you use QuizHub so we can improve the product."
+                description="Help us understand how you use Progrezz so we can improve the product."
                 checked={draft.analytics}
                 onChange={(checked) => setDraft((prev) => ({ ...prev, analytics: checked }))}
               />

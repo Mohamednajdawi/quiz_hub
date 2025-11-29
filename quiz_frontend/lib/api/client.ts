@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://quizhub-production-1ddf.up.railway.app/';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://progrezz-production-1ddf.up.railway.app/';
 
 // Debug: Log the API URL (only in browser, not during SSR)
 if (typeof window !== 'undefined') {

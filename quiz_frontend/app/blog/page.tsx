@@ -7,7 +7,7 @@ import { siteConfig } from '@/lib/config/site';
 
 export const metadata = {
   title: 'Blog',
-  description: 'Insights on AI study workflows, product updates, and learning science from the QuizHub team.',
+  description: 'Insights on AI study workflows, product updates, and learning science from the Progrezz team.',
   alternates: {
     canonical: `${siteConfig.url}/blog`,
   },
@@ -21,7 +21,7 @@ export default function BlogIndexPage() {
       <section className="py-10">
         <div className="mb-10 text-center space-y-4">
           <p className="text-sm font-semibold text-indigo-600 uppercase tracking-[0.25em]">Insights</p>
-          <h1 className="text-4xl sm:text-5xl font-bold text-gray-900">QuizHub Blog</h1>
+          <h1 className="text-4xl sm:text-5xl font-bold text-gray-900">Progrezz Blog</h1>
           <p className="text-lg text-gray-600 max-w-3xl mx-auto">
             Product thinking, learning science, and practical strategies for building AI-powered study experiences.
           </p>

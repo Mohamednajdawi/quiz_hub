@@ -1,4 +1,4 @@
-# Introducing Quiz Hub: The AI-Powered Learning Platform That Transforms How Students Study
+# Introducing Progrezz: The AI-Powered Learning Platform That Transforms How Students Study
 
 *Published: January 2025*
 
@@ -10,13 +10,13 @@ Every student knows the struggle: you have a stack of PDFs, dozens of bookmarked
 
 **What if AI could do the heavy lifting?**
 
-That's exactly what we built Quiz Hub to solve. We've created an intelligent platform that transforms any study material—PDFs, web articles, documents—into interactive learning tools in seconds, not hours.
+That's exactly what we built Progrezz to solve. We've created an intelligent platform that transforms any study material—PDFs, web articles, documents—into interactive learning tools in seconds, not hours.
 
 ---
 
-## What is Quiz Hub?
+## What is Progrezz?
 
-Quiz Hub is an AI-powered educational platform that automatically generates personalized study content from your materials. Think of it as your personal study assistant that never sleeps, creating quizzes, flashcards, and essay questions tailored to your learning needs.
+Progrezz is an AI-powered educational platform that automatically generates personalized study content from your materials. Think of it as your personal study assistant that never sleeps, creating quizzes, flashcards, and essay questions tailored to your learning needs.
 
 ### The Core Concept
 
@@ -251,7 +251,7 @@ We're not just building software; we're building a better way to learn.
 
 ## Connect With Us
 
-- **Website**: [Quiz Hub](https://quizhub.com)
+- **Website**: [Progrezz](https://progrezz.com)
 - **Email**: najdawimohamed@gmail.com
 - **Location**: Linz, Austria
 
@@ -259,7 +259,7 @@ Have questions? Want to share feedback? We'd love to hear from you.
 
 ---
 
-*Quiz Hub - Where AI meets education, and learning becomes effortless.*
+*Progrezz - Where AI meets education, and learning becomes effortless.*
 
 ---
 

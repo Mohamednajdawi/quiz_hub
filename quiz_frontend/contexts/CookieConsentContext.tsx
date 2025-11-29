@@ -24,7 +24,7 @@ interface CookieConsentContextValue {
   updateConsent: (prefs: Partial<Omit<ConsentPreferences, 'necessary'>>) => void;
 }
 
-const STORAGE_KEY = 'quizhub_cookie_consent_v1';
+const STORAGE_KEY = 'progrezz_cookie_consent_v1';
 const defaultPreferences: ConsentPreferences = {
   necessary: true,
   analytics: false,

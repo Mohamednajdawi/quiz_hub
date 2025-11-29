@@ -204,7 +204,7 @@ export function BillingContent() {
                 <Crown className="w-4 h-4 ml-2" />
               </Button>
             </Link>
-            <a href="mailto:support@quizhub.com">
+            <a href="mailto:support@progrezz.com">
               <Button variant="secondary">
                 Need Help?
                 <Info className="w-4 h-4 ml-2" />
@@ -391,10 +391,10 @@ export function BillingContent() {
                 <p>
                   Have billing questions? Email us at{' '}
                   <a
-                    href="mailto:support@quizhub.com"
+                    href="mailto:support@progrezz.com"
                     className="font-semibold text-indigo-600 hover:text-indigo-800"
                   >
-                    support@quizhub.com
+                    support@progrezz.com
                   </a>
                   .
                 </p>

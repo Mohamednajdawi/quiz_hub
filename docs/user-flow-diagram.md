@@ -1,4 +1,4 @@
-# Quiz Hub: Complete User Flow Diagram
+# Progrezz: Complete User Flow Diagram
 
 ## 🎯 Overview
 This document outlines the complete user journey from project creation through all available features, designed with senior UX/UI best practices in mind.

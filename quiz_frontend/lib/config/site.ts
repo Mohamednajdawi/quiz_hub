@@ -5,10 +5,10 @@
 
 export const siteConfig = {
   // Basic Site Information
-  name: "Quiz Hub",
-  title: "Quiz Hub - AI-Powered Learning Platform",
+  name: "Progrezz",
+  title: "Progrezz - AI-Powered Learning Platform",
   description: "Generate quizzes, flashcards, and essay questions from URLs and PDFs using AI. Perfect for students and educators.",
-  url: process.env.NEXT_PUBLIC_SITE_URL || "https://quizhub.com",
+  url: process.env.NEXT_PUBLIC_SITE_URL || "https://progrezz.com",
   
   // Contact Information
   contact: {
@@ -33,7 +33,7 @@ export const siteConfig = {
 
   // Legal Information (for Austrian Impressum requirements)
   legal: {
-    companyName: "Quiz Hub",
+    companyName: "Progrezz",
     responsiblePerson: "Mohammad Alnajdawi",
     vatNumber: "", // Add VAT/UID number if available
     companyRegister: "", // Add company register number if available

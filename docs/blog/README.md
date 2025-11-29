@@ -1,12 +1,12 @@
-# Quiz Hub Blog Posts
+# Progrezz Blog Posts
 
-This directory contains blog posts and marketing content for Quiz Hub.
+This directory contains blog posts and marketing content for Progrezz.
 
 ## 📝 Available Posts
 
 ### 1. **introducing-quiz-hub.md**
 A comprehensive, in-depth blog post that covers:
-- The problem Quiz Hub solves
+- The problem Progrezz solves
 - Detailed feature explanations
 - Technology stack and architecture
 - Real-world use cases
@@ -57,8 +57,8 @@ Extract key sections from either post:
 ## 📊 Content Structure
 
 Both posts follow a similar structure:
-1. **Hook/Problem Statement** - Why Quiz Hub exists
-2. **Solution Overview** - What Quiz Hub does
+1. **Hook/Problem Statement** - Why Progrezz exists
+2. **Solution Overview** - What Progrezz does
 3. **Key Features** - Detailed feature breakdown
 4. **Technology** - Tech stack and architecture
 5. **Use Cases** - Real-world applications
@@ -77,12 +77,12 @@ When updating blog posts:
 
 ### Twitter/X (280 chars)
 ```
-🚀 Quiz Hub: Turn any PDF or article into interactive quizzes, flashcards, and study materials in seconds. Powered by AI. Free tier available. Start learning smarter → quizhub.com
+🚀 Progrezz: Turn any PDF or article into interactive quizzes, flashcards, and study materials in seconds. Powered by AI. Free tier available. Start learning smarter → progrezz.com
 ```
 
 ### LinkedIn Post
 ```
-Introducing Quiz Hub - an AI-powered platform that transforms study materials into interactive learning tools.
+Introducing Progrezz - an AI-powered platform that transforms study materials into interactive learning tools.
 
 ✨ Generate quizzes, flashcards, and essay questions from PDFs and URLs
 📚 Organize everything in your Student Hub workspace
@@ -91,14 +91,14 @@ Introducing Quiz Hub - an AI-powered platform that transforms study materials in
 
 Built with FastAPI, Next.js, and cutting-edge AI.
 
-Try it free → quizhub.com
+Try it free → progrezz.com
 
 #EdTech #AI #Learning #Education
 ```
 
 ### Instagram Caption
 ```
-Transform your study routine with Quiz Hub! 📚✨
+Transform your study routine with Progrezz! 📚✨
 
 Upload a PDF or paste a URL → Get instant quizzes, flashcards, and study materials powered by AI.
 
@@ -116,12 +116,12 @@ Start learning smarter today! Link in bio 👆
 ## 📧 Email Templates
 
 ### Welcome Email
-Subject: Welcome to Quiz Hub - Start Learning Smarter
+Subject: Welcome to Progrezz - Start Learning Smarter
 
 ```
 Hi [Name],
 
-Welcome to Quiz Hub! We're excited to help you transform your study routine.
+Welcome to Progrezz! We're excited to help you transform your study routine.
 
 Here's what you can do:
 • Upload PDFs or paste URLs
@@ -134,7 +134,7 @@ Get started: [Link]
 Questions? Just reply to this email.
 
 Happy studying!
-The Quiz Hub Team
+The Progrezz Team
 ```
 
 ### Feature Announcement
@@ -152,7 +152,7 @@ Try it now:
 
 This is just the beginning. More features coming soon!
 
-The Quiz Hub Team
+The Progrezz Team
 ```
 
 ---

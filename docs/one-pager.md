@@ -1,10 +1,10 @@
-# Quiz Hub – Product One-Pager
+# Progrezz – Product One-Pager
 
 ## Snapshot
 
 - **What it is:** AI-native study hub that turns dense readings (PDFs, web links) into interactive learning assets—quizzes, flashcards, essay drills, PDF chat, and the new **visual mind maps**.
 - **Who it serves:** Students, tutors, cohort-based bootcamps, and academic support teams who need rapid content personalization without authoring overhead.
-- **Value prop:** Upload once, generate many. Quiz Hub keeps every output aligned with the learner’s weaknesses, tracks usage tokens, and syncs progress inside a unified “Student Hub.”
+- **Value prop:** Upload once, generate many. Progrezz keeps every output aligned with the learner's weaknesses, tracks usage tokens, and syncs progress inside a unified "Student Hub."
 
 ## The Problem
 
@@ -13,7 +13,7 @@ Digital classrooms exploded, but study prep is still manual. Instructors spend h
 ## Our Solution
 
 1. **Auto-Built Study Kits**  
-   Feed Quiz Hub any PDF or link and instantly spin up quizzes, flashcards, essay drills, and highly visual mind maps. The platform remembers every miss, so regenerated content focuses on the exact gaps.
+   Feed Progrezz any PDF or link and instantly spin up quizzes, flashcards, essay drills, and highly visual mind maps. The platform remembers every miss, so regenerated content focuses on the exact gaps.
 
 2. **Visual Knowledge Maps**  
    Learners explore topics through color-coded, left-to-right mind maps with expandable layers. Great for workshops, async review, and quick “why this matters” storytelling.

@@ -20,7 +20,7 @@ interface WelcomeOnboardingProps {
   onClose: () => void;
 }
 
-const ONBOARDING_STORAGE_KEY = 'quizhub_onboarding_completed';
+const ONBOARDING_STORAGE_KEY = 'progrezz_onboarding_completed';
 
 export function WelcomeOnboarding({ isOpen, onClose }: WelcomeOnboardingProps) {
   const router = useRouter();
@@ -29,7 +29,7 @@ export function WelcomeOnboarding({ isOpen, onClose }: WelcomeOnboardingProps) {
   const steps = [
     {
       icon: Sparkles,
-      title: 'Welcome to Quiz Hub!',
+      title: 'Welcome to Progrezz!',
       description: 'Transform your study materials into interactive learning tools with AI-powered quizzes, flashcards, and essay questions.',
       content: (
         <div className="space-y-4">

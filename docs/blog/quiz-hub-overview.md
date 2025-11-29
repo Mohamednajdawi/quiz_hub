@@ -1,8 +1,8 @@
-# Quiz Hub: AI-Powered Study Assistant
+# Progrezz: AI-Powered Study Assistant
 
 ## Transform Your Study Materials Into Interactive Learning Tools
 
-**Quiz Hub** is the intelligent study platform that turns PDFs, articles, and documents into quizzes, flashcards, and essay questions—instantly.
+**Progrezz** is the intelligent study platform that turns PDFs, articles, and documents into quizzes, flashcards, and essay questions—instantly.
 
 ---
 
