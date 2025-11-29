@@ -164,7 +164,7 @@ async def get_data_access(
                 "topic": topic.topic,
                 "category": topic.category,
                 "subcategory": topic.subcategory,
-                "created_at": topic.created_at.isoformat() if topic.created_at else None,
+                "creation_timestamp": topic.creation_timestamp.isoformat() if topic.creation_timestamp else None,
             }
             for topic in flashcard_topics
         ]
@@ -177,7 +177,7 @@ async def get_data_access(
                 "topic": topic.topic,
                 "category": topic.category,
                 "subcategory": topic.subcategory,
-                "created_at": topic.created_at.isoformat() if topic.created_at else None,
+                "creation_timestamp": topic.creation_timestamp.isoformat() if topic.creation_timestamp else None,
             }
             for topic in essay_topics
         ]
@@ -339,7 +339,7 @@ async def export_data_portability(
     try:
         # Get all user data by calling the data access endpoint logic directly
         user_id = current_user.id
-        user = db.query(User).filter(User.id == user_id).first()
+        user = db.query(UserModel).filter(UserModel.id == user_id).first()
         if not user:
             raise HTTPException(status_code=404, detail="User not found")
         
