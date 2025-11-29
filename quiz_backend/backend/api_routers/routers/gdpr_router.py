@@ -23,7 +23,6 @@ from sqlalchemy import and_, or_
 
 from backend.database.db import get_db
 from backend.database.sqlite_dal import (
-    User,
     QuizTopic,
     QuizQuestion,
     QuizAttempt,
@@ -40,8 +39,9 @@ from backend.database.sqlite_dal import (
     Referral,
     TokenUsage,
     GenerationJob,
+    User as UserModel,
 )
-from backend.api_routers.routers.auth_router import get_current_user_dependency, UserModel
+from backend.api_routers.routers.auth_router import get_current_user_dependency
 from backend.utils.admin import get_user_token_usage
 
 router = APIRouter()
@@ -63,7 +63,7 @@ async def get_data_access(
     
     try:
         # Get user basic data
-        user = db.query(User).filter(User.id == user_id).first()
+        user = db.query(UserModel).filter(UserModel.id == user_id).first()
         if not user:
             raise HTTPException(status_code=404, detail="User not found")
         
@@ -272,7 +272,7 @@ async def update_data_rectification(
     user_id = current_user.id
     
     try:
-        user = db.query(User).filter(User.id == user_id).first()
+        user = db.query(UserModel).filter(UserModel.id == user_id).first()
         if not user:
             raise HTTPException(status_code=404, detail="User not found")
         
@@ -430,7 +430,7 @@ async def delete_data_erasure(
     user_id = current_user.id
     
     try:
-        user = db.query(User).filter(User.id == user_id).first()
+        user = db.query(UserModel).filter(UserModel.id == user_id).first()
         if not user:
             raise HTTPException(status_code=404, detail="User not found")
         
@@ -588,7 +588,7 @@ async def restrict_processing(
     user_id = current_user.id
     
     try:
-        user = db.query(User).filter(User.id == user_id).first()
+        user = db.query(UserModel).filter(UserModel.id == user_id).first()
         if not user:
             raise HTTPException(status_code=404, detail="User not found")
         
@@ -647,7 +647,7 @@ async def object_to_processing(
         # 3. Notify relevant systems
         
         # For now, we'll deactivate the account as a simple implementation
-        user = db.query(User).filter(User.id == user_id).first()
+        user = db.query(UserModel).filter(UserModel.id == user_id).first()
         if not user:
             raise HTTPException(status_code=404, detail="User not found")
         
