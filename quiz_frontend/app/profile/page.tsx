@@ -185,6 +185,18 @@ function ProfileContent() {
                     <span className="font-semibold">Free plan status:</span> {user.free_tokens} generation{user.free_tokens === 1 ? '' : 's'} remaining.
                   </div>
                 )}
+
+                <div className="mt-6 pt-6 border-t border-gray-200">
+                  <h3 className="text-sm font-semibold text-gray-900 mb-2">Data Privacy & Rights</h3>
+                  <p className="text-sm text-gray-600 mb-3">
+                    Under GDPR, you have rights regarding your personal data. Access your data, export it, or request deletion.
+                  </p>
+                  <Link href="/profile/data-rights">
+                    <Button variant="secondary" className="w-full sm:w-auto">
+                      Manage Data Rights
+                    </Button>
+                  </Link>
+                </div>
               </div>
 
               <div>
