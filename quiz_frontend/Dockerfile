@@ -21,7 +21,7 @@ COPY . .
 
 # Set build-time environment variables
 ENV NEXT_TELEMETRY_DISABLED=1
-# Disable Turbopack for Docker builds to avoid font loading issues with Google Fonts
+# Disable Turbopack for Docker builds (Google Fonts removed for BMB compliance)
 ENV NEXT_PRIVATE_SKIP_TURBO=1
 
 # Build the application (using webpack instead of Turbopack)

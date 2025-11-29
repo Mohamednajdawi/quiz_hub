@@ -42,8 +42,7 @@ export function CookieConsentBanner() {
           <div>
             <h2 className="text-base font-semibold text-gray-900">Your privacy choices</h2>
             <p className="mt-1 text-sm text-gray-600">
-              We use cookies to provide essential site functionality and, with your permission,
-              improve analytics and marketing. See our{' '}
+              We use cookies to provide essential site functionality. See our{' '}
               <Link href="/privacy" className="text-indigo-600 underline">
                 Privacy Policy
               </Link>{' '}
@@ -53,13 +52,22 @@ export function CookieConsentBanner() {
 
           {showPreferences && (
             <div className="rounded-lg bg-gray-50 p-4 space-y-3 text-sm text-gray-700">
-              <PreferenceToggle
-                id="analytics-consent"
-                label="Analytics"
-                description="Help us understand how you use Progrezz so we can improve the product."
-                checked={draft.analytics}
-                onChange={(checked) => setDraft((prev) => ({ ...prev, analytics: checked }))}
-              />
+              <div className="flex items-start justify-between gap-4 opacity-50">
+                <div>
+                  <label className="font-medium text-gray-900">Analytics</label>
+                  <p className="text-gray-600 text-sm">Disabled for BMB compliance (no external analytics services used)</p>
+                </div>
+                <label className="relative inline-flex h-6 w-11 cursor-not-allowed items-center">
+                  <input
+                    type="checkbox"
+                    className="sr-only peer"
+                    checked={false}
+                    disabled
+                  />
+                  <span className="h-6 w-11 rounded-full bg-gray-200" />
+                  <span className="absolute left-1 top-1 h-4 w-4 rounded-full bg-white shadow" />
+                </label>
+              </div>
               <PreferenceToggle
                 id="marketing-consent"
                 label="Marketing"

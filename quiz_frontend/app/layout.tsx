@@ -1,20 +1,11 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { Providers } from "./providers";
 import { StructuredData } from "@/components/StructuredData";
-import { AnalyticsProvider } from "@/components/analytics/AnalyticsProvider";
 import { siteConfig } from "@/lib/config/site";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
+// Using system fonts for BMB compliance (Google Fonts forbidden per Clause 16)
+// System fonts ensure no external connections and full EU/EEA compliance
 
 export const metadata: Metadata = {
   title: {
@@ -83,12 +74,9 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-      >
+      <body className="antialiased">
         <StructuredData />
         <Providers>
-          <AnalyticsProvider />
           {children}
         </Providers>
       </body>
