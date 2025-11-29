@@ -64,7 +64,7 @@ function DataRightsContent() {
 
   const handleDataErasure = async () => {
     const confirmed = window.confirm(
-      '⚠️ WARNING: This action is IRREVERSIBLE.\n\n' +
+      '⚠️ WARNING: This action cannot be undone.\n\n' +
       'Deleting your account will:\n' +
       '• Permanently delete all your data\n' +
       '• Remove all quizzes, flashcards, essays, and mind maps\n' +
@@ -106,7 +106,7 @@ function DataRightsContent() {
     }
 
     const confirmed = window.confirm(
-      'Restricting processing will deactivate your account. You will not be able to use Progrezz until the restriction is lifted.\n\n' +
+      'Restricting your account will deactivate it immediately. You will not be able to use Progrezz until the restriction is lifted.\n\n' +
       'Do you want to continue?'
     );
 
@@ -136,7 +136,7 @@ function DataRightsContent() {
     }
 
     const confirmed = window.confirm(
-      'Objecting to processing will deactivate your account. You will not be able to use Progrezz.\n\n' +
+      'Submitting this request will deactivate your account immediately. You will not be able to use Progrezz until the matter is resolved.\n\n' +
       'Do you want to continue?'
     );
 
@@ -171,9 +171,9 @@ function DataRightsContent() {
             >
               ← Back to Profile
             </Button>
-            <h1 className="text-3xl font-bold text-gray-900">Your Data Rights</h1>
+            <h1 className="text-3xl font-bold text-gray-900">Data & Privacy</h1>
             <p className="text-sm text-gray-600 mt-2">
-              Under GDPR, you have several rights regarding your personal data. Use these tools to exercise your rights.
+              Manage your personal data, download your information, or delete your account.
             </p>
           </div>
 
@@ -190,15 +190,15 @@ function DataRightsContent() {
           )}
 
           <div className="space-y-6">
-            {/* Article 15: Right of Access */}
+            {/* Data Access */}
             <Card>
               <CardHeader
-                title="Right of Access (Article 15)"
-                description="View all personal data we hold about you"
+                title="View Your Data"
+                description="See all information we have about your account"
               />
               <div className="px-6 pb-6">
                 <p className="text-sm text-gray-600 mb-4">
-                  You have the right to know what personal data we process about you and how we use it.
+                  Review all personal information, activity history, and content associated with your account.
                 </p>
                 <div className="flex gap-3">
                   <Button
@@ -282,38 +282,34 @@ function DataRightsContent() {
               </div>
             </Card>
 
-            {/* Article 16: Right to Rectification */}
+            {/* Data Correction */}
             <Card>
               <CardHeader
-                title="Right to Rectification (Article 16)"
-                description="Correct inaccurate personal data"
+                title="Update Your Information"
+                description="Correct or update your personal details"
               />
               <div className="px-6 pb-6">
                 <p className="text-sm text-gray-600 mb-4">
-                  You can update your personal information from your{' '}
-                  <a href="/profile" className="text-indigo-600 hover:underline">
-                    profile page
-                  </a>
-                  .
+                  Keep your account information up to date. You can modify your name, birth date, and other personal details.
                 </p>
                 <Button
                   variant="secondary"
                   onClick={() => router.push('/profile')}
                 >
-                  Go to Profile
+                  Edit Profile
                 </Button>
               </div>
             </Card>
 
-            {/* Article 20: Right to Data Portability */}
+            {/* Data Export */}
             <Card>
               <CardHeader
-                title="Right to Data Portability (Article 20)"
-                description="Download your data in a machine-readable format"
+                title="Download Your Data"
+                description="Export your account data in a portable format"
               />
               <div className="px-6 pb-6">
                 <p className="text-sm text-gray-600 mb-4">
-                  Download all your personal data in JSON or CSV format for use in other services.
+                  Get a complete copy of your data in JSON or CSV format. Perfect for backing up your information or transferring to another service.
                 </p>
                 <div className="flex gap-3">
                   <Button
@@ -342,23 +338,22 @@ function DataRightsContent() {
               </div>
             </Card>
 
-            {/* Article 18: Right to Restriction */}
+            {/* Processing Restriction */}
             <Card>
               <CardHeader
-                title="Right to Restriction of Processing (Article 18)"
-                description="Temporarily restrict processing of your data"
+                title="Restrict Account Activity"
+                description="Temporarily pause processing of your data"
               />
               <div className="px-6 pb-6">
                 <p className="text-sm text-gray-600 mb-4">
-                  If you dispute the accuracy of your data or object to processing, you can request
-                  that we restrict processing while the matter is resolved.
+                  If you need to temporarily pause account activity while resolving a concern, you can request a restriction. Your account will be deactivated until you're ready to resume.
                 </p>
                 <div className="space-y-4">
                   <Input
-                    label="Reason for Restriction"
+                    label="Reason"
                     value={restrictionReason}
                     onChange={(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => setRestrictionReason(e.target.value)}
-                    placeholder="Please explain why you want to restrict processing..."
+                    placeholder="Please explain why you need to restrict your account activity..."
                     multiline
                     rows={3}
                   />
@@ -371,37 +366,37 @@ function DataRightsContent() {
                     isLoading={loading && activeSection === 'restrict'}
                     disabled={loading || !restrictionReason.trim()}
                   >
-                    Request Restriction
+                    Restrict Account
                   </Button>
                 </div>
               </div>
             </Card>
 
-            {/* Article 21: Right to Object */}
+            {/* Object to Processing */}
             <Card>
               <CardHeader
-                title="Right to Object (Article 21)"
-                description="Object to processing of your personal data"
+                title="Object to Data Processing"
+                description="Request that we stop processing your data for specific purposes"
               />
               <div className="px-6 pb-6">
                 <p className="text-sm text-gray-600 mb-4">
-                  You have the right to object to processing of your personal data for certain purposes.
+                  If you have concerns about how your data is being used, you can object to specific processing activities. Your account will be deactivated while we review your request.
                 </p>
                 <div className="space-y-4">
                   <Input
-                    label="Reason for Objection"
+                    label="Reason"
                     value={objectionReason}
                     onChange={(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => setObjectionReason(e.target.value)}
-                    placeholder="Please explain why you object to processing..."
+                    placeholder="Please explain your concerns..."
                     multiline
                     rows={3}
                     required
                   />
                   <Input
-                    label="Processing Purpose (Optional)"
+                    label="Specific Purpose (Optional)"
                     value={objectionPurpose}
                     onChange={(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => setObjectionPurpose(e.target.value)}
-                    placeholder="e.g., marketing, analytics, etc."
+                    placeholder="e.g., marketing communications, analytics, etc."
                   />
                   <Button
                     variant="warning"
@@ -412,21 +407,21 @@ function DataRightsContent() {
                     isLoading={loading && activeSection === 'object'}
                     disabled={loading || !objectionReason.trim()}
                   >
-                    Submit Objection
+                    Submit Request
                   </Button>
                 </div>
               </div>
             </Card>
 
-            {/* Article 17: Right to Erasure */}
+            {/* Account Deletion */}
             <Card className="border-red-200 bg-red-50">
               <CardHeader
-                title="Right to Erasure (Article 17) - 'Right to be Forgotten'"
-                description="Permanently delete your account and all data"
+                title="Delete Account"
+                description="Permanently remove your account and all associated data"
               />
               <div className="px-6 pb-6">
                 <div className="bg-red-100 border border-red-300 rounded-md p-4 mb-4">
-                  <p className="text-sm text-red-800 font-semibold mb-2">⚠️ Warning: This action is irreversible</p>
+                  <p className="text-sm text-red-800 font-semibold mb-2">⚠️ Warning: This action cannot be undone</p>
                   <ul className="text-sm text-red-700 list-disc list-inside space-y-1">
                     <li>All your data will be permanently deleted</li>
                     <li>All quizzes, flashcards, essays, and mind maps will be removed</li>
@@ -436,8 +431,7 @@ function DataRightsContent() {
                   </ul>
                 </div>
                 <p className="text-sm text-gray-600 mb-4">
-                  If you want to delete your account and all associated data, click the button below.
-                  This action cannot be undone.
+                  Once deleted, you will not be able to recover any of your data or content. Please ensure you have exported any information you wish to keep before proceeding.
                 </p>
                 <Button
                   variant="danger"
