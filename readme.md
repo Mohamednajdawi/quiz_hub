@@ -249,7 +249,7 @@ STRIPE_ENTERPRISE_PRICE_ID=price_...
 
 3. **Webhook Secret**: https://dashboard.stripe.com/webhooks
    - Add endpoint: `https://your-backend-domain.com/payments/webhooks`
-   - **Your production URL**: `https://progrezz-production-1ddf.up.railway.app/payments/webhooks`
+   - **Your production URL**: `https://quizhub-production-1ddf.up.railway.app/payments/webhooks`
    - Select events:
      - ✅ `checkout.session.completed` ⭐ **REQUIRED for Checkout**
      - ✅ `payment_intent.succeeded`
