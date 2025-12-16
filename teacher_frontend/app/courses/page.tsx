@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { ProtectedRoute } from '@/components/ProtectedRoute';
 import { Navigation } from '@/components/Navigation';
+import { useAuth } from '@/contexts/AuthContext';
 import { coursesApi, Course } from '@/lib/api/courses';
 import { motion } from 'framer-motion';
 import { Plus, BookOpen, Trash2, Edit2, FileText, Calendar, Loader2 } from 'lucide-react';
@@ -13,6 +14,7 @@ import { format } from 'date-fns';
 export default function CoursesPage() {
   const router = useRouter();
   const queryClient = useQueryClient();
+  const { isAuthenticated, isLoading: authLoading } = useAuth();
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [courseName, setCourseName] = useState('');
   const [courseDescription, setCourseDescription] = useState('');
@@ -20,7 +22,9 @@ export default function CoursesPage() {
   const { data, isLoading, error } = useQuery({
     queryKey: ['courses'],
     queryFn: () => coursesApi.getAll(),
+    enabled: !authLoading && isAuthenticated, // Only run when auth is ready
     staleTime: 5 * 60 * 1000, // 5 minutes - courses don't change often
+    retry: 1,
   });
 
   const createMutation = useMutation({

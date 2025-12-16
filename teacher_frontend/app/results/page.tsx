@@ -4,15 +4,19 @@ import { useQuery } from '@tanstack/react-query';
 import { ProtectedRoute } from '@/components/ProtectedRoute';
 import { Navigation } from '@/components/Navigation';
 import { quizApi } from '@/lib/api/quiz';
-import { motion } from 'framer-motion';
-import { BarChart3, Clock, TrendingUp, Users, AlertCircle, CheckCircle } from 'lucide-react';
-import { format } from 'date-fns';
+import { useAuth } from '@/contexts/AuthContext';
+import { BarChart3 } from 'lucide-react';
 import { QuizResultsCard } from '@/components/results/QuizResultsCard';
 
 export default function ResultsPage() {
-  const { data: quizzes } = useQuery({
+  const { isAuthenticated, isLoading: authLoading } = useAuth();
+  
+  const { data: quizzes, isLoading, error } = useQuery({
     queryKey: ['my-quizzes'],
     queryFn: () => quizApi.getMyQuizzes(),
+    enabled: !authLoading && isAuthenticated, // Only run when auth is ready
+    staleTime: 2 * 60 * 1000, // 2 minutes
+    retry: 1,
   });
 
 
@@ -26,7 +30,17 @@ export default function ResultsPage() {
             <p className="text-[#94A3B8]">Monitor student performance and quiz statistics</p>
           </div>
 
-          {!quizzes || quizzes.topics.length === 0 ? (
+          {isLoading || authLoading ? (
+            <div className="flex items-center justify-center py-16">
+              <div className="text-[#38BDF8] text-lg">Loading quizzes...</div>
+            </div>
+          ) : error ? (
+            <div className="text-center py-16">
+              <BarChart3 className="w-16 h-16 text-red-400 mx-auto mb-4 opacity-50" />
+              <h2 className="text-xl font-semibold text-white mb-2">Error loading quizzes</h2>
+              <p className="text-[#94A3B8]">Please try refreshing the page</p>
+            </div>
+          ) : !quizzes || quizzes.topics.length === 0 ? (
             <div className="text-center py-16">
               <BarChart3 className="w-16 h-16 text-[#94A3B8] mx-auto mb-4 opacity-50" />
               <h2 className="text-xl font-semibold text-white mb-2">No quizzes yet</h2>

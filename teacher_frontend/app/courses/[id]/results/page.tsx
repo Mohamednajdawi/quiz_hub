@@ -2,6 +2,7 @@
 
 import { useParams, useRouter } from 'next/navigation';
 import { useQuery, useQueries } from '@tanstack/react-query';
+import { useAuth } from '@/contexts/AuthContext';
 import { quizApi } from '@/lib/api/quiz';
 import { coursesApi } from '@/lib/api/courses';
 import { Loader2, ArrowLeft, User, Clock, TrendingUp, AlertCircle } from 'lucide-react';
@@ -11,6 +12,7 @@ import { useState } from 'react';
 export default function CourseResultsPage() {
   const params = useParams();
   const router = useRouter();
+  const { isAuthenticated, isLoading: authLoading } = useAuth();
   const courseId = parseInt(params.id as string);
   const [expandedAttempt, setExpandedAttempt] = useState<number | null>(null);
 
@@ -18,14 +20,17 @@ export default function CourseResultsPage() {
   const { data: course } = useQuery({
     queryKey: ['course', courseId],
     queryFn: () => coursesApi.getById(courseId),
+    enabled: !!courseId && !authLoading && isAuthenticated, // Only run when auth is ready
+    retry: 1,
   });
 
   // Get generated content to map quizzes to PDFs
   const { data: generatedContent } = useQuery({
     queryKey: ['generated-content', courseId],
     queryFn: () => coursesApi.getGeneratedContent(courseId),
-    enabled: !!courseId,
+    enabled: !!courseId && !authLoading && isAuthenticated, // Only run when auth is ready
     staleTime: 2 * 60 * 1000,
+    retry: 1,
   });
 
   // Fetch results for all quizzes in this course using useQueries (proper parallel queries)
@@ -35,8 +40,9 @@ export default function CourseResultsPage() {
     queries: quizIds.map((quizId: number) => ({
       queryKey: ['quiz-results', quizId],
       queryFn: () => quizApi.getSharedResults(quizId),
-      enabled: !!course && quizIds.length > 0,
+      enabled: !!course && quizIds.length > 0 && !authLoading && isAuthenticated, // Only run when auth is ready
       staleTime: 2 * 60 * 1000, // 2 minutes - results don't change often
+      retry: 1,
     })),
   });
 

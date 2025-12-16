@@ -5,6 +5,7 @@ import dynamic from 'next/dynamic';
 import { ProtectedRoute } from '@/components/ProtectedRoute';
 import { Navigation } from '@/components/Navigation';
 import { PdfSidebar } from '@/components/course/PdfSidebar';
+import { useAuth } from '@/contexts/AuthContext';
 import { useQuery } from '@tanstack/react-query';
 import { coursesApi, CourseContent } from '@/lib/api/courses';
 import { ArrowLeft, BarChart3 } from 'lucide-react';
@@ -33,13 +34,15 @@ export default function CourseDetailPage({ params }: { params: Promise<{ id: str
   const resolvedParams = use(params);
   const courseId = parseInt(resolvedParams.id);
   const router = useRouter();
+  const { isAuthenticated, isLoading: authLoading } = useAuth();
   const [selectedPdf, setSelectedPdf] = useState<CourseContent | null>(null);
 
   const { data: course, isLoading } = useQuery({
     queryKey: ['course', courseId],
     queryFn: () => coursesApi.getById(courseId),
-    enabled: !!courseId,
+    enabled: !!courseId && !authLoading && isAuthenticated, // Only run when auth is ready
     staleTime: 2 * 60 * 1000, // 2 minutes - course data changes less frequently
+    retry: 1,
   });
 
   // Auto-select first PDF when course loads
