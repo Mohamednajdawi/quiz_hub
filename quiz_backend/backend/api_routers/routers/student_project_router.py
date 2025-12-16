@@ -1605,7 +1605,8 @@ async def get_project_generated_content(
                 "difficulty": quiz_topic.difficulty,
                 "question_count": question_count,
                 "creation_timestamp": quiz_topic.creation_timestamp.isoformat() if quiz_topic.creation_timestamp else None,
-                "reference_created_at": ref.created_at.isoformat() if ref.created_at else None
+                "reference_created_at": ref.created_at.isoformat() if ref.created_at else None,
+                "content_id": ref.content_id
             })
     
     # Get flashcard references
@@ -1629,7 +1630,8 @@ async def get_project_generated_content(
                 "difficulty": flashcard_topic.difficulty,
                 "card_count": card_count,
                 "creation_timestamp": flashcard_topic.creation_timestamp.isoformat() if flashcard_topic.creation_timestamp else None,
-                "reference_created_at": ref.created_at.isoformat() if ref.created_at else None
+                "reference_created_at": ref.created_at.isoformat() if ref.created_at else None,
+                "content_id": ref.content_id
             })
     
     # Get essay references
@@ -1653,7 +1655,8 @@ async def get_project_generated_content(
                 "difficulty": essay_topic.difficulty,
                 "question_count": question_count,
                 "creation_timestamp": essay_topic.creation_timestamp.isoformat() if essay_topic.creation_timestamp else None,
-                "reference_created_at": ref.created_at.isoformat() if ref.created_at else None
+                "reference_created_at": ref.created_at.isoformat() if ref.created_at else None,
+                "content_id": ref.content_id
             })
     
     # Get mind map references

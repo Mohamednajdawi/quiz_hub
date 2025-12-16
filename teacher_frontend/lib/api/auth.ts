@@ -1,0 +1,84 @@
+import apiClient from './client';
+
+export type GenderOption = 'male' | 'female' | 'non_binary' | 'prefer_not_to_say' | 'other';
+
+export interface RegisterRequest {
+  email: string;
+  password: string;
+  first_name: string;
+  last_name: string;
+  birth_date: string;
+  gender: GenderOption;
+}
+
+export interface LoginRequest {
+  email: string;
+  password: string;
+}
+
+export interface AuthResponse {
+  access_token: string;
+  token_type: string;
+  user: User;
+}
+
+export interface SubscriptionInfo {
+  plan_type: string;
+  status: string;
+  current_period_end?: string | null;
+  cancel_at_period_end: boolean;
+  monthly_generations?: number | null;
+  remaining_generations?: number | null;
+  monthly_limit?: number | null;
+}
+
+export interface User {
+  id: string;
+  email: string;
+  is_active: boolean;
+  first_name?: string | null;
+  last_name?: string | null;
+  birth_date?: string | null;
+  gender?: GenderOption | null;
+  free_tokens?: number | null;
+  account_type?: string | null;
+  subscription?: SubscriptionInfo | null;
+}
+
+export type UpdateProfileRequest = Partial<Pick<User, 'first_name' | 'last_name' | 'birth_date' | 'gender'>>;
+
+export const authApi = {
+  register: async (data: RegisterRequest): Promise<AuthResponse> => {
+    const response = await apiClient.post('/auth/register', data);
+    return response.data;
+  },
+
+  login: async (data: LoginRequest): Promise<AuthResponse> => {
+    const formData = new FormData();
+    formData.append('username', data.email);
+    formData.append('password', data.password);
+    
+    // Don't set Content-Type - let browser set it with boundary
+    const response = await apiClient.post('/auth/login', formData);
+    return response.data;
+  },
+
+  getCurrentUser: async (token: string): Promise<User> => {
+    const response = await apiClient.get('/auth/me', {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+    return response.data;
+  },
+
+  updateProfile: async (token: string, data: UpdateProfileRequest): Promise<User> => {
+    const response = await apiClient.put('/auth/me', data, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+    return response.data;
+  },
+};
+

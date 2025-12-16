@@ -1,0 +1,38 @@
+@import "tailwindcss";
+
+:root {
+  --brand-navy: #0B1221;
+  --brand-secondary: #161F32;
+  --brand-text-light: #94A3B8;
+  --brand-accent: #38BDF8;
+  --brand-white: #ffffff;
+  
+  --background: var(--brand-navy);
+  --foreground: var(--brand-white);
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+  
+  --color-cyan-500: var(--brand-accent);
+  --color-gray-700: var(--brand-text-light);
+  --color-gray-800: var(--brand-secondary);
+  --color-gray-900: var(--brand-navy);
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-geist-sans), 'Inter', 'Manrope', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+
+@layer utilities {
+  .glassmorphism {
+    background: rgba(22, 31, 50, 0.8);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(56, 189, 248, 0.1);
+  }
+}
