@@ -70,14 +70,44 @@ export const quizApi = {
 
   // Get share code for quiz
   getShareCode: async (topicId: number): Promise<{ quiz_id: number; share_code: string | null; topic: string }> => {
-    const response = await apiClient.get(`/quiz/${topicId}/share-code`);
-    return response.data;
+    try {
+      console.log('[quizApi.getShareCode] Requesting share code for topic:', topicId);
+      const url = `/quiz/${topicId}/share-code`;
+      console.log('[quizApi.getShareCode] Full URL:', `${apiClient.defaults.baseURL}${url}`);
+      const response = await apiClient.get(url);
+      console.log('[quizApi.getShareCode] Response:', response.data);
+      return response.data;
+    } catch (error: any) {
+      console.error('[quizApi.getShareCode] Error:', {
+        message: error.message,
+        response: error.response?.data,
+        status: error.response?.status,
+        url: error.config?.url,
+        baseURL: apiClient.defaults.baseURL,
+      });
+      throw error;
+    }
   },
 
   // Generate share code for quiz
   generateShareCode: async (topicId: number): Promise<{ quiz_id: number; share_code: string; topic: string }> => {
-    const response = await apiClient.post(`/quiz/${topicId}/generate-share-code`);
-    return response.data;
+    try {
+      console.log('[quizApi.generateShareCode] Generating share code for topic:', topicId);
+      const url = `/quiz/${topicId}/generate-share-code`;
+      console.log('[quizApi.generateShareCode] Full URL:', `${apiClient.defaults.baseURL}${url}`);
+      const response = await apiClient.post(url);
+      console.log('[quizApi.generateShareCode] Response:', response.data);
+      return response.data;
+    } catch (error: any) {
+      console.error('[quizApi.generateShareCode] Error:', {
+        message: error.message,
+        response: error.response?.data,
+        status: error.response?.status,
+        url: error.config?.url,
+        baseURL: apiClient.defaults.baseURL,
+      });
+      throw error;
+    }
   },
 
   // Get quiz by share code (public, no auth)

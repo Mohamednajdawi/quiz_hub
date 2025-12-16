@@ -61,31 +61,59 @@ def verify_and_repair_schema() -> None:
         
         inspector = inspect(engine)
         
-        # Check if essay_answers table exists
-        if "essay_answers" not in inspector.get_table_names():
-            print("ℹ️  essay_answers table does not exist yet, skipping verification")
+        # Check if quiz_attempts table exists
+        if "quiz_attempts" not in inspector.get_table_names():
+            print("ℹ️  quiz_attempts table does not exist yet, skipping verification")
             return
         
         # Get existing columns
-        columns = {col["name"] for col in inspector.get_columns("essay_answers")}
+        quiz_attempts_columns = {col["name"] for col in inspector.get_columns("quiz_attempts")}
         
-        # Check and add missing columns
+        # Check and add missing columns for quiz_attempts
         # SQLite DDL operations are autocommit, so we can execute them directly
         needs_repair = False
         with engine.connect() as conn:
-            if "ai_feedback" not in columns:
-                print("🔧 Adding missing column: essay_answers.ai_feedback")
-                conn.execute(text("ALTER TABLE essay_answers ADD COLUMN ai_feedback TEXT"))
+            if "participant_first_name" not in quiz_attempts_columns:
+                print("🔧 Adding missing column: quiz_attempts.participant_first_name")
+                conn.execute(text("ALTER TABLE quiz_attempts ADD COLUMN participant_first_name VARCHAR"))
                 conn.commit()
-                print("✅ Added ai_feedback column")
+                print("✅ Added participant_first_name column")
                 needs_repair = True
             
-            if "score" not in columns:
-                print("🔧 Adding missing column: essay_answers.score")
-                conn.execute(text("ALTER TABLE essay_answers ADD COLUMN score REAL"))
+            if "participant_last_name" not in quiz_attempts_columns:
+                print("🔧 Adding missing column: quiz_attempts.participant_last_name")
+                conn.execute(text("ALTER TABLE quiz_attempts ADD COLUMN participant_last_name VARCHAR"))
                 conn.commit()
-                print("✅ Added score column")
+                print("✅ Added participant_last_name column")
                 needs_repair = True
+            
+            if "participant_email" not in quiz_attempts_columns:
+                print("🔧 Adding missing column: quiz_attempts.participant_email")
+                conn.execute(text("ALTER TABLE quiz_attempts ADD COLUMN participant_email VARCHAR"))
+                conn.commit()
+                print("✅ Added participant_email column")
+                needs_repair = True
+        
+        # Check if essay_answers table exists
+        if "essay_answers" in inspector.get_table_names():
+            # Get existing columns
+            essay_columns = {col["name"] for col in inspector.get_columns("essay_answers")}
+            
+            # Check and add missing columns
+            with engine.connect() as conn:
+                if "ai_feedback" not in essay_columns:
+                    print("🔧 Adding missing column: essay_answers.ai_feedback")
+                    conn.execute(text("ALTER TABLE essay_answers ADD COLUMN ai_feedback TEXT"))
+                    conn.commit()
+                    print("✅ Added ai_feedback column")
+                    needs_repair = True
+                
+                if "score" not in essay_columns:
+                    print("🔧 Adding missing column: essay_answers.score")
+                    conn.execute(text("ALTER TABLE essay_answers ADD COLUMN score REAL"))
+                    conn.commit()
+                    print("✅ Added score column")
+                    needs_repair = True
         
         if not needs_repair:
             print("✅ Schema verification passed: all required columns exist")

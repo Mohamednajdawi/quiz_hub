@@ -429,13 +429,30 @@ export function GenerationPanel({
         const newData = await quizApi.generateShareCode(topicId);
         return newData.share_code;
       } catch (error: any) {
+        console.error('[GenerationPanel] Error getting share code:', error);
+        
         // If 403, try generating a new code
-        if (error.response?.status === 403 || error.message?.includes('403')) {
-          const newData = await quizApi.generateShareCode(topicId);
-          return newData.share_code;
+        if (error.response?.status === 403 || error.message?.includes('403') || error.message?.includes('Access denied')) {
+          try {
+            const newData = await quizApi.generateShareCode(topicId);
+            return newData.share_code;
+          } catch (genError: any) {
+            console.error('[GenerationPanel] Error generating share code:', genError);
+            throw new Error(genError.message || 'Failed to generate share code. Please try again.');
+          }
         }
-        throw error;
+        
+        // If network error, provide more helpful message
+        if (error.message?.includes('Network error') || !error.response) {
+          throw new Error('Unable to connect to the server. Please check your internet connection and ensure the backend is running.');
+        }
+        
+        throw new Error(error.message || 'Failed to get share code. Please try again.');
       }
+    },
+    onError: (error: any) => {
+      console.error('[GenerationPanel] Share code mutation error:', error);
+      alert(error.message || 'Failed to get share code. Please try again.');
     },
   });
 
