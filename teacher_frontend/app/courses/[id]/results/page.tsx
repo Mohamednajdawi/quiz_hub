@@ -33,16 +33,29 @@ export default function CourseResultsPage() {
     retry: 1,
   });
 
-  // Fetch results for all quizzes in this course using useQueries (proper parallel queries)
+  // Fetch results for all quizzes in this course using useQueries
+  // Stagger requests to avoid overwhelming the network on refresh
   const quizIds = course?.quiz_references || [];
   
   const resultsQueries = useQueries({
-    queries: quizIds.map((quizId: number) => ({
+    queries: quizIds.map((quizId: number, index: number) => ({
       queryKey: ['quiz-results', quizId],
-      queryFn: () => quizApi.getSharedResults(quizId),
+      queryFn: async () => {
+        // Stagger requests: wait 50ms * index to avoid simultaneous bursts
+        if (index > 0) {
+          await new Promise(resolve => setTimeout(resolve, Math.min(index * 50, 1000)));
+        }
+        return quizApi.getSharedResults(quizId);
+      },
       enabled: !!course && quizIds.length > 0 && !authLoading && isAuthenticated, // Only run when auth is ready
       staleTime: 2 * 60 * 1000, // 2 minutes - results don't change often
-      retry: 1,
+      retry: (failureCount, error: any) => {
+        // Only retry network errors, and limit retries
+        if (error?.message?.includes('Network error')) {
+          return failureCount < 2;
+        }
+        return failureCount < 1;
+      },
     })),
   });
 

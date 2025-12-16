@@ -19,12 +19,26 @@ export default function CoursesPage() {
   const [courseName, setCourseName] = useState('');
   const [courseDescription, setCourseDescription] = useState('');
 
+  // #region agent log
+  useEffect(() => {
+    fetch('http://127.0.0.1:7243/ingest/ce1c6d50-1c88-48f7-82cd-e69144f360b0',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'courses/page.tsx:17',message:'CoursesPage render',data:{authLoading,isAuthenticated,queryEnabled:!authLoading&&isAuthenticated},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
+  }, [authLoading, isAuthenticated]);
+  // #endregion
+
   const { data, isLoading, error, refetch } = useQuery({
     queryKey: ['courses'],
-    queryFn: () => coursesApi.getAll(),
+    queryFn: () => {
+      // #region agent log
+      fetch('http://127.0.0.1:7243/ingest/ce1c6d50-1c88-48f7-82cd-e69144f360b0',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'courses/page.tsx:26',message:'Courses query function executing',data:{},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
+      // #endregion
+      return coursesApi.getAll();
+    },
     enabled: !authLoading && isAuthenticated, // Only run when auth is ready
     staleTime: 5 * 60 * 1000, // 5 minutes - courses don't change often
     retry: (failureCount, error: any) => {
+      // #region agent log
+      fetch('http://127.0.0.1:7243/ingest/ce1c6d50-1c88-48f7-82cd-e69144f360b0',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'courses/page.tsx:33',message:'Courses query retry decision',data:{failureCount,errorMessage:error?.message,willRetry:error?.message?.includes('Network error')?failureCount<3:failureCount<1},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
+      // #endregion
       // Retry network errors more aggressively
       if (error?.message?.includes('Network error')) {
         return failureCount < 3;
@@ -32,6 +46,12 @@ export default function CoursesPage() {
       return failureCount < 1;
     },
   });
+  
+  // #region agent log
+  useEffect(() => {
+    fetch('http://127.0.0.1:7243/ingest/ce1c6d50-1c88-48f7-82cd-e69144f360b0',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'courses/page.tsx:43',message:'Courses query state changed',data:{isLoading,hasError:!!error,hasData:!!data,errorMessage:error?.message},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
+  }, [isLoading, error, data]);
+  // #endregion
 
   const createMutation = useMutation({
     mutationFn: (data: { name: string; description: string }) =>

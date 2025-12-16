@@ -13,12 +13,26 @@ export default function ResultsPage() {
   const { isAuthenticated, isLoading: authLoading } = useAuth();
   const queryClient = useQueryClient();
   
+  // #region agent log
+  useEffect(() => {
+    fetch('http://127.0.0.1:7243/ingest/ce1c6d50-1c88-48f7-82cd-e69144f360b0',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'results/page.tsx:13',message:'ResultsPage render',data:{authLoading,isAuthenticated,queryEnabled:!authLoading&&isAuthenticated},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
+  }, [authLoading, isAuthenticated]);
+  // #endregion
+  
   const { data: quizzes, isLoading, error, refetch } = useQuery({
     queryKey: ['my-quizzes'],
-    queryFn: () => quizApi.getMyQuizzes(),
+    queryFn: () => {
+      // #region agent log
+      fetch('http://127.0.0.1:7243/ingest/ce1c6d50-1c88-48f7-82cd-e69144f360b0',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'results/page.tsx:22',message:'Query function executing',data:{},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
+      // #endregion
+      return quizApi.getMyQuizzes();
+    },
     enabled: !authLoading && isAuthenticated, // Only run when auth is ready
     staleTime: 2 * 60 * 1000, // 2 minutes
     retry: (failureCount, error: any) => {
+      // #region agent log
+      fetch('http://127.0.0.1:7243/ingest/ce1c6d50-1c88-48f7-82cd-e69144f360b0',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'results/page.tsx:28',message:'Query retry decision',data:{failureCount,errorMessage:error?.message,willRetry:error?.message?.includes('Network error')?failureCount<3:failureCount<1},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
+      // #endregion
       // Retry network errors more aggressively
       if (error?.message?.includes('Network error')) {
         return failureCount < 3;
@@ -26,6 +40,12 @@ export default function ResultsPage() {
       return failureCount < 1;
     },
   });
+  
+  // #region agent log
+  useEffect(() => {
+    fetch('http://127.0.0.1:7243/ingest/ce1c6d50-1c88-48f7-82cd-e69144f360b0',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'results/page.tsx:38',message:'Query state changed',data:{isLoading,hasError:!!error,hasData:!!quizzes,errorMessage:error?.message},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
+  }, [isLoading, error, quizzes]);
+  // #endregion
 
 
   return (
@@ -46,7 +66,13 @@ export default function ResultsPage() {
             <div className="text-center py-16">
               <BarChart3 className="w-16 h-16 text-red-400 mx-auto mb-4 opacity-50" />
               <h2 className="text-xl font-semibold text-white mb-2">Error loading quizzes</h2>
-              <p className="text-[#94A3B8]">Please try refreshing the page</p>
+              <p className="text-[#94A3B8] mb-4">{error.message || 'Please try refreshing the page'}</p>
+              <button
+                onClick={() => refetch()}
+                className="px-4 py-2 bg-[#38BDF8] hover:bg-[#38BDF8]/90 text-[#0B1221] font-semibold rounded transition-colors"
+              >
+                Retry
+              </button>
             </div>
           ) : !quizzes || quizzes.topics.length === 0 ? (
             <div className="text-center py-16">

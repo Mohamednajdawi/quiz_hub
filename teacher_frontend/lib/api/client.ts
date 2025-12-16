@@ -23,8 +23,14 @@ export const apiClient = axios.create({
 // Add token to requests if available
 apiClient.interceptors.request.use(
   (config) => {
+    // #region agent log
+    fetch('http://127.0.0.1:7243/ingest/ce1c6d50-1c88-48f7-82cd-e69144f360b0',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'client.ts:25',message:'Request interceptor called',data:{url:config.url,method:config.method,hasWindow:typeof window!=='undefined'},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'D'})}).catch(()=>{});
+    // #endregion
     if (typeof window !== 'undefined') {
       const token = localStorage.getItem('token');
+      // #region agent log
+      fetch('http://127.0.0.1:7243/ingest/ce1c6d50-1c88-48f7-82cd-e69144f360b0',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'client.ts:29',message:'Token retrieved from localStorage',data:{hasToken:!!token,tokenLength:token?.length||0,url:config.url},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'D'})}).catch(()=>{});
+      // #endregion
       if (token) {
         config.headers.Authorization = `Bearer ${token}`;
       }
@@ -36,6 +42,9 @@ apiClient.interceptors.request.use(
     return config;
   },
   (error) => {
+    // #region agent log
+    fetch('http://127.0.0.1:7243/ingest/ce1c6d50-1c88-48f7-82cd-e69144f360b0',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'client.ts:40',message:'Request interceptor error',data:{error:String(error)},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'D'})}).catch(()=>{});
+    // #endregion
     return Promise.reject(error);
   }
 );
@@ -49,10 +58,16 @@ apiClient.interceptors.response.use(
       const message = error.response.data?.detail || error.response.data?.message || 'An error occurred';
       
       if (status === 401) {
+        // #region agent log
+        fetch('http://127.0.0.1:7243/ingest/ce1c6d50-1c88-48f7-82cd-e69144f360b0',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'client.ts:52',message:'401 error detected',data:{currentPath:typeof window!=='undefined'?window.location.pathname:'N/A',url:error.config?.url},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'D'})}).catch(()=>{});
+        // #endregion
         // Only clear auth and redirect if we're not already on login page
         if (typeof window !== 'undefined') {
           const currentPath = window.location.pathname;
           if (currentPath !== '/login' && currentPath !== '/register') {
+            // #region agent log
+            fetch('http://127.0.0.1:7243/ingest/ce1c6d50-1c88-48f7-82cd-e69144f360b0',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'client.ts:58',message:'401 redirect triggered',data:{currentPath},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'D'})}).catch(()=>{});
+            // #endregion
             localStorage.removeItem('token');
             localStorage.removeItem('user');
             // Use a small delay to avoid redirect loops
@@ -78,6 +93,9 @@ apiClient.interceptors.response.use(
       
       return Promise.reject(new Error(message));
     } else if (error.request) {
+      // #region agent log
+      fetch('http://127.0.0.1:7243/ingest/ce1c6d50-1c88-48f7-82cd-e69144f360b0',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'client.ts:82',message:'Network error detected',data:{url:error.config?.url,method:error.config?.method,hasResponse:!!error.response},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'E'})}).catch(()=>{});
+      // #endregion
       // Network error - don't destroy the app, just return a retry-able error
       // The query will retry automatically
       return Promise.reject(new Error('Network error. Please check your connection.'));

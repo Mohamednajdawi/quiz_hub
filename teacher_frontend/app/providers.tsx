@@ -15,14 +15,14 @@ export function Providers({ children }: { children: React.ReactNode }) {
             refetchOnWindowFocus: false,
             refetchOnMount: true, // Refetch on mount to ensure fresh data after auth loads
             retry: (failureCount, error: any) => {
-              // Retry network errors up to 3 times
+              // Retry network errors up to 2 times (reduced from 3 to fail faster)
               if (error?.message?.includes('Network error')) {
-                return failureCount < 3;
+                return failureCount < 2;
               }
               // For other errors, only retry once
               return failureCount < 1;
             },
-            retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000), // Exponential backoff
+            retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 5000), // Reduced max delay to 5s
           },
         },
       })
