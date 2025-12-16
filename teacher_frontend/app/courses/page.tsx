@@ -24,15 +24,14 @@ export default function CoursesPage() {
     queryFn: () => coursesApi.getAll(),
     enabled: !authLoading && isAuthenticated, // Only run when auth is ready
     staleTime: 5 * 60 * 1000, // 5 minutes - courses don't change often
-    retry: 1,
+    retry: (failureCount, error: any) => {
+      // Retry network errors more aggressively
+      if (error?.message?.includes('Network error')) {
+        return failureCount < 3;
+      }
+      return failureCount < 1;
+    },
   });
-
-  // Refetch when auth becomes ready (if query wasn't already enabled)
-  useEffect(() => {
-    if (!authLoading && isAuthenticated && !isLoading && !data) {
-      refetch();
-    }
-  }, [authLoading, isAuthenticated, isLoading, data, refetch]);
 
   const createMutation = useMutation({
     mutationFn: (data: { name: string; description: string }) =>

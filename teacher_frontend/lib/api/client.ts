@@ -49,11 +49,17 @@ apiClient.interceptors.response.use(
       const message = error.response.data?.detail || error.response.data?.message || 'An error occurred';
       
       if (status === 401) {
-        // Clear auth on 401
+        // Only clear auth and redirect if we're not already on login page
         if (typeof window !== 'undefined') {
-          localStorage.removeItem('token');
-          localStorage.removeItem('user');
-          window.location.href = '/login';
+          const currentPath = window.location.pathname;
+          if (currentPath !== '/login' && currentPath !== '/register') {
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            // Use a small delay to avoid redirect loops
+            setTimeout(() => {
+              window.location.href = '/login';
+            }, 100);
+          }
         }
         return Promise.reject(new Error('Authentication failed. Please log in again.'));
       } else if (status === 403) {
@@ -72,6 +78,8 @@ apiClient.interceptors.response.use(
       
       return Promise.reject(new Error(message));
     } else if (error.request) {
+      // Network error - don't destroy the app, just return a retry-able error
+      // The query will retry automatically
       return Promise.reject(new Error('Network error. Please check your connection.'));
     } else {
       return Promise.reject(error);

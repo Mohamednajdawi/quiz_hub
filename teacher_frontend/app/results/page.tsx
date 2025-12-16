@@ -18,15 +18,14 @@ export default function ResultsPage() {
     queryFn: () => quizApi.getMyQuizzes(),
     enabled: !authLoading && isAuthenticated, // Only run when auth is ready
     staleTime: 2 * 60 * 1000, // 2 minutes
-    retry: 1,
+    retry: (failureCount, error: any) => {
+      // Retry network errors more aggressively
+      if (error?.message?.includes('Network error')) {
+        return failureCount < 3;
+      }
+      return failureCount < 1;
+    },
   });
-
-  // Refetch when auth becomes ready (if query wasn't already enabled)
-  useEffect(() => {
-    if (!authLoading && isAuthenticated && !isLoading && !quizzes) {
-      refetch();
-    }
-  }, [authLoading, isAuthenticated, isLoading, quizzes, refetch]);
 
 
   return (

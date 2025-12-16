@@ -38,40 +38,60 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return;
     }
 
-    try {
-      const storedToken = localStorage.getItem('token');
-      const storedUserRaw = localStorage.getItem('user');
+    // Use a small timeout to ensure localStorage is available
+    const initAuth = () => {
+      try {
+        const storedToken = localStorage.getItem('token');
+        const storedUserRaw = localStorage.getItem('user');
 
-      if (storedToken && storedUserRaw) {
-        setToken(storedToken);
-        try {
-          const parsedUser: User = JSON.parse(storedUserRaw);
-          setUser(parsedUser);
+        if (storedToken && storedUserRaw) {
+          setToken(storedToken);
+          try {
+            const parsedUser: User = JSON.parse(storedUserRaw);
+            setUser(parsedUser);
+            // Set loading to false immediately so queries can start
+            setIsLoading(false);
+            
+            // Verify token in background (non-blocking) - don't wait for this
+            authApi.getCurrentUser(storedToken)
+              .then((freshUser) => {
+                setUser(freshUser);
+                localStorage.setItem('user', JSON.stringify(freshUser));
+              })
+              .catch((err) => {
+                // Only handle 401 errors - network errors shouldn't clear auth
+                if (err?.response?.status === 401) {
+                  // Token is invalid, clear it
+                  localStorage.removeItem('token');
+                  localStorage.removeItem('user');
+                  setToken(null);
+                  setUser(null);
+                }
+                // For network errors, keep the stored token and let the interceptor handle it
+              });
+          } catch (error) {
+            console.error('Failed to parse stored user', error);
+            setIsLoading(false);
+            // Clear invalid data
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+          }
+        } else {
           setIsLoading(false);
-          
-          // Verify token in background (non-blocking)
-          authApi.getCurrentUser(storedToken)
-            .then((freshUser) => {
-              setUser(freshUser);
-              localStorage.setItem('user', JSON.stringify(freshUser));
-            })
-            .catch(() => {
-              // Only logout if token is actually invalid (don't block on network errors)
-              // The API interceptor will handle 401 errors
-            });
-        } catch (error) {
-          console.error('Failed to parse stored user', error);
-          setIsLoading(false);
-          // Clear invalid data
-          localStorage.removeItem('token');
-          localStorage.removeItem('user');
         }
-      } else {
+      } catch (error) {
+        console.error('Error initializing auth:', error);
         setIsLoading(false);
       }
-    } catch (error) {
-      console.error('Error initializing auth:', error);
-      setIsLoading(false);
+    };
+
+    // Small delay to ensure everything is ready
+    if (document.readyState === 'complete') {
+      initAuth();
+    } else {
+      window.addEventListener('load', initAuth);
+      // Also try immediately in case load already fired
+      setTimeout(initAuth, 0);
     }
   }, []);
 
