@@ -9,6 +9,9 @@ const nextConfig: NextConfig = {
     formats: ['image/avif', 'image/webp'],
   },
   
+  // Enable standalone output for Docker
+  output: 'standalone',
+  
   // Experimental features for better performance
   experimental: {
     optimizePackageImports: ['lucide-react', 'framer-motion'],
