@@ -1,15 +1,33 @@
 'use client';
 
 import { use, useState, useEffect } from 'react';
+import dynamic from 'next/dynamic';
 import { ProtectedRoute } from '@/components/ProtectedRoute';
 import { Navigation } from '@/components/Navigation';
 import { PdfSidebar } from '@/components/course/PdfSidebar';
-import { ChatViewer } from '@/components/course/ChatViewer';
-import { GenerationPanel } from '@/components/course/GenerationPanel';
 import { useQuery } from '@tanstack/react-query';
 import { coursesApi, CourseContent } from '@/lib/api/courses';
 import { ArrowLeft, BarChart3 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+
+// Lazy load heavy components for better initial load performance
+const ChatViewer = dynamic(() => import('@/components/course/ChatViewer').then(mod => ({ default: mod.ChatViewer })), {
+  loading: () => (
+    <div className="h-full flex items-center justify-center bg-[#161F32] rounded-lg">
+      <div className="text-[#38BDF8] text-sm">Loading chat...</div>
+    </div>
+  ),
+  ssr: false,
+});
+
+const GenerationPanel = dynamic(() => import('@/components/course/GenerationPanel').then(mod => ({ default: mod.GenerationPanel })), {
+  loading: () => (
+    <div className="h-full flex items-center justify-center bg-[#161F32] rounded-lg">
+      <div className="text-[#38BDF8] text-sm">Loading panel...</div>
+    </div>
+  ),
+  ssr: false,
+});
 
 export default function CourseDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const resolvedParams = use(params);

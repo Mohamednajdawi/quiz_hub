@@ -1,11 +1,11 @@
 'use client';
 
+import { memo } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { BookOpen, LogOut, User, BarChart3 } from 'lucide-react';
-import { motion } from 'framer-motion';
 
-export function Navigation() {
+export const Navigation = memo(function Navigation() {
   const router = useRouter();
   const pathname = usePathname();
   const { user, logout } = useAuth();
@@ -53,7 +53,11 @@ export function Navigation() {
           <div className="flex items-center gap-4">
             <div className="hidden sm:flex items-center gap-2 text-[#94A3B8]">
               <User className="w-5 h-5" />
-              <span className="text-sm">{user?.email}</span>
+              <span className="text-sm">
+                {user?.first_name || user?.last_name
+                  ? `${user.first_name || ''} ${user.last_name || ''}`.trim()
+                  : user?.email || 'User'}
+              </span>
             </div>
             <button
               onClick={logout}
@@ -67,5 +71,5 @@ export function Navigation() {
       </div>
     </nav>
   );
-}
+});
 

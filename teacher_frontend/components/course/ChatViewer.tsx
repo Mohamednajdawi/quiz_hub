@@ -1,9 +1,8 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, memo } from 'react';
 import { CourseContent, coursesApi } from '@/lib/api/courses';
 import { MessageSquare, FileText, X } from 'lucide-react';
-import { motion } from 'framer-motion';
 import apiClient from '@/lib/api/client';
 
 interface ChatViewerProps {
@@ -13,7 +12,7 @@ interface ChatViewerProps {
   onPdfDeselect?: () => void;
 }
 
-export function ChatViewer({ courseId, contents, selectedPdf, onPdfDeselect }: ChatViewerProps) {
+export const ChatViewer = memo(function ChatViewer({ courseId, contents, selectedPdf, onPdfDeselect }: ChatViewerProps) {
   const [selectedContent, setSelectedContent] = useState<CourseContent | null>(null);
   const [viewMode, setViewMode] = useState<'chat' | 'viewer'>('chat');
   const [messages, setMessages] = useState<Array<{ role: 'user' | 'assistant'; content: string }>>([]);
@@ -179,11 +178,10 @@ export function ChatViewer({ courseId, contents, selectedPdf, onPdfDeselect }: C
                 </div>
               ) : (
                 messages.map((message, index) => (
-                  <motion.div
+                  <div
                     key={index}
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
+                    className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'} animate-fade-in`}
+                    style={{ animationDelay: `${index * 50}ms` }}
                   >
                     <div
                       className={`max-w-[80%] p-3 rounded-lg ${
@@ -194,7 +192,7 @@ export function ChatViewer({ courseId, contents, selectedPdf, onPdfDeselect }: C
                     >
                       <p className="text-sm">{message.content}</p>
                     </div>
-                  </motion.div>
+                  </div>
                 ))
               )}
               {isLoading && (
@@ -267,5 +265,5 @@ export function ChatViewer({ courseId, contents, selectedPdf, onPdfDeselect }: C
       </div>
     </div>
   );
-}
+});
 

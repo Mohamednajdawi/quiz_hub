@@ -35,4 +35,20 @@ body {
     backdrop-filter: blur(10px);
     border: 1px solid rgba(56, 189, 248, 0.1);
   }
+
+  .animate-fade-in {
+    animation: fadeIn 0.3s ease-in-out forwards;
+    opacity: 0;
+  }
+
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+      transform: translateX(-10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateX(0);
+    }
+  }
 }

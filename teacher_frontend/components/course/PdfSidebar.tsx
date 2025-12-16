@@ -1,10 +1,9 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState, useRef, memo } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { coursesApi, CourseContent } from '@/lib/api/courses';
 import { Upload, FileText, Trash2, X } from 'lucide-react';
-import { motion } from 'framer-motion';
 import { format } from 'date-fns';
 
 interface PdfSidebarProps {
@@ -14,7 +13,7 @@ interface PdfSidebarProps {
   selectedPdf?: CourseContent | null;
 }
 
-export function PdfSidebar({ courseId, contents, onPdfSelect, selectedPdf }: PdfSidebarProps) {
+export const PdfSidebar = memo(function PdfSidebar({ courseId, contents, onPdfSelect, selectedPdf }: PdfSidebarProps) {
   const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const queryClient = useQueryClient();
@@ -94,12 +93,10 @@ export function PdfSidebar({ courseId, contents, onPdfSelect, selectedPdf }: Pdf
           </div>
         ) : (
           contents.map((content) => (
-            <motion.div
+            <div
               key={content.id}
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
               onClick={() => onPdfSelect?.(content)}
-              className={`p-3 bg-[#161F32] rounded border transition-colors group cursor-pointer ${
+              className={`p-3 bg-[#161F32] rounded border transition-all group cursor-pointer animate-fade-in ${
                 selectedPdf?.id === content.id
                   ? 'border-[#38BDF8] bg-[#38BDF8]/10'
                   : 'border-[#38BDF8]/10 hover:border-[#38BDF8]/30'
@@ -124,7 +121,7 @@ export function PdfSidebar({ courseId, contents, onPdfSelect, selectedPdf }: Pdf
                   <Trash2 className="w-4 h-4" />
                 </button>
               </div>
-            </motion.div>
+            </div>
           ))
         )}
       </div>
@@ -139,5 +136,5 @@ export function PdfSidebar({ courseId, contents, onPdfSelect, selectedPdf }: Pdf
       )}
     </div>
   );
-}
+});
 

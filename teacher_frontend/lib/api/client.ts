@@ -1,10 +1,20 @@
 import axios from 'axios';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://quizhub-production-1ddf.up.railway.app/';
+// Ensure API URL has protocol
+const getApiBaseUrl = () => {
+  const url = process.env.NEXT_PUBLIC_API_URL || 'quizhub-production-1ddf.up.railway.app';
+  // If URL doesn't start with http:// or https://, add https://
+  if (!url.startsWith('http://') && !url.startsWith('https://')) {
+    return `https://${url}`;
+  }
+  return url;
+};
+
+const API_BASE_URL = getApiBaseUrl();
 
 export const apiClient = axios.create({
   baseURL: API_BASE_URL,
-  timeout: 30000,
+  timeout: 10000, // Reduced from 30s to 10s for better UX
   headers: {
     'Content-Type': 'application/json',
   },
@@ -72,7 +82,7 @@ apiClient.interceptors.response.use(
 // Public API client (no auth headers) for shared quizzes/essays
 export const publicApiClient = axios.create({
   baseURL: API_BASE_URL,
-  timeout: 30000,
+  timeout: 10000, // Reduced from 30s to 10s for better UX
   headers: {
     'Content-Type': 'application/json',
   },
