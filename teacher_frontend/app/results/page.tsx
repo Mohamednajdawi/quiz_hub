@@ -1,6 +1,7 @@
 'use client';
 
-import { useQuery } from '@tanstack/react-query';
+import { useEffect } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { ProtectedRoute } from '@/components/ProtectedRoute';
 import { Navigation } from '@/components/Navigation';
 import { quizApi } from '@/lib/api/quiz';
@@ -10,14 +11,22 @@ import { QuizResultsCard } from '@/components/results/QuizResultsCard';
 
 export default function ResultsPage() {
   const { isAuthenticated, isLoading: authLoading } = useAuth();
+  const queryClient = useQueryClient();
   
-  const { data: quizzes, isLoading, error } = useQuery({
+  const { data: quizzes, isLoading, error, refetch } = useQuery({
     queryKey: ['my-quizzes'],
     queryFn: () => quizApi.getMyQuizzes(),
     enabled: !authLoading && isAuthenticated, // Only run when auth is ready
     staleTime: 2 * 60 * 1000, // 2 minutes
     retry: 1,
   });
+
+  // Refetch when auth becomes ready (if query wasn't already enabled)
+  useEffect(() => {
+    if (!authLoading && isAuthenticated && !isLoading && !quizzes) {
+      refetch();
+    }
+  }, [authLoading, isAuthenticated, isLoading, quizzes, refetch]);
 
 
   return (

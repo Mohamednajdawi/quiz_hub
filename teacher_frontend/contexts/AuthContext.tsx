@@ -32,31 +32,45 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   useEffect(() => {
-    const storedToken = localStorage.getItem('token');
-    const storedUserRaw = localStorage.getItem('user');
+    // Ensure we're on the client side
+    if (typeof window === 'undefined') {
+      setIsLoading(false);
+      return;
+    }
 
-    if (storedToken && storedUserRaw) {
-      setToken(storedToken);
-      try {
-        const parsedUser: User = JSON.parse(storedUserRaw);
-        setUser(parsedUser);
+    try {
+      const storedToken = localStorage.getItem('token');
+      const storedUserRaw = localStorage.getItem('user');
+
+      if (storedToken && storedUserRaw) {
+        setToken(storedToken);
+        try {
+          const parsedUser: User = JSON.parse(storedUserRaw);
+          setUser(parsedUser);
+          setIsLoading(false);
+          
+          // Verify token in background (non-blocking)
+          authApi.getCurrentUser(storedToken)
+            .then((freshUser) => {
+              setUser(freshUser);
+              localStorage.setItem('user', JSON.stringify(freshUser));
+            })
+            .catch(() => {
+              // Only logout if token is actually invalid (don't block on network errors)
+              // The API interceptor will handle 401 errors
+            });
+        } catch (error) {
+          console.error('Failed to parse stored user', error);
+          setIsLoading(false);
+          // Clear invalid data
+          localStorage.removeItem('token');
+          localStorage.removeItem('user');
+        }
+      } else {
         setIsLoading(false);
-        
-        // Verify token in background (non-blocking)
-        authApi.getCurrentUser(storedToken)
-          .then((freshUser) => {
-            setUser(freshUser);
-            localStorage.setItem('user', JSON.stringify(freshUser));
-          })
-          .catch(() => {
-            // Only logout if token is actually invalid (don't block on network errors)
-            // The API interceptor will handle 401 errors
-          });
-      } catch (error) {
-        console.error('Failed to parse stored user', error);
-        logout();
       }
-    } else {
+    } catch (error) {
+      console.error('Error initializing auth:', error);
       setIsLoading(false);
     }
   }, []);

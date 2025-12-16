@@ -19,13 +19,20 @@ export default function CoursesPage() {
   const [courseName, setCourseName] = useState('');
   const [courseDescription, setCourseDescription] = useState('');
 
-  const { data, isLoading, error } = useQuery({
+  const { data, isLoading, error, refetch } = useQuery({
     queryKey: ['courses'],
     queryFn: () => coursesApi.getAll(),
     enabled: !authLoading && isAuthenticated, // Only run when auth is ready
     staleTime: 5 * 60 * 1000, // 5 minutes - courses don't change often
     retry: 1,
   });
+
+  // Refetch when auth becomes ready (if query wasn't already enabled)
+  useEffect(() => {
+    if (!authLoading && isAuthenticated && !isLoading && !data) {
+      refetch();
+    }
+  }, [authLoading, isAuthenticated, isLoading, data, refetch]);
 
   const createMutation = useMutation({
     mutationFn: (data: { name: string; description: string }) =>
@@ -108,7 +115,7 @@ export default function CoursesPage() {
     }
   };
 
-  if (isLoading) {
+  if (authLoading || isLoading) {
     return (
       <ProtectedRoute>
         <div className="min-h-screen bg-[#0B1221]">

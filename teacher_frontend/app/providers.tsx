@@ -13,7 +13,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
             staleTime: 5 * 60 * 1000, // 5 minutes - data stays fresh longer
             gcTime: 10 * 60 * 1000, // 10 minutes - keep in cache (renamed from cacheTime in v5)
             refetchOnWindowFocus: false,
-            refetchOnMount: false, // Don't refetch on mount if data is fresh
+            refetchOnMount: true, // Refetch on mount to ensure fresh data after auth loads
             retry: 1, // Only retry once on failure
           },
         },
