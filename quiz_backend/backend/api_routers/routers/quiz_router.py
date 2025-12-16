@@ -599,7 +599,10 @@ async def get_quiz_by_share_code(
 
 
 class SharedQuizSubmission(BaseModel):
-    participant_name: str
+    participant_name: str  # Keep for backward compatibility
+    participant_first_name: str | None = None
+    participant_last_name: str | None = None
+    participant_email: str | None = None
     user_answers: List[int]
     time_taken_seconds: int
 
@@ -650,7 +653,10 @@ async def submit_shared_quiz(
         correct_answers=correct_answers,
         difficulty_level=quiz.difficulty,
         is_shared_quiz=True,
-        participant_name=submission.participant_name,
+        participant_name=submission.participant_name,  # Keep for backward compatibility
+        participant_first_name=submission.participant_first_name,
+        participant_last_name=submission.participant_last_name,
+        participant_email=submission.participant_email,
         share_code=share_code
     )
     
@@ -933,12 +939,17 @@ async def get_shared_quiz_results(
             "attempts": [
                 {
                     "id": attempt.id,
-                    "participant_name": attempt.participant_name,
+                    "participant_name": attempt.participant_name,  # Keep for backward compatibility
+                    "participant_first_name": attempt.participant_first_name,
+                    "participant_last_name": attempt.participant_last_name,
+                    "participant_email": attempt.participant_email,
                     "timestamp": attempt.timestamp.isoformat(),
                     "score": attempt.score,
                     "total_questions": attempt.total_questions,
                     "percentage_score": round(attempt.percentage_score, 2),
                     "time_taken_seconds": attempt.time_taken_seconds,
+                    "user_answers": attempt.user_answers,
+                    "correct_answers": attempt.correct_answers,
                     "ai_feedback": attempt.ai_feedback,
                 }
                 for attempt in attempts

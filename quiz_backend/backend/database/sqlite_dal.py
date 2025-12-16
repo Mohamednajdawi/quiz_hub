@@ -145,7 +145,10 @@ class QuizAttempt(Base):
     
     # Shared quiz fields
     is_shared_quiz = Column(Boolean, default=False)  # True if taken via share code
-    participant_name = Column(String, nullable=True)  # Name of participant (for shared quizzes)
+    participant_name = Column(String, nullable=True)  # Name of participant (for shared quizzes) - kept for backward compatibility
+    participant_first_name = Column(String, nullable=True)  # First name of participant
+    participant_last_name = Column(String, nullable=True)  # Last name of participant
+    participant_email = Column(String, nullable=True)  # Email of participant
     share_code = Column(String(6), nullable=True)  # Share code used to take this quiz
     
     # Relationships

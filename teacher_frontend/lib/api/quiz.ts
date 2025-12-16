@@ -2,7 +2,10 @@ import apiClient, { publicApiClient } from './client';
 
 export interface QuizAttempt {
   id: number;
-  participant_name?: string;
+  participant_name?: string;  // Keep for backward compatibility
+  participant_first_name?: string;
+  participant_last_name?: string;
+  participant_email?: string;
   timestamp: string;
   score: number;
   total_questions: number;
@@ -111,10 +114,13 @@ export const quizApi = {
     timestamp: string;
     ai_feedback?: string;
   }> => {
-    // Combine name and lastname, include email in name for now (backend doesn't have separate email field yet)
-    const fullName = `${participantName} ${participantLastName}${participantEmail ? ` (${participantEmail})` : ''}`;
+    // Combine name for backward compatibility, but also send separate fields
+    const fullName = `${participantName} ${participantLastName}`;
     const response = await publicApiClient.post(`/quiz/share/${shareCode}/submit`, {
-      participant_name: fullName,
+      participant_name: fullName,  // Keep for backward compatibility
+      participant_first_name: participantName,
+      participant_last_name: participantLastName,
+      participant_email: participantEmail,
       user_answers: userAnswers,
       time_taken_seconds: timeTakenSeconds,
     });

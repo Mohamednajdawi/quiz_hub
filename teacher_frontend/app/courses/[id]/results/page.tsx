@@ -105,6 +105,41 @@ export default function CourseResultsPage() {
     return new Date(timestamp).toLocaleString();
   };
 
+  // Get incorrect question numbers from user_answers and correct_answers
+  const getIncorrectQuestions = (attempt: any): number[] => {
+    if (!attempt.user_answers || !attempt.correct_answers) {
+      return [];
+    }
+    const incorrect: number[] = [];
+    for (let i = 0; i < attempt.user_answers.length; i++) {
+      if (attempt.user_answers[i] !== attempt.correct_answers[i]) {
+        incorrect.push(i + 1); // Question numbers are 1-indexed
+      }
+    }
+    return incorrect;
+  };
+
+  // Format incorrect questions as "Q2, Q7" or "Q2 and Q7"
+  const formatIncorrectQuestions = (incorrect: number[]): string => {
+    if (incorrect.length === 0) return 'None';
+    if (incorrect.length === 1) return `Q${incorrect[0]}`;
+    if (incorrect.length === 2) return `Q${incorrect[0]} and Q${incorrect[1]}`;
+    // More than 2: "Q2, Q7, and Q10"
+    const last = incorrect[incorrect.length - 1];
+    const rest = incorrect.slice(0, -1).map(q => `Q${q}`).join(', ');
+    return `${rest}, and Q${last}`;
+  };
+
+  // Get participant display name
+  const getParticipantName = (attempt: any): string => {
+    if (attempt.participant_first_name || attempt.participant_last_name) {
+      const firstName = attempt.participant_first_name || '';
+      const lastName = attempt.participant_last_name || '';
+      return `${firstName} ${lastName}`.trim() || 'Anonymous';
+    }
+    return attempt.participant_name || 'Anonymous';
+  };
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-[#0B1221] flex items-center justify-center">
@@ -238,31 +273,72 @@ export default function CourseResultsPage() {
                     setExpandedAttempt(expandedAttempt === attempt.id ? null : attempt.id)
                   }
                 >
-                  <div className="flex items-center justify-between">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-3 mb-2">
-                        <h3 className="text-lg font-semibold text-white">
-                          {attempt.participant_name || 'Anonymous'}
-                        </h3>
-                        <span className="text-sm text-[#94A3B8]">•</span>
-                        <span className="text-sm text-[#94A3B8]">{attempt.quiz_topic}</span>
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="flex-1 min-w-0">
+                      {/* Participant Name */}
+                      <h3 className="text-lg font-semibold text-white mb-1">
+                        {getParticipantName(attempt)}
+                      </h3>
+                      
+                      {/* Participant Details */}
+                      <div className="flex flex-wrap items-center gap-3 mb-3 text-sm">
+                        {attempt.participant_first_name && (
+                          <span className="text-[#94A3B8]">
+                            <span className="font-medium text-white">First:</span> {attempt.participant_first_name}
+                          </span>
+                        )}
+                        {attempt.participant_last_name && (
+                          <span className="text-[#94A3B8]">
+                            <span className="font-medium text-white">Last:</span> {attempt.participant_last_name}
+                          </span>
+                        )}
+                        {attempt.participant_email && (
+                          <span className="text-[#94A3B8]">
+                            <span className="font-medium text-white">Email:</span> {attempt.participant_email}
+                          </span>
+                        )}
                       </div>
-                      {/* PDF name badge */}
-                      <div className="mb-2">
+
+                      {/* Quiz Topic and PDF */}
+                      <div className="flex items-center gap-3 mb-2">
+                        <span className="text-sm text-[#94A3B8]">{attempt.quiz_topic}</span>
+                        <span className="text-sm text-[#94A3B8]">•</span>
                         <span className="inline-flex items-center gap-1 px-2 py-1 bg-[#38BDF8]/20 text-[#38BDF8] text-xs rounded border border-[#38BDF8]/30">
                           <span>📄</span>
                           {attempt.pdf_name}
                         </span>
                       </div>
+
+                      {/* Score and Incorrect Questions */}
+                      <div className="flex items-center gap-4 mb-2">
+                        <span className="text-sm text-[#94A3B8]">
+                          <span className="font-medium text-white">Score:</span> {attempt.score} / {attempt.total_questions}
+                        </span>
+                        {(() => {
+                          const incorrect = getIncorrectQuestions(attempt);
+                          if (incorrect.length > 0) {
+                            return (
+                              <span className="text-sm text-red-400">
+                                <span className="font-medium">Incorrect:</span> {formatIncorrectQuestions(incorrect)}
+                              </span>
+                            );
+                          }
+                          return null;
+                        })()}
+                      </div>
+
+                      {/* Timestamp and Time Taken */}
                       <div className="flex items-center gap-4 text-sm text-[#94A3B8]">
                         <span>{formatDate(attempt.timestamp)}</span>
                         <span>•</span>
                         <span>{formatTime(attempt.time_taken_seconds)}</span>
                       </div>
                     </div>
-                    <div className="text-right">
+                    
+                    {/* Score Percentage */}
+                    <div className="text-right flex-shrink-0">
                       <div
-                        className={`text-2xl font-bold ${
+                        className={`text-3xl font-bold ${
                           attempt.percentage_score >= 70
                             ? 'text-[#38BDF8]'
                             : attempt.percentage_score >= 50
@@ -272,33 +348,90 @@ export default function CourseResultsPage() {
                       >
                         {attempt.percentage_score.toFixed(1)}%
                       </div>
-                      <div className="text-sm text-[#94A3B8]">
-                        {attempt.score} / {attempt.total_questions}
-                      </div>
                     </div>
                   </div>
                 </div>
 
                 {/* Expanded Details */}
                 {expandedAttempt === attempt.id && (
-                  <div className="border-t border-[#38BDF8]/20 p-6 bg-[#161F32]/30">
+                  <div className="border-t border-[#38BDF8]/20 p-6 bg-[#161F32]/30 space-y-4">
+                    {/* Participant Information */}
+                    <div>
+                      <h4 className="text-sm font-semibold text-white mb-3">Participant Information</h4>
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-sm">
+                        <div>
+                          <span className="text-[#94A3B8]">First Name:</span>
+                          <span className="text-white ml-2">{attempt.participant_first_name || 'N/A'}</span>
+                        </div>
+                        <div>
+                          <span className="text-[#94A3B8]">Last Name:</span>
+                          <span className="text-white ml-2">{attempt.participant_last_name || 'N/A'}</span>
+                        </div>
+                        <div>
+                          <span className="text-[#94A3B8]">Email:</span>
+                          <span className="text-white ml-2">{attempt.participant_email || 'N/A'}</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Score Details */}
+                    <div>
+                      <h4 className="text-sm font-semibold text-white mb-3">Score Details</h4>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+                        <div>
+                          <span className="text-[#94A3B8]">Score:</span>
+                          <span className="text-white ml-2 font-semibold">{attempt.score} / {attempt.total_questions}</span>
+                        </div>
+                        <div>
+                          <span className="text-[#94A3B8]">Percentage:</span>
+                          <span className={`ml-2 font-semibold ${
+                            attempt.percentage_score >= 70
+                              ? 'text-[#38BDF8]'
+                              : attempt.percentage_score >= 50
+                              ? 'text-yellow-500'
+                              : 'text-red-500'
+                          }`}>
+                            {attempt.percentage_score.toFixed(1)}%
+                          </span>
+                        </div>
+                        <div>
+                          <span className="text-[#94A3B8]">Time Taken:</span>
+                          <span className="text-white ml-2">{formatTime(attempt.time_taken_seconds)}</span>
+                        </div>
+                        <div>
+                          <span className="text-[#94A3B8]">Incorrect Questions:</span>
+                          <span className="text-red-400 ml-2 font-semibold">
+                            {formatIncorrectQuestions(getIncorrectQuestions(attempt))}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* AI Feedback */}
                     {attempt.ai_feedback && (
-                      <div className="mb-4">
+                      <div>
                         <h4 className="text-sm font-semibold text-white mb-2">AI Feedback</h4>
                         <p className="text-[#94A3B8] whitespace-pre-wrap bg-[#0B1221] p-4 rounded border border-[#38BDF8]/10">
                           {attempt.ai_feedback}
                         </p>
                       </div>
                     )}
-                    <div className="text-sm text-[#94A3B8]">
-                      <p>
-                        <span className="font-semibold">Quiz ID:</span> {attempt.quiz_id}
-                      </p>
-                      {attempt.share_code && (
+
+                    {/* Technical Details */}
+                    <div className="pt-3 border-t border-[#38BDF8]/10">
+                      <div className="text-xs text-[#94A3B8] space-y-1">
                         <p>
-                          <span className="font-semibold">Share Code:</span> {attempt.share_code}
+                          <span className="font-semibold">Quiz ID:</span> {attempt.quiz_id}
                         </p>
-                      )}
+                        {attempt.share_code && (
+                          <p>
+                            <span className="font-semibold">Share Code:</span> {attempt.share_code}
+                          </p>
+                        )}
+                        <p>
+                          <span className="font-semibold">Submitted:</span> {formatDate(attempt.timestamp)}
+                        </p>
+                      </div>
                     </div>
                   </div>
                 )}
