@@ -2,8 +2,10 @@
 
 import { useState, useEffect, memo } from 'react';
 import { CourseContent, coursesApi } from '@/lib/api/courses';
-import { MessageSquare, FileText, X } from 'lucide-react';
+import { MessageSquare, FileText, X, GitBranch, Loader2 } from 'lucide-react';
 import apiClient from '@/lib/api/client';
+import { mindMapsApi, type MindMapDetail } from '@/lib/api/mindmaps';
+import MindMapCanvas from '@/components/mindmaps/MindMapCanvasFlow';
 
 interface ChatViewerProps {
   courseId: number;
@@ -12,20 +14,35 @@ interface ChatViewerProps {
   onPdfDeselect?: () => void;
 }
 
-export const ChatViewer = memo(function ChatViewer({ courseId, contents, selectedPdf, onPdfDeselect }: ChatViewerProps) {
+export const ChatViewer = memo(function ChatViewer({
+  courseId,
+  contents,
+  selectedPdf,
+  onPdfDeselect,
+}: ChatViewerProps) {
   const [selectedContent, setSelectedContent] = useState<CourseContent | null>(null);
-  const [viewMode, setViewMode] = useState<'chat' | 'viewer'>('chat');
+  const [viewMode, setViewMode] = useState<'chat' | 'viewer' | 'mindmap'>('chat');
   const [messages, setMessages] = useState<Array<{ role: 'user' | 'assistant'; content: string }>>([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [pdfBlobUrl, setPdfBlobUrl] = useState<string | null>(null);
   const [pdfError, setPdfError] = useState<string | null>(null);
 
-  // Handle external PDF selection from sidebar - open chat instead of viewer
+  const [mindMapData, setMindMapData] = useState<MindMapDetail | null>(null);
+  const [mindMapLoading, setMindMapLoading] = useState(false);
+  const [mindMapError, setMindMapError] = useState<string | null>(null);
+  const [mindMapJobId, setMindMapJobId] = useState<number | null>(null);
+
+  // Handle external PDF selection from sidebar - open chat instead of viewer/mindmap
   useEffect(() => {
     if (selectedPdf && selectedPdf.id !== selectedContent?.id) {
       setSelectedContent(selectedPdf);
-      setViewMode('chat'); // Always open chat when clicking PDF from sidebar
+      setViewMode('chat');
+      // Reset mind map state when switching PDFs
+      setMindMapData(null);
+      setMindMapError(null);
+      setMindMapJobId(null);
+      setMindMapLoading(false);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedPdf]);
@@ -101,6 +118,118 @@ export const ChatViewer = memo(function ChatViewer({ courseId, contents, selecte
     }
   };
 
+  const handleGenerateMindMap = async () => {
+    if (!selectedContent) {
+      setMindMapError('Select a PDF in the sidebar first to generate a mind map.');
+      return;
+    }
+
+    try {
+      setMindMapError(null);
+      setMindMapLoading(true);
+      setMindMapData(null);
+
+      const response = await mindMapsApi.startMindMapGenerationJob(courseId, selectedContent.id, {
+        include_examples: true,
+      });
+      setMindMapJobId(response.job_id);
+      setViewMode('mindmap');
+    } catch (error: any) {
+      console.error('Error starting mind map generation:', error);
+      setMindMapError(error.message || 'Failed to start mind map generation');
+      setMindMapLoading(false);
+      setMindMapJobId(null);
+    }
+  };
+
+  // When entering mind map view, try to load an existing mind map for this PDF before generating a new one
+  useEffect(() => {
+    const loadExistingMindMap = async () => {
+      if (viewMode !== 'mindmap') return;
+      if (!selectedContent) {
+        setMindMapData(null);
+        setMindMapError(null);
+        setMindMapLoading(false);
+        return;
+      }
+      if (mindMapJobId) {
+        // Job already in progress; polling effect will handle updates
+        return;
+      }
+
+      try {
+        setMindMapLoading(true);
+        setMindMapError(null);
+
+        const summaries = await mindMapsApi.getMindMapsForContent(courseId, selectedContent.id);
+        if (!summaries.length) {
+          setMindMapLoading(false);
+          return;
+        }
+
+        // Use the most recently created mind map
+        const latest = summaries.reduce((latest, current) => {
+          const latestTime = latest.created_at ? new Date(latest.created_at).getTime() : 0;
+          const currentTime = current.created_at ? new Date(current.created_at).getTime() : 0;
+          return currentTime > latestTime ? current : latest;
+        });
+
+        const full = await mindMapsApi.getMindMap(latest.id);
+        setMindMapData(full);
+        setMindMapLoading(false);
+      } catch (error: any) {
+        console.error('Error loading existing mind map:', error);
+        setMindMapError(error.message || 'Failed to load existing mind map');
+        setMindMapLoading(false);
+      }
+    };
+
+    loadExistingMindMap();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [viewMode, selectedContent?.id, courseId]);
+
+  // Poll generation job status when a job is active
+  useEffect(() => {
+    if (!mindMapJobId) return;
+
+    let isCancelled = false;
+
+    const poll = async () => {
+      try {
+        const status = await mindMapsApi.getGenerationJob(mindMapJobId);
+        if (isCancelled) return;
+
+        if (status.status === 'completed' && status.result?.mind_map_id) {
+          const full = await mindMapsApi.getMindMap(status.result.mind_map_id);
+          if (isCancelled) return;
+          setMindMapData(full);
+          setMindMapLoading(false);
+          setMindMapJobId(null);
+        } else if (status.status === 'failed') {
+          setMindMapError(status.error_message || 'Mind map generation failed');
+          setMindMapLoading(false);
+          setMindMapJobId(null);
+        } else {
+          // Still pending/in_progress – poll again
+          setTimeout(poll, 4000);
+        }
+      } catch (error: any) {
+        if (isCancelled) return;
+        console.error('Error checking mind map job status:', error);
+        setMindMapError(error.message || 'Failed to check mind map status');
+        setMindMapLoading(false);
+        setMindMapJobId(null);
+      }
+    };
+
+    setMindMapLoading(true);
+    poll();
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [mindMapJobId]);
+
   // Clean up blob URL on unmount or when content changes
   useEffect(() => {
     return () => {
@@ -143,6 +272,19 @@ export const ChatViewer = memo(function ChatViewer({ courseId, contents, selecte
             }`}
           >
             <FileText className="w-5 h-5" />
+          </button>
+          <button
+            onClick={() => {
+              setViewMode('mindmap');
+            }}
+            className={`px-4 py-2 rounded transition-colors ${
+              viewMode === 'mindmap'
+                ? 'bg-[#38BDF8]/20 text-[#38BDF8]'
+                : 'text-[#94A3B8] hover:text-white'
+            }`}
+            title="Mind map"
+          >
+            <GitBranch className="w-5 h-5" />
           </button>
         </div>
         {selectedContent && (
@@ -229,7 +371,7 @@ export const ChatViewer = memo(function ChatViewer({ courseId, contents, selecte
               </div>
             </div>
           </div>
-        ) : (
+        ) : viewMode === 'viewer' ? (
           <div className="h-full">
             {pdfError ? (
               <div className="h-full flex items-center justify-center text-red-400">
@@ -257,6 +399,111 @@ export const ChatViewer = memo(function ChatViewer({ courseId, contents, selecte
                 <div className="text-center">
                   <FileText className="w-12 h-12 mx-auto mb-4 opacity-50" />
                   <p>Select a PDF to view</p>
+                </div>
+              </div>
+            )}
+          </div>
+        ) : (
+          <div className="h-full flex flex-col">
+            {!selectedContent ? (
+              <div className="h-full flex items-center justify-center text-[#94A3B8]">
+                <div className="text-center max-w-xs">
+                  <GitBranch className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                  <p className="mb-2">Select a PDF to generate a mind map.</p>
+                  <p className="text-xs text-[#64748b]">
+                    Choose a document from the left and then click &quot;Generate mind map&quot;.
+                  </p>
+                </div>
+              </div>
+            ) : mindMapError ? (
+              <div className="h-full flex items-center justify-center text-red-400">
+                <div className="text-center max-w-sm space-y-3">
+                  <GitBranch className="w-10 h-10 mx-auto mb-2 opacity-75" />
+                  <p className="font-medium">Mind map error</p>
+                  <p className="text-sm text-red-200">{mindMapError}</p>
+                  <button
+                    onClick={handleGenerateMindMap}
+                    className="mt-2 inline-flex items-center gap-2 px-4 py-2 rounded bg-[#38BDF8] text-[#0B1221] text-sm font-semibold hover:bg-[#38BDF8]/90 transition-colors"
+                  >
+                    <GitBranch className="w-4 h-4" />
+                    Try generating again
+                  </button>
+                </div>
+              </div>
+            ) : mindMapLoading && !mindMapData ? (
+              <div className="h-full flex items-center justify-center text-[#94A3B8]">
+                <div className="flex flex-col items-center gap-3">
+                  <div className="w-10 h-10 border-2 border-[#38BDF8] border-t-transparent rounded-full animate-spin" />
+                  <p className="text-sm">Drawing your mind map...</p>
+                </div>
+              </div>
+            ) : mindMapData ? (
+              <div className="h-full overflow-y-auto p-4 space-y-4">
+                <div className="space-y-1">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-[#64748b]">
+                    Mind map for
+                  </p>
+                  <p className="text-sm font-semibold text-white truncate">
+                    {mindMapData.title}
+                  </p>
+                  {mindMapData.central_idea && (
+                    <p className="text-xs text-[#94A3B8]">
+                      {mindMapData.central_idea}
+                    </p>
+                  )}
+                </div>
+                <div className="rounded-xl bg-[#020617] border border-[#1f2937] p-2 sm:p-4">
+                  <MindMapCanvas
+                    nodes={mindMapData.nodes as any[]}
+                    edges={mindMapData.edges as any[]}
+                    centralIdea={mindMapData.central_idea}
+                  />
+                </div>
+                <div className="flex justify-end">
+                  <button
+                    onClick={handleGenerateMindMap}
+                    className="inline-flex items-center gap-2 px-3 py-1.5 rounded border border-[#38BDF8]/40 text-xs text-[#E2E8F0] hover:bg-[#0B1221] transition-colors"
+                  >
+                    {mindMapLoading ? (
+                      <>
+                        <Loader2 className="w-3 h-3 animate-spin" />
+                        Regenerating...
+                      </>
+                    ) : (
+                      <>
+                        <GitBranch className="w-3 h-3" />
+                        Regenerate mind map
+                      </>
+                    )}
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="h-full flex items-center justify-center text-[#94A3B8]">
+                <div className="text-center max-w-xs space-y-3">
+                  <GitBranch className="w-10 h-10 mx-auto mb-1 opacity-75" />
+                  <p className="font-medium text-sm text-white">
+                    No mind map yet for this PDF
+                  </p>
+                  <p className="text-xs text-[#64748b]">
+                    Turn this document into a visual mind map to see the main ideas and how they connect.
+                  </p>
+                  <button
+                    onClick={handleGenerateMindMap}
+                    className="mt-2 inline-flex items-center gap-2 px-4 py-2 rounded bg-[#38BDF8] text-[#0B1221] text-sm font-semibold hover:bg-[#38BDF8]/90 transition-colors"
+                  >
+                    {mindMapLoading ? (
+                      <>
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                        Generating...
+                      </>
+                    ) : (
+                      <>
+                        <GitBranch className="w-4 h-4" />
+                        Generate mind map
+                      </>
+                    )}
+                  </button>
                 </div>
               </div>
             )}
