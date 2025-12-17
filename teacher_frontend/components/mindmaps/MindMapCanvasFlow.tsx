@@ -3,6 +3,7 @@
 import { useMemo, useState } from 'react';
 import ReactFlow, {
   Background,
+  BackgroundVariant,
   Controls,
   Edge,
   MiniMap,
@@ -516,7 +517,12 @@ export function MindMapCanvasFlow({ nodes, edges, centralIdea }: MindMapCanvasFl
             style: { strokeWidth: 2 },
           }}
         >
-          <Background gap={26} size={1.6} color="#0f172a" variant="dots" />
+          <Background
+            gap={26}
+            size={1.6}
+            color="#0f172a"
+            variant={BackgroundVariant.Dots}
+          />
           <MiniMap
             pannable
             zoomable
