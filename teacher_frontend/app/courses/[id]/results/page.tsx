@@ -49,7 +49,7 @@ export default function CourseResultsPage() {
       },
       enabled: !!course && quizIds.length > 0 && !authLoading && isAuthenticated, // Only run when auth is ready
       staleTime: 2 * 60 * 1000, // 2 minutes - results don't change often
-      retry: (failureCount, error: any) => {
+      retry: (failureCount: number, error: any) => {
         // Only retry network errors, and limit retries
         if (error?.message?.includes('Network error')) {
           return failureCount < 2;
