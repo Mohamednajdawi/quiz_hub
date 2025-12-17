@@ -78,7 +78,7 @@ const importanceToDepth = (node: RawNode) => {
 export function MindMapCanvas({ nodes, edges, centralIdea }: MindMapCanvasProps) {
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
-  const nodeRefs = useRef<Map<string, HTMLButtonElement | null>>(new Map());
+  const nodeRefs = useRef<Map<string, HTMLElement | null>>(new Map());
 
   const effectiveEdges = useMemo<RawEdge[]>(() => {
     const explicit = Array.isArray(edges) ? edges : [];
