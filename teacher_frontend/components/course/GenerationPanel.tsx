@@ -5,6 +5,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { generationApi } from '@/lib/api/generation';
 import { quizApi } from '@/lib/api/quiz';
 import { coursesApi, CourseContent } from '@/lib/api/courses';
+import { flashcardsApi } from '@/lib/api/flashcards';
 import { FileQuestion, BookOpen, FileText, Download, Share2, Loader2, Copy, Check, X, ChevronDown, ChevronUp } from 'lucide-react';
 import { motion } from 'framer-motion';
 
@@ -36,6 +37,23 @@ export function GenerationPanel({
   const [expandedTypes, setExpandedTypes] = useState<Set<'quiz' | 'flashcard' | 'essay'>>(new Set());
   // Track content_id for newly generated items (before generatedContent loads)
   const [pendingContentIds, setPendingContentIds] = useState<Record<string, number | null>>({});
+  // Local copies of reference ids so we can react immediately to new generations
+  const [localQuizReferences, setLocalQuizReferences] = useState<number[]>(quizReferences);
+  const [localFlashcardReferences, setLocalFlashcardReferences] = useState<number[]>(flashcardReferences);
+  const [localEssayReferences, setLocalEssayReferences] = useState<number[]>(essayReferences);
+
+  // Keep local references in sync with props
+  useEffect(() => {
+    setLocalQuizReferences(quizReferences);
+  }, [quizReferences]);
+
+  useEffect(() => {
+    setLocalFlashcardReferences(flashcardReferences);
+  }, [flashcardReferences]);
+
+  useEffect(() => {
+    setLocalEssayReferences(essayReferences);
+  }, [essayReferences]);
 
   const quizMutation = useMutation({
     mutationFn: (data: { num_questions?: number; difficulty: string; project_id: number; content_id?: number }) =>
@@ -50,7 +68,13 @@ export function GenerationPanel({
         'quiz-pending': variables.content_id || null,
       }));
     },
-    onSuccess: (data, variables) => {
+    onSuccess: async (data, variables) => {
+      // Ensure new quiz id is reflected locally immediately
+      if (data?.quiz_id) {
+        setLocalQuizReferences((prev) =>
+          prev.includes(data.quiz_id) ? prev : [...prev, data.quiz_id]
+        );
+      }
       // Store the content_id for the newly generated quiz
       if (data?.quiz_id) {
         setPendingContentIds((prev) => {
@@ -65,9 +89,15 @@ export function GenerationPanel({
       setNumQuestions(10);
       setDifficulty('medium');
       // Refresh course data to show new references
-      queryClient.invalidateQueries({ queryKey: ['course', courseId] });
+      await queryClient.invalidateQueries({
+        queryKey: ['course', courseId],
+        refetchType: 'active',
+      });
       // Also refresh generated content to get content_id for new items
-      queryClient.invalidateQueries({ queryKey: ['generated-content', courseId] });
+      await queryClient.invalidateQueries({
+        queryKey: ['generated-content', courseId],
+        refetchType: 'active',
+      });
     },
     onError: (error: any) => {
       const errorMessage = error.response?.data?.detail || error.message || 'Failed to generate quiz';
@@ -95,23 +125,27 @@ export function GenerationPanel({
         'flashcard-pending': variables.content_id || null,
       }));
     },
-    onSuccess: (data, variables) => {
+    onSuccess: async (_data, variables) => {
+      // We don't get the new flashcard topic id directly, but generated-content
+      // and course queries will include it after refetch; keep local references
+      // in sync by relying on those queries.
       // Store the content_id for the newly generated flashcard
-      if (data?.flashcard_topic_id) {
-        setPendingContentIds((prev) => {
-          const { 'flashcard-pending': pendingId, ...rest } = prev;
-          return {
-            ...rest,
-            [`flashcard-${data.flashcard_topic_id}`]: variables.content_id || null,
-          };
-        });
-      }
+      setPendingContentIds((prev) => {
+        const { 'flashcard-pending': _pendingId, ...rest } = prev;
+        return rest;
+      });
       // Reset form values
       setNumCards(10);
       // Refresh course data to show new references
-      queryClient.invalidateQueries({ queryKey: ['course', courseId] });
+      await queryClient.invalidateQueries({
+        queryKey: ['course', courseId],
+        refetchType: 'active',
+      });
       // Also refresh generated content to get content_id for new items
-      queryClient.invalidateQueries({ queryKey: ['generated-content', courseId] });
+      await queryClient.invalidateQueries({
+        queryKey: ['generated-content', courseId],
+        refetchType: 'active',
+      });
     },
     onError: (error: any) => {
       const errorMessage = error.response?.data?.detail || error.message || 'Failed to generate flashcards';
@@ -139,7 +173,13 @@ export function GenerationPanel({
         'essay-pending': variables.content_id || null,
       }));
     },
-    onSuccess: (data, variables) => {
+    onSuccess: async (data, variables) => {
+      // Ensure new essay id is reflected locally immediately
+      if (data?.essay_topic_id) {
+        setLocalEssayReferences((prev) =>
+          prev.includes(data.essay_topic_id) ? prev : [...prev, data.essay_topic_id]
+        );
+      }
       // Store the content_id for the newly generated essay
       if (data?.essay_topic_id) {
         setPendingContentIds((prev) => {
@@ -154,9 +194,15 @@ export function GenerationPanel({
       setNumQuestions(10);
       setDifficulty('medium');
       // Refresh course data to show new references
-      queryClient.invalidateQueries({ queryKey: ['course', courseId] });
+      await queryClient.invalidateQueries({
+        queryKey: ['course', courseId],
+        refetchType: 'active',
+      });
       // Also refresh generated content to get content_id for new items
-      queryClient.invalidateQueries({ queryKey: ['generated-content', courseId] });
+      await queryClient.invalidateQueries({
+        queryKey: ['generated-content', courseId],
+        refetchType: 'active',
+      });
     },
     onError: (error: any) => {
       const errorMessage = error.response?.data?.detail || error.message || 'Failed to generate essays';
@@ -207,7 +253,16 @@ export function GenerationPanel({
 
   const [copiedShareCode, setCopiedShareCode] = useState<string | null>(null);
   const [shareCodeMap, setShareCodeMap] = useState<Record<string, string>>({});
-  const [shareModal, setShareModal] = useState<{ isOpen: boolean; link: string; type: string; id: number } | null>(null);
+  const [shareModal, setShareModal] = useState<
+    | {
+        isOpen: boolean;
+        type: 'Quiz' | 'Flashcards' | 'Essay';
+        id: number;
+        link?: string;
+        content?: string;
+      }
+    | null
+  >(null);
 
   // Fetch generated content details to get names and content_ids
   const { data: generatedContent, isLoading: isLoadingGeneratedContent, error: generatedContentError } = useQuery({
@@ -228,7 +283,9 @@ export function GenerationPanel({
       }
     },
     enabled: !!courseId,
-    staleTime: 1 * 60 * 1000, // 1 minute
+    // While something is generating, poll so new items appear without manual refresh
+    refetchInterval: activeGenerations.size > 0 ? 4000 : false,
+    staleTime: 0,
   });
 
   // Debug: Log state changes
@@ -239,9 +296,9 @@ export function GenerationPanel({
       isLoadingGeneratedContent,
       hasGeneratedContent: !!generatedContent,
       generatedContentError: generatedContentError?.message,
-      quizReferences: quizReferences.length,
-      flashcardReferences: flashcardReferences.length,
-      essayReferences: essayReferences.length,
+      quizReferences: localQuizReferences.length,
+      flashcardReferences: localFlashcardReferences.length,
+      essayReferences: localEssayReferences.length,
       quizzes: generatedContent?.quizzes?.map(q => {
         const qAny = q as any;
         return {
@@ -279,7 +336,7 @@ export function GenerationPanel({
       activeGenerations: Array.from(activeGenerations),
       rawGeneratedContent: generatedContent,
     });
-  }, [courseId, selectedContentId, isLoadingGeneratedContent, generatedContent, generatedContentError, quizReferences, flashcardReferences, essayReferences, pendingContentIds, activeGenerations]);
+  }, [courseId, selectedContentId, isLoadingGeneratedContent, generatedContent, generatedContentError, localQuizReferences, localFlashcardReferences, localEssayReferences, pendingContentIds, activeGenerations]);
 
   // Helper function to format content name
   const formatContentName = (
@@ -383,7 +440,7 @@ export function GenerationPanel({
 
   // Clear active generations when new references appear (job completed)
   useEffect(() => {
-    if (activeGenerations.has('flashcard') && flashcardReferences.length > prevFlashcardCount) {
+    if (activeGenerations.has('flashcard') && localFlashcardReferences.length > prevFlashcardCount) {
       // New flashcard appeared, clear the loading indicator
       setActiveGenerations((prev) => {
         const next = new Set(prev);
@@ -391,30 +448,30 @@ export function GenerationPanel({
         return next;
       });
     }
-    setPrevFlashcardCount(flashcardReferences.length);
-  }, [flashcardReferences.length, prevFlashcardCount, activeGenerations]);
+    setPrevFlashcardCount(localFlashcardReferences.length);
+  }, [localFlashcardReferences.length, prevFlashcardCount, activeGenerations]);
 
   useEffect(() => {
-    if (activeGenerations.has('quiz') && quizReferences.length > prevQuizCount) {
+    if (activeGenerations.has('quiz') && localQuizReferences.length > prevQuizCount) {
       setActiveGenerations((prev) => {
         const next = new Set(prev);
         next.delete('quiz');
         return next;
       });
     }
-    setPrevQuizCount(quizReferences.length);
-  }, [quizReferences.length, prevQuizCount, activeGenerations]);
+    setPrevQuizCount(localQuizReferences.length);
+  }, [localQuizReferences.length, prevQuizCount, activeGenerations]);
 
   useEffect(() => {
-    if (activeGenerations.has('essay') && essayReferences.length > prevEssayCount) {
+    if (activeGenerations.has('essay') && localEssayReferences.length > prevEssayCount) {
       setActiveGenerations((prev) => {
         const next = new Set(prev);
         next.delete('essay');
         return next;
       });
     }
-    setPrevEssayCount(essayReferences.length);
-  }, [essayReferences.length, prevEssayCount, activeGenerations]);
+    setPrevEssayCount(localEssayReferences.length);
+  }, [localEssayReferences.length, prevEssayCount, activeGenerations]);
 
   // Get or generate share code
   const getShareCodeMutation = useMutation({
@@ -469,8 +526,42 @@ export function GenerationPanel({
         link.click();
         document.body.removeChild(link);
         window.URL.revokeObjectURL(url);
+      } else if (type === 'flashcard') {
+        // Export flashcards as a simple text file
+        const data = await flashcardsApi.getByTopic(id);
+        const safeTopic =
+          data.topic.replace(/[^a-zA-Z0-9]+/g, '_').replace(/^_+|_+$/g, '') || 'flashcards';
+
+        const lines: string[] = [];
+        lines.push(`Flashcards: ${data.topic}`);
+        if (data.category || data.subcategory) {
+          lines.push(
+            `Category: ${data.category || 'N/A'}${data.subcategory ? ` / ${data.subcategory}` : ''}`
+          );
+        }
+        lines.push('');
+
+        data.cards.forEach((card, index) => {
+          lines.push(`Card ${index + 1}`);
+          lines.push(`Front: ${card.front}`);
+          lines.push(`Back: ${card.back}`);
+          lines.push(`Importance: ${card.importance || 'medium'}`);
+          lines.push('');
+        });
+
+        const blob = new Blob([lines.join('\n')], {
+          type: 'text/plain;charset=utf-8',
+        });
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `${safeTopic}_flashcards.txt`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        window.URL.revokeObjectURL(url);
       } else {
-        // TODO: Implement export for flashcards and essays when backend endpoints are available
+        // TODO: Implement export for essays when backend endpoints are available
         alert(`Export for ${type} is not yet implemented`);
       }
     } catch (error: any) {
@@ -491,12 +582,21 @@ export function GenerationPanel({
         // Open share modal
         setShareModal({
           isOpen: true,
-          link: shareLink,
           type: 'Quiz',
           id,
+          link: shareLink,
+        });
+      } else if (type === 'flashcard') {
+        // Create share/view link for flashcards by topic ID
+        const shareLink = `${window.location.origin}/flashcards/share/${id}`;
+        setShareModal({
+          isOpen: true,
+          type: 'Flashcards',
+          id,
+          link: shareLink,
         });
       } else {
-        // TODO: Implement share for flashcards and essays when backend endpoints are available
+        // TODO: Implement share for essays when backend endpoints are available
         alert(`Share functionality for ${type} is not yet implemented`);
       }
     } catch (error: any) {
@@ -508,8 +608,11 @@ export function GenerationPanel({
   const handleCopyLink = async () => {
     if (shareModal) {
       try {
-        await navigator.clipboard.writeText(shareModal.link);
-        setCopiedShareCode(`quiz-${shareModal.id}`);
+        const textToCopy = shareModal.link || shareModal.content || '';
+        if (!textToCopy) return;
+        await navigator.clipboard.writeText(textToCopy);
+        const key = `${shareModal.type.toLowerCase()}-${shareModal.id}`;
+        setCopiedShareCode(key);
         setTimeout(() => setCopiedShareCode(null), 3000);
       } catch (error) {
         console.error('Failed to copy link', error);
@@ -739,13 +842,13 @@ export function GenerationPanel({
         )}
 
         {/* Generated Content List */}
-        {(quizReferences.length > 0 || flashcardReferences.length > 0 || essayReferences.length > 0) && (
+        {(localQuizReferences.length > 0 || localFlashcardReferences.length > 0 || localEssayReferences.length > 0) && (
           <div className="mt-8 pt-4 border-t border-[#38BDF8]/20">
             <h3 className="text-sm font-semibold text-white mb-3">Generated Content</h3>
             <div className="space-y-2">
               {(() => {
                 // Filter quizzes by selected PDF (content_id)
-                const filteredQuizzes = quizReferences.filter((id) => {
+                const filteredQuizzes = localQuizReferences.filter((id) => {
                   const quiz = generatedContent?.quizzes?.find((q) => q.id === id);
                   
                   // If generatedContent is still loading OR not loaded yet, show all items
@@ -801,7 +904,7 @@ export function GenerationPanel({
                 });
                 
                 console.log('[Filter] Quiz Results:', {
-                  totalReferences: quizReferences.length,
+                  totalReferences: localQuizReferences.length,
                   filteredCount: filteredQuizzes.length,
                   filteredIds: filteredQuizzes
                 });
@@ -854,7 +957,7 @@ export function GenerationPanel({
               {/* Show more/less button for quizzes */}
               {(() => {
                 // Filter quizzes by selected PDF (content_id)
-                const filteredQuizzes = quizReferences.filter((id) => {
+                const filteredQuizzes = localQuizReferences.filter((id) => {
                   const quiz = generatedContent?.quizzes?.find((q) => q.id === id);
                   // If generatedContent is still loading, show all items temporarily
                   if (isLoadingGeneratedContent && !quiz) {
@@ -960,8 +1063,8 @@ export function GenerationPanel({
                   }
                 });
                 
-                console.log('[Filter] Flashcard Results:', {
-                  totalReferences: flashcardReferences.length,
+            console.log('[Filter] Flashcard Results:', {
+                  totalReferences: localFlashcardReferences.length,
                   filteredCount: filteredFlashcards.length,
                   filteredIds: filteredFlashcards
                 });
@@ -1008,7 +1111,7 @@ export function GenerationPanel({
               ))}
               {(() => {
                 // Filter essays by selected PDF (content_id)
-                const filteredEssays = essayReferences.filter((id) => {
+                const filteredEssays = localEssayReferences.filter((id) => {
                   const essay = generatedContent?.essays?.find((e) => e.id === id);
                   
                   // If generatedContent is still loading OR not loaded yet, show all items
@@ -1053,7 +1156,7 @@ export function GenerationPanel({
                 });
                 
                 console.log('[Filter] Essay Results:', {
-                  totalReferences: essayReferences.length,
+                  totalReferences: localEssayReferences.length,
                   filteredCount: filteredEssays.length,
                   filteredIds: filteredEssays
                 });
@@ -1189,26 +1292,38 @@ export function GenerationPanel({
             </div>
 
             <p className="text-sm text-[#94A3B8] mb-4">
-              Share this link with students. They can take the {shareModal.type.toLowerCase()} without signing in.
+              {shareModal.type === 'Quiz'
+                ? `Share this link with students. They can take the quiz without signing in.`
+                : `Share or view these ${shareModal.type.toLowerCase()}. You can copy them into your LMS, slides, or notes.`}
             </p>
 
             <div className="flex gap-2 mb-4">
-              <input
-                type="text"
-                value={shareModal.link}
-                readOnly
-                className="flex-1 px-4 py-2 bg-[#161F32] border border-[#38BDF8]/20 rounded text-white text-sm focus:outline-none focus:border-[#38BDF8]"
-                onClick={(e) => (e.target as HTMLInputElement).select()}
-              />
+              {shareModal.link ? (
+                <input
+                  type="text"
+                  value={shareModal.link}
+                  readOnly
+                  className="flex-1 px-4 py-2 bg-[#161F32] border border-[#38BDF8]/20 rounded text-white text-sm focus:outline-none focus:border-[#38BDF8]"
+                  onClick={(e) => (e.target as HTMLInputElement).select()}
+                />
+              ) : (
+                <textarea
+                  value={shareModal.content || ''}
+                  readOnly
+                  rows={8}
+                  className="flex-1 px-4 py-2 bg-[#161F32] border border-[#38BDF8]/20 rounded text-white text-xs focus:outline-none focus:border-[#38BDF8] whitespace-pre-wrap"
+                  onClick={(e) => (e.target as HTMLTextAreaElement).select()}
+                />
+              )}
               <button
                 onClick={handleCopyLink}
                 className={`px-4 py-2 rounded font-semibold transition-colors flex items-center gap-2 ${
-                  copiedShareCode === `quiz-${shareModal.id}`
+                  copiedShareCode === `${shareModal.type.toLowerCase()}-${shareModal.id}`
                     ? 'bg-green-500/20 border border-green-500/50 text-green-400'
                     : 'bg-[#38BDF8] hover:bg-[#38BDF8]/90 text-[#0B1221]'
                 }`}
               >
-                {copiedShareCode === `quiz-${shareModal.id}` ? (
+                {copiedShareCode === `${shareModal.type.toLowerCase()}-${shareModal.id}` ? (
                   <>
                     <Check className="w-4 h-4" />
                     Copied!

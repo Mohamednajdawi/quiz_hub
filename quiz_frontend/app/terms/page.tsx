@@ -10,80 +10,209 @@ export default function TermsPage() {
         <Card>
           <div className="px-6 py-8">
             <h1 className="text-3xl font-bold text-gray-900 mb-6">Terms of Service</h1>
-            
+
             <div className="prose prose-sm max-w-none space-y-6 text-gray-700">
-              <p className="text-sm text-gray-500">Last updated: {new Date().toLocaleDateString()}</p>
+              <p className="text-sm text-gray-500">
+                Last updated: {new Date().toLocaleDateString()}
+              </p>
 
               <section>
-                <h2 className="text-xl font-semibold text-gray-900 mt-6 mb-3">1. Acceptance of Terms</h2>
+                <h2 className="text-xl font-semibold text-gray-900 mt-6 mb-3">
+                  1. Scope and Contracting Parties
+                </h2>
                 <p>
-                  By accessing and using Quiz Hub ("the Service"), you accept and agree to be bound by the terms and provision of this agreement.
+                  These Terms of Service (the &quot;Terms&quot;) govern the use of the Quiz Hub platform and
+                  related services (the &quot;Service&quot;). The Service is provided by [Company Name GmbH],
+                  [Street and Number], [Postal Code] [City], [Country] (&quot;we&quot;, &quot;us&quot;,
+                  &quot;our&quot;). By registering for an account or using the Service, you agree to be bound by
+                  these Terms.
+                </p>
+                <p className="text-xs text-gray-500">
+                  Replace the placeholders with your actual legal entity details and have these Terms reviewed by
+                  legal counsel in your jurisdiction.
                 </p>
               </section>
 
               <section>
-                <h2 className="text-xl font-semibold text-gray-900 mt-6 mb-3">2. Use License</h2>
+                <h2 className="text-xl font-semibold text-gray-900 mt-6 mb-3">
+                  2. Governing Law and Jurisdiction
+                </h2>
                 <p>
-                  Permission is granted to temporarily use the Service for personal, non-commercial transitory viewing only. This is the grant of a license, not a transfer of title, and under this license you may not:
+                  These Terms and any disputes arising out of or in connection with them are governed by the laws
+                  of [Member State of the European Union], excluding its conflict of law rules. If you are a
+                  consumer resident in the EU/EEA, mandatory statutory consumer protection provisions of your
+                  country of residence remain unaffected.
+                </p>
+              </section>
+
+              <section>
+                <h2 className="text-xl font-semibold text-gray-900 mt-6 mb-3">
+                  3. Account Registration and Responsibilities
+                </h2>
+                <p>
+                  To use certain features of the Service, you must create an account and provide accurate, complete
+                  information. You are responsible for:
                 </p>
                 <ul className="list-disc pl-6 mt-2 space-y-1">
-                  <li>Modify or copy the materials</li>
-                  <li>Use the materials for any commercial purpose or for any public display</li>
-                  <li>Attempt to reverse engineer any software contained in the Service</li>
-                  <li>Remove any copyright or other proprietary notations from the materials</li>
+                  <li>Maintaining the confidentiality of your login credentials;</li>
+                  <li>
+                    Ensuring that your account is used only by you or authorized persons under your responsibility;
+                  </li>
+                  <li>Immediately notifying us of any unauthorized use of your account.</li>
+                </ul>
+                <p>
+                  You remain responsible for all activities that occur under your account unless you have
+                  immediately informed us of a suspected misuse and we have had a reasonable time to act.
+                </p>
+              </section>
+
+              <section>
+                <h2 className="text-xl font-semibold text-gray-900 mt-6 mb-3">
+                  4. Acceptable Use
+                </h2>
+                <p>You agree not to use the Service:</p>
+                <ul className="list-disc pl-6 mt-2 space-y-1">
+                  <li>In violation of any applicable law or regulation;</li>
+                  <li>
+                    To upload or generate content that is unlawful, defamatory, discriminatory, hateful, or
+                    otherwise objectionable;
+                  </li>
+                  <li>To upload malicious code, viruses, or to attack the Service&apos;s infrastructure;</li>
+                  <li>To attempt to gain unauthorized access to other accounts or systems;</li>
+                  <li>To reverse engineer, decompile, or otherwise attempt to derive the source code.</li>
+                </ul>
+                <p>
+                  We reserve the right to suspend or terminate accounts that materially or repeatedly violate these
+                  Acceptable Use rules.
+                </p>
+              </section>
+
+              <section>
+                <h2 className="text-xl font-semibold text-gray-900 mt-6 mb-3">
+                  5. Intellectual Property and User Content
+                </h2>
+                <p>
+                  All software, design elements, logos, and underlying technology of the Service are protected by
+                  intellectual property rights and remain our exclusive property or that of our licensors.
+                </p>
+                <p>
+                  Content you upload or generate (e.g. quizzes, flashcards, essays, notes) remains your property.
+                  You grant us a non‑exclusive, worldwide, royalty‑free licence to host, process, and display such
+                  content solely for the purpose of providing and improving the Service.
+                </p>
+              </section>
+
+              <section>
+                <h2 className="text-xl font-semibold text-gray-900 mt-6 mb-3">
+                  6. Subscriptions, Billing and Free Trial
+                </h2>
+                <p>
+                  Access to premium features of the Service may require a paid subscription. By starting a
+                  subscription, you authorize us or our payment processor to charge the applicable fees on a
+                  recurring basis (monthly or annually, as selected).
+                </p>
+                <ul className="list-disc pl-6 mt-2 space-y-1">
+                  <li>Prices and billing intervals are displayed at the time of purchase.</li>
+                  <li>
+                    Subscriptions renew automatically until cancelled. You can cancel at any time with effect from
+                    the end of the current billing period.
+                  </li>
+                  <li>
+                    Where required by law, you will receive clear information about your right of withdrawal (see
+                    Refund Policy / Right of Withdrawal).
+                  </li>
                 </ul>
               </section>
 
               <section>
-                <h2 className="text-xl font-semibold text-gray-900 mt-6 mb-3">3. User Accounts</h2>
+                <h2 className="text-xl font-semibold text-gray-900 mt-6 mb-3">
+                  7. Availability and Changes to the Service
+                </h2>
                 <p>
-                  You are responsible for maintaining the confidentiality of your account and password. You agree to accept responsibility for all activities that occur under your account.
+                  We aim to provide the Service with reasonable care and skill, but we do not guarantee
+                  uninterrupted availability. Maintenance, security updates or events beyond our control may
+                  temporarily affect access.
+                </p>
+                <p>
+                  We may modify, discontinue, or replace parts of the Service to improve functionality or for
+                  technical or legal reasons. Where changes significantly affect core functionality of a paid plan,
+                  we will inform affected users in advance where reasonably possible.
                 </p>
               </section>
 
               <section>
-                <h2 className="text-xl font-semibold text-gray-900 mt-6 mb-3">4. Content and Intellectual Property</h2>
+                <h2 className="text-xl font-semibold text-gray-900 mt-6 mb-3">
+                  8. Term and Termination
+                </h2>
                 <p>
-                  All content generated through the Service, including quizzes, flashcards, and essays, is for educational purposes. You retain ownership of content you create, but grant us a license to use, store, and process such content to provide the Service.
+                  The contract for the use of the Service runs for an indefinite period and may be terminated by
+                  either party:
                 </p>
-              </section>
-
-              <section>
-                <h2 className="text-xl font-semibold text-gray-900 mt-6 mb-3">5. Prohibited Uses</h2>
-                <p>You may not use the Service:</p>
                 <ul className="list-disc pl-6 mt-2 space-y-1">
-                  <li>In any way that violates any applicable law or regulation</li>
-                  <li>To transmit any malicious code or viruses</li>
-                  <li>To spam or harass other users</li>
-                  <li>To attempt to gain unauthorized access to the Service</li>
+                  <li>By you at any time via your account settings or by contacting support;</li>
+                  <li>
+                    By us with reasonable notice, or without notice in the event of serious or repeated breaches of
+                    these Terms.
+                  </li>
                 </ul>
-              </section>
-
-              <section>
-                <h2 className="text-xl font-semibold text-gray-900 mt-6 mb-3">6. Subscription and Billing</h2>
                 <p>
-                  Subscription fees are billed in advance on a monthly or annual basis. You may cancel your subscription at any time, and cancellation will take effect at the end of the current billing period.
+                  Upon termination, we may delete or anonymise your data in accordance with our Privacy Policy and
+                  statutory retention requirements.
                 </p>
               </section>
 
               <section>
-                <h2 className="text-xl font-semibold text-gray-900 mt-6 mb-3">7. Limitation of Liability</h2>
+                <h2 className="text-xl font-semibold text-gray-900 mt-6 mb-3">
+                  9. Limitation of Liability
+                </h2>
                 <p>
-                  The Service is provided "as is" without warranties of any kind. We shall not be liable for any indirect, incidental, special, consequential, or punitive damages resulting from your use of the Service.
+                  We shall be liable without limitation for intent and gross negligence, as well as for damages
+                  resulting from injury to life, body or health. For simple negligence, we are only liable for
+                  breaches of an essential contractual obligation (an obligation whose fulfilment enables the proper
+                  performance of the contract and on whose observance you regularly rely).
+                </p>
+                <p>
+                  In such cases, our liability is limited to the foreseeable damage typical for this type of
+                  contract. Mandatory statutory liability regimes (e.g. under product liability law) remain
+                  unaffected. Any further liability is excluded.
+                </p>
+                <p className="text-xs text-gray-500">
+                  Adapt this section to the liability concept applicable in your jurisdiction and consult legal
+                  counsel.
                 </p>
               </section>
 
               <section>
-                <h2 className="text-xl font-semibold text-gray-900 mt-6 mb-3">8. Changes to Terms</h2>
+                <h2 className="text-xl font-semibold text-gray-900 mt-6 mb-3">
+                  10. Changes to these Terms
+                </h2>
                 <p>
-                  We reserve the right to modify these terms at any time. We will notify users of any material changes via email or through the Service.
+                  We may amend these Terms if there is a valid reason to do so (e.g. changes in the law, expansion
+                  of functionalities). We will inform you of changes in a suitable form (e.g. by email or in-app
+                  notice). If you do not agree with the amended Terms, you may terminate your account before the
+                  changes take effect.
                 </p>
               </section>
 
               <section>
-                <h2 className="text-xl font-semibold text-gray-900 mt-6 mb-3">9. Contact Information</h2>
+                <h2 className="text-xl font-semibold text-gray-900 mt-6 mb-3">
+                  11. Contact and Complaints
+                </h2>
                 <p>
-                  If you have any questions about these Terms of Service, please contact us through the contact information provided in the Impressum.
+                  If you have any questions about these Terms or wish to submit a complaint, please contact us
+                  using the details provided in the Imprint (Impressum). We will make reasonable efforts to resolve
+                  disputes amicably before resorting to formal legal remedies.
+                </p>
+              </section>
+
+              <section>
+                <h2 className="text-xl font-semibold text-gray-900 mt-6 mb-3">
+                  12. Important Notice
+                </h2>
+                <p className="text-sm text-gray-600">
+                  This Terms of Service template is a starting point and does not constitute legal advice. Please
+                  adapt the content to your specific business model and have it reviewed by qualified legal counsel
+                  in your jurisdiction.
                 </p>
               </section>
             </div>

@@ -7,6 +7,7 @@ import { NotificationsProvider } from '@/contexts/NotificationsContext';
 import { GenerationJobsProvider } from '@/contexts/GenerationJobsContext';
 import { CookieConsentProvider } from '@/contexts/CookieConsentContext';
 import { CookieConsentBanner } from '@/components/CookieConsentBanner';
+import { CookieConsentManagerButton } from '@/components/CookieConsentManagerButton';
 
 export function Providers({ children }: { children: React.ReactNode }) {
   const [queryClient] = useState(
@@ -29,6 +30,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
             <GenerationJobsProvider>
               {children}
               <CookieConsentBanner />
+              <CookieConsentManagerButton />
             </GenerationJobsProvider>
           </CookieConsentProvider>
         </NotificationsProvider>

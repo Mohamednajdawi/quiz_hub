@@ -5,7 +5,16 @@ import { useQuery, useQueries } from '@tanstack/react-query';
 import { useAuth } from '@/contexts/AuthContext';
 import { quizApi } from '@/lib/api/quiz';
 import { coursesApi } from '@/lib/api/courses';
-import { Loader2, ArrowLeft, User, Clock, TrendingUp, AlertCircle } from 'lucide-react';
+import {
+  Loader2,
+  ArrowLeft,
+  User,
+  Clock,
+  TrendingUp,
+  AlertCircle,
+  ChevronDown,
+  ChevronUp,
+} from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useState } from 'react';
 
@@ -15,6 +24,7 @@ export default function CourseResultsPage() {
   const { isAuthenticated, isLoading: authLoading } = useAuth();
   const courseId = parseInt(params.id as string);
   const [expandedAttempt, setExpandedAttempt] = useState<number | null>(null);
+  const [expandedPdfs, setExpandedPdfs] = useState<Set<string>>(new Set());
 
   // Get course data to find quiz references
   const { data: course } = useQuery({
@@ -159,6 +169,61 @@ export default function CourseResultsPage() {
     return attempt.participant_name || 'Anonymous';
   };
 
+  // Build question-level performance analysis for a given result set (e.g. per PDF)
+  const buildQuestionAnalysis = (results: any[]) => {
+    const statsMap: Record<
+      number,
+      {
+        totalAttempts: number;
+        correctCount: number;
+      }
+    > = {};
+
+    results.forEach((attempt: any) => {
+      if (attempt.question_performance && Array.isArray(attempt.question_performance)) {
+        attempt.question_performance.forEach((q: any, index: number) => {
+          const questionNumber = index + 1;
+          if (!statsMap[questionNumber]) {
+            statsMap[questionNumber] = { totalAttempts: 0, correctCount: 0 };
+          }
+          statsMap[questionNumber].totalAttempts += 1;
+          if (q.is_correct) {
+            statsMap[questionNumber].correctCount += 1;
+          }
+        });
+      } else if (attempt.user_answers && attempt.correct_answers) {
+        const len = Math.min(attempt.user_answers.length, attempt.correct_answers.length);
+        for (let i = 0; i < len; i++) {
+          const questionNumber = i + 1;
+          if (!statsMap[questionNumber]) {
+            statsMap[questionNumber] = { totalAttempts: 0, correctCount: 0 };
+          }
+          statsMap[questionNumber].totalAttempts += 1;
+          if (attempt.user_answers[i] === attempt.correct_answers[i]) {
+            statsMap[questionNumber].correctCount += 1;
+          }
+        }
+      }
+    });
+
+    return Object.entries(statsMap)
+      .map(([questionNumber, stats]) => {
+        const incorrectCount = stats.totalAttempts - stats.correctCount;
+        const correctPercentage =
+          stats.totalAttempts > 0
+            ? Math.round((stats.correctCount / stats.totalAttempts) * 100)
+            : 0;
+        return {
+          questionNumber: Number(questionNumber),
+          totalAttempts: stats.totalAttempts,
+          correctCount: stats.correctCount,
+          incorrectCount,
+          correctPercentage,
+        };
+      })
+      .sort((a, b) => a.questionNumber - b.questionNumber);
+  };
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-[#0B1221] flex items-center justify-center">
@@ -176,13 +241,18 @@ export default function CourseResultsPage() {
         {/* Header */}
         <div className="mb-6">
           <button
-            onClick={() => router.push(`/courses/${courseId}`)}
+            onClick={() => router.push('/results')}
             className="flex items-center gap-2 text-[#94A3B8] hover:text-white mb-4"
           >
             <ArrowLeft className="w-5 h-5" />
-            Back to Course
+            Back to results
           </button>
-          <h1 className="text-3xl font-bold text-white mb-2">Quiz Results</h1>
+          <h1 className="text-3xl font-bold mb-2">
+            <span className="text-white">Quiz Results for </span>
+            <span className="text-[#38BDF8]">
+              {course?.name || 'Course'}
+            </span>
+          </h1>
           <p className="text-[#94A3B8]">
             View all student attempts and performance analytics
           </p>
@@ -191,60 +261,61 @@ export default function CourseResultsPage() {
         {/* Summary Stats */}
         {allResults.length > 0 && (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="glassmorphism rounded-lg border border-[#38BDF8]/20 p-6"
-            >
-              <div className="flex items-center gap-3 mb-2">
-                <User className="w-6 h-6 text-[#38BDF8]" />
-                <h3 className="text-sm font-medium text-[#94A3B8]">Total Attempts</h3>
-              </div>
-              <p className="text-3xl font-bold text-white">{allResults.length}</p>
-            </motion.div>
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="glassmorphism rounded-lg border border-[#38BDF8]/20 p-6"
+              >
+                <div className="flex items-center gap-3 mb-2">
+                  <User className="w-6 h-6 text-[#38BDF8]" />
+                  <h3 className="text-sm font-medium text-[#94A3B8]">Total Attempts</h3>
+                </div>
+                <p className="text-3xl font-bold text-white">{allResults.length}</p>
+              </motion.div>
 
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.1 }}
-              className="glassmorphism rounded-lg border border-[#38BDF8]/20 p-6"
-            >
-              <div className="flex items-center gap-3 mb-2">
-                <TrendingUp className="w-6 h-6 text-[#38BDF8]" />
-                <h3 className="text-sm font-medium text-[#94A3B8]">Average Score</h3>
-              </div>
-              <p className="text-3xl font-bold text-white">
-                {allResults.length > 0
-                  ? (
-                      allResults.reduce((sum, r) => sum + r.percentage_score, 0) / allResults.length
-                    ).toFixed(1)
-                  : 0}
-                %
-              </p>
-            </motion.div>
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.1 }}
+                className="glassmorphism rounded-lg border border-[#38BDF8]/20 p-6"
+              >
+                <div className="flex items-center gap-3 mb-2">
+                  <TrendingUp className="w-6 h-6 text-[#38BDF8]" />
+                  <h3 className="text-sm font-medium text-[#94A3B8]">Average Score</h3>
+                </div>
+                <p className="text-3xl font-bold text-white">
+                  {allResults.length > 0
+                    ? (
+                        allResults.reduce((sum, r) => sum + r.percentage_score, 0) /
+                        allResults.length
+                      ).toFixed(1)
+                    : 0}
+                  %
+                </p>
+              </motion.div>
 
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.2 }}
-              className="glassmorphism rounded-lg border border-[#38BDF8]/20 p-6"
-            >
-              <div className="flex items-center gap-3 mb-2">
-                <Clock className="w-6 h-6 text-[#38BDF8]" />
-                <h3 className="text-sm font-medium text-[#94A3B8]">Avg Time</h3>
-              </div>
-              <p className="text-3xl font-bold text-white">
-                {allResults.length > 0
-                  ? formatTime(
-                      Math.round(
-                        allResults.reduce((sum, r) => sum + r.time_taken_seconds, 0) /
-                          allResults.length
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.2 }}
+                className="glassmorphism rounded-lg border border-[#38BDF8]/20 p-6"
+              >
+                <div className="flex items-center gap-3 mb-2">
+                  <Clock className="w-6 h-6 text-[#38BDF8]" />
+                  <h3 className="text-sm font-medium text-[#94A3B8]">Avg Time</h3>
+                </div>
+                <p className="text-3xl font-bold text-white">
+                  {allResults.length > 0
+                    ? formatTime(
+                        Math.round(
+                          allResults.reduce((sum, r) => sum + r.time_taken_seconds, 0) /
+                            allResults.length
+                        )
                       )
-                    )
-                  : '0m 0s'}
-              </p>
-            </motion.div>
-          </div>
+                    : '0m 0s'}
+                </p>
+              </motion.div>
+            </div>
         )}
 
         {/* Results List - Grouped by PDF */}
@@ -258,27 +329,169 @@ export default function CourseResultsPage() {
           </div>
         ) : (
           <div className="space-y-6">
-            {pdfGroups.map((pdfGroup, groupIndex) => (
-              <div key={pdfGroup.key} className="space-y-4">
-                {/* PDF Header */}
-                <div className="glassmorphism rounded-lg border border-[#38BDF8]/30 p-4 bg-[#38BDF8]/5">
-                  <div className="flex items-center gap-3">
-                    <div className="w-1 h-8 bg-[#38BDF8] rounded-full"></div>
-                    <div>
-                      <h2 className="text-lg font-semibold text-white flex items-center gap-2">
-                        <span>📄</span>
-                        {pdfGroup.pdfName}
-                      </h2>
-                      <p className="text-sm text-[#94A3B8] mt-1">
-                        {pdfGroup.results.length} {pdfGroup.results.length === 1 ? 'attempt' : 'attempts'}
-                      </p>
+            {pdfGroups.map((pdfGroup) => {
+              const isCollapsed = !expandedPdfs.has(pdfGroup.key);
+              const questionAnalysis = buildQuestionAnalysis(pdfGroup.results);
+              const pdfAttempts = pdfGroup.results.length;
+              const pdfAverageScore =
+                pdfAttempts > 0
+                  ? (
+                      pdfGroup.results.reduce(
+                        (sum: number, r: any) => sum + r.percentage_score,
+                        0
+                      ) / pdfAttempts
+                    ).toFixed(1)
+                  : '0.0';
+              const pdfAverageTimeSeconds =
+                pdfAttempts > 0
+                  ? Math.round(
+                      pdfGroup.results.reduce(
+                        (sum: number, r: any) => sum + r.time_taken_seconds,
+                        0
+                      ) / pdfAttempts
+                    )
+                  : 0;
+              return (
+                <div key={pdfGroup.key} className="space-y-4">
+                  {/* PDF Header */}
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setExpandedPdfs((prev) => {
+                        const next = new Set(prev);
+                        if (next.has(pdfGroup.key)) {
+                          next.delete(pdfGroup.key);
+                        } else {
+                          next.add(pdfGroup.key);
+                        }
+                        return next;
+                      })
+                    }
+                    className="w-full text-left"
+                  >
+                    <div className="glassmorphism rounded-lg border border-[#38BDF8]/30 p-4 bg-[#38BDF8]/5 flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className="w-1 h-8 bg-[#38BDF8] rounded-full" />
+                        <div>
+                          <h2 className="text-lg font-semibold text-white flex items-center gap-2">
+                            <span>📄</span>
+                            {pdfGroup.pdfName}
+                          </h2>
+                          <p className="text-sm text-[#94A3B8] mt-1">
+                            {pdfGroup.results.length}{' '}
+                            {pdfGroup.results.length === 1 ? 'attempt' : 'attempts'}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2 text-xs text-[#94A3B8]">
+                        <span>{isCollapsed ? 'Expand' : 'Collapse'}</span>
+                        {isCollapsed ? (
+                          <ChevronDown className="w-4 h-4" />
+                        ) : (
+                          <ChevronUp className="w-4 h-4" />
+                        )}
+                      </div>
                     </div>
-                  </div>
-                </div>
+                  </button>
 
-                {/* Results for this PDF */}
-                <div className="space-y-4 ml-4">
-                  {pdfGroup.results.map((attempt: any, index: number) => (
+                  {/* Results for this PDF */}
+                  {!isCollapsed && (
+                    <div className="space-y-4 ml-4">
+                      {/* Per-PDF summary stats */}
+                      {pdfAttempts > 0 && (
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                          <div className="glassmorphism rounded-lg border border-[#38BDF8]/20 p-3">
+                            <div className="flex items-center gap-2 mb-1">
+                              <User className="w-4 h-4 text-[#38BDF8]" />
+                              <h4 className="text-xs font-medium text-[#94A3B8]">
+                                Total Attempts
+                              </h4>
+                            </div>
+                            <p className="text-xl font-bold text-white">{pdfAttempts}</p>
+                          </div>
+
+                          <div className="glassmorphism rounded-lg border border-[#38BDF8]/20 p-3">
+                            <div className="flex items-center gap-2 mb-1">
+                              <TrendingUp className="w-4 h-4 text-[#38BDF8]" />
+                              <h4 className="text-xs font-medium text-[#94A3B8]">
+                                Average Score
+                              </h4>
+                            </div>
+                            <p className="text-xl font-bold text-white">
+                              {pdfAverageScore}%
+                            </p>
+                          </div>
+
+                          <div className="glassmorphism rounded-lg border border-[#38BDF8]/20 p-3">
+                            <div className="flex items-center gap-2 mb-1">
+                              <Clock className="w-4 h-4 text-[#38BDF8]" />
+                              <h4 className="text-xs font-medium text-[#94A3B8]">
+                                Avg Time
+                              </h4>
+                            </div>
+                            <p className="text-xl font-bold text-white">
+                              {formatTime(pdfAverageTimeSeconds)}
+                            </p>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Question-level performance analysis for this PDF */}
+                      {questionAnalysis.length > 0 && (
+                        <motion.div
+                          initial={{ opacity: 0, y: 20 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ delay: 0.1 }}
+                          className="glassmorphism rounded-lg border border-[#38BDF8]/20 p-4"
+                        >
+                          <div className="flex items-center justify-between mb-3">
+                            <div>
+                              <h3 className="text-sm font-semibold text-white">
+                                Question Performance Overview
+                              </h3>
+                              <p className="text-[11px] text-[#94A3B8]">
+                                Correctness across all attempts for this PDF.
+                              </p>
+                            </div>
+                          </div>
+                          <div className="space-y-1.5">
+                            {questionAnalysis.map((q) => {
+                              const colorClass =
+                                q.correctPercentage >= 70
+                                  ? 'bg-green-500'
+                                  : q.correctPercentage >= 50
+                                  ? 'bg-yellow-500'
+                                  : 'bg-red-500';
+                              return (
+                                <div
+                                  key={q.questionNumber}
+                                  className="flex items-center gap-3 text-[11px] text-[#94A3B8]"
+                                >
+                                  <div className="w-10 font-medium text-white">
+                                    Q{q.questionNumber}
+                                  </div>
+                                  <div className="flex-1 h-2 bg-[#161F32] rounded-full overflow-hidden">
+                                    <div
+                                      className={`${colorClass} h-full`}
+                                      style={{ width: `${q.correctPercentage}%` }}
+                                    />
+                                  </div>
+                                  <div className="w-28 text-right">
+                                    <span className="font-semibold text-white">
+                                      {q.correctPercentage}%
+                                    </span>{' '}
+                                    <span className="ml-1">
+                                      ({q.correctCount}/{q.totalAttempts})
+                                    </span>
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </motion.div>
+                      )}
+
+                      {pdfGroup.results.map((attempt: any, index: number) => (
               <motion.div
                 key={attempt.id}
                 initial={{ opacity: 0, y: 20 }}
@@ -303,12 +516,12 @@ export default function CourseResultsPage() {
                       <div className="flex flex-wrap items-center gap-3 mb-3 text-sm">
                         {attempt.participant_first_name && (
                           <span className="text-[#94A3B8]">
-                            <span className="font-medium text-white">First:</span> {attempt.participant_first_name}
+                            <span className="font-medium text-white">First Name:</span> {attempt.participant_first_name}
                           </span>
                         )}
                         {attempt.participant_last_name && (
                           <span className="text-[#94A3B8]">
-                            <span className="font-medium text-white">Last:</span> {attempt.participant_last_name}
+                            <span className="font-medium text-white">Last Name:</span> {attempt.participant_last_name}
                           </span>
                         )}
                         {attempt.participant_email && (
@@ -455,10 +668,12 @@ export default function CourseResultsPage() {
                   </div>
                 )}
               </motion.div>
-                  ))}
+                      ))}
+                    </div>
+                  )}
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>

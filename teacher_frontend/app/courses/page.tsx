@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { ProtectedRoute } from '@/components/ProtectedRoute';
 import { Navigation } from '@/components/Navigation';
+import { Footer } from '@/components/Footer';
 import { useAuth } from '@/contexts/AuthContext';
 import { coursesApi, Course } from '@/lib/api/courses';
 import { motion } from 'framer-motion';
@@ -18,6 +19,7 @@ export default function CoursesPage() {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [courseName, setCourseName] = useState('');
   const [courseDescription, setCourseDescription] = useState('');
+  const [showAllCourses, setShowAllCourses] = useState(false);
 
   // #region agent log
   useEffect(() => {
@@ -161,6 +163,12 @@ export default function CoursesPage() {
   }
 
   const courses = data?.projects || [];
+  // Ensure most recent courses first, using created_at
+  const sortedCourses = [...courses].sort(
+    (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+  );
+  const visibleCourses = showAllCourses ? sortedCourses : sortedCourses.slice(0, 9);
+  const hasMoreCourses = sortedCourses.length > 9;
 
   return (
     <ProtectedRoute>
@@ -181,7 +189,7 @@ export default function CoursesPage() {
             </button>
           </div>
 
-          {courses.length === 0 ? (
+          {sortedCourses.length === 0 ? (
             <div className="text-center py-16">
               <BookOpen className="w-16 h-16 text-[#94A3B8] mx-auto mb-4" />
               <h2 className="text-xl font-semibold text-white mb-2">No courses yet</h2>
@@ -194,8 +202,9 @@ export default function CoursesPage() {
               </button>
             </div>
           ) : (
+            <>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {courses.map((course, index) => (
+              {visibleCourses.map((course, index) => (
                 <motion.div
                   key={course.id}
                   initial={{ opacity: 0, y: 20 }}
@@ -243,8 +252,22 @@ export default function CoursesPage() {
                 </motion.div>
               ))}
             </div>
+            {hasMoreCourses && (
+              <div className="mt-8 flex justify-center">
+                <button
+                  onClick={() => setShowAllCourses((prev) => !prev)}
+                  className="px-6 py-2 border border-[#38BDF8]/40 text-[#38BDF8] hover:bg-[#38BDF8]/10 rounded-full text-sm font-medium transition-colors"
+                >
+                  {showAllCourses
+                    ? 'Show less'
+                    : `Show more (${sortedCourses.length - visibleCourses.length})`}
+                </button>
+              </div>
+            )}
+            </>
           )}
         </div>
+        <Footer />
 
         {showCreateModal && (
           <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">

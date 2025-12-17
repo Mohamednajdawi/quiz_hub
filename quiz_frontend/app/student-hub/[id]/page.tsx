@@ -235,6 +235,12 @@ function ContentItem({
     queryKey: ['generated-content', projectId, content.id],
     queryFn: () => studentProjectsApi.getContentGeneratedContent(projectId, content.id),
     enabled: expanded,
+    // While something is generating for this PDF, poll so new items appear automatically
+    refetchInterval:
+      expanded && (isGeneratingQuiz || isGeneratingFlashcards || isGeneratingEssays || isGeneratingMindMaps)
+        ? 4000
+        : false,
+    staleTime: 0,
   });
 
   const handleViewQuiz = async (quizId: number) => {

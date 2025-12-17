@@ -7,7 +7,7 @@ export function Footer() {
   return (
     <footer className="bg-white border-t border-[#e6e6e6] mt-auto text-brand">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
           {/* Legal Links */}
           <div>
             <h3 className="text-sm font-semibold text-brand mb-4">Legal</h3>
@@ -25,6 +25,11 @@ export function Footer() {
               <li>
                 <Link href="/refund" className="text-sm text-[#596078] hover:text-brand">
                   Refund Policy
+                </Link>
+              </li>
+              <li>
+                <Link href="/imprint" className="text-sm text-[#596078] hover:text-brand">
+                  Imprint (Impressum)
                 </Link>
               </li>
             </ul>
@@ -47,6 +52,28 @@ export function Footer() {
               <li>
                 <Link href="/blog" className="text-sm text-[#596078] hover:text-brand">
                   Blog
+                </Link>
+              </li>
+            </ul>
+          </div>
+
+          {/* Resources */}
+          <div>
+            <h3 className="text-sm font-semibold text-brand mb-4">Resources</h3>
+            <ul className="space-y-2">
+              <li>
+                <Link href="/quizzes" className="text-sm text-[#596078] hover:text-brand">
+                  Quizzes
+                </Link>
+              </li>
+              <li>
+                <Link href="/flashcards" className="text-sm text-[#596078] hover:text-brand">
+                  Flashcards
+                </Link>
+              </li>
+              <li>
+                <Link href="/essays" className="text-sm text-[#596078] hover:text-brand">
+                  Essay Q&amp;A
                 </Link>
               </li>
             </ul>
