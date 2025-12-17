@@ -6,8 +6,9 @@ import { generationApi } from '@/lib/api/generation';
 import { quizApi } from '@/lib/api/quiz';
 import { coursesApi, CourseContent } from '@/lib/api/courses';
 import { flashcardsApi } from '@/lib/api/flashcards';
-import { FileQuestion, BookOpen, FileText, Download, Share2, Loader2, Copy, Check, X, ChevronDown, ChevronUp } from 'lucide-react';
+import { FileQuestion, BookOpen, FileText, Download, Share2, Loader2, Copy, Check, X, ChevronDown, ChevronUp, Edit3 } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { QuizEditorModal } from '@/components/course/QuizEditorModal';
 
 interface GenerationPanelProps {
   courseId: number;
@@ -263,6 +264,7 @@ export function GenerationPanel({
       }
     | null
   >(null);
+  const [quizEditor, setQuizEditor] = useState<{ isOpen: boolean; topicId: number } | null>(null);
 
   // Fetch generated content details to get names and content_ids
   const { data: generatedContent, isLoading: isLoadingGeneratedContent, error: generatedContentError } = useQuery({
@@ -927,11 +929,21 @@ export function GenerationPanel({
                 >
                   <div className="flex items-center gap-2 min-w-0 flex-1">
                     <FileQuestion className="w-4 h-4 text-[#38BDF8] flex-shrink-0" />
-                    <span className="text-sm text-white truncate" title={formatContentName('quiz', id, quizReferences)}>
+                    <span
+                      className="text-sm text-white truncate"
+                      title={formatContentName('quiz', id, quizReferences)}
+                    >
                       {formatContentName('quiz', id, quizReferences)}
                     </span>
                   </div>
                   <div className="flex gap-2">
+                    <button
+                      onClick={() => setQuizEditor({ isOpen: true, topicId: id })}
+                      className="p-1 text-[#94A3B8] hover:text-[#38BDF8] transition-colors"
+                      title="View & edit questions"
+                    >
+                      <Edit3 className="w-4 h-4" />
+                    </button>
                     <button
                       onClick={() => handleExport('quiz', id)}
                       className="p-1 text-[#94A3B8] hover:text-[#38BDF8] transition-colors"
@@ -1347,6 +1359,13 @@ export function GenerationPanel({
             </div>
           </motion.div>
         </div>
+      )}
+
+      {quizEditor && quizEditor.isOpen && (
+        <QuizEditorModal
+          topicId={quizEditor.topicId}
+          onClose={() => setQuizEditor(null)}
+        />
       )}
     </div>
   );

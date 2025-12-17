@@ -38,6 +38,21 @@ export interface QuizStatistics {
   total_time_spent: number;
 }
 
+export interface QuizQuestion {
+  id: number;
+  question: string;
+  options: string[];
+  right_option: number | string;
+}
+
+export interface QuizDetail {
+  topic: string;
+  category: string;
+  subcategory: string;
+  creation_timestamp?: string;
+  questions: QuizQuestion[];
+}
+
 export const quizApi = {
   getSharedResults: async (topicId: number): Promise<QuizResults> => {
     const response = await apiClient.get(`/quiz/${topicId}/shared-results`);
@@ -54,9 +69,47 @@ export const quizApi = {
     return response.data;
   },
 
+  getQuiz: async (topicId: number): Promise<QuizDetail> => {
+    const response = await apiClient.get(`/quiz/${topicId}`);
+    return response.data;
+  },
+
   getMyQuizzes: async (): Promise<{ topics: Array<{ id: number; topic: string; category: string }> }> => {
     const response = await apiClient.get('/quiz-topics/my');
     return response.data;
+  },
+
+  updateQuestion: async (
+    topicId: number,
+    questionId: number,
+    question: string,
+    options: string[],
+    rightOption: number | string
+  ): Promise<QuizQuestion> => {
+    const response = await apiClient.put(`/quiz/${topicId}/question/${questionId}`, {
+      question,
+      options,
+      right_option: rightOption,
+    });
+    return response.data;
+  },
+
+  addQuestion: async (
+    topicId: number,
+    question: string,
+    options: string[],
+    rightOption: number | string
+  ): Promise<QuizQuestion> => {
+    const response = await apiClient.post(`/quiz/${topicId}/question`, {
+      question,
+      options,
+      right_option: rightOption,
+    });
+    return response.data;
+  },
+
+  deleteQuestion: async (topicId: number, questionId: number): Promise<void> => {
+    await apiClient.delete(`/quiz/${topicId}/question/${questionId}`);
   },
 
   // Export quiz to PDF or DOCX
