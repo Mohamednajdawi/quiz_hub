@@ -31,6 +31,8 @@ COPY . .
 ENV NEXT_TELEMETRY_DISABLED=1
 # Force Tailwind/Next to skip Turbo if possible to avoid binding issues
 ENV NEXT_PRIVATE_SKIP_TURBO=1
+# Force lightningcss (used by Tailwind v4) to use WASM instead of native binaries
+ENV LIGHTNINGCSS_FORCE_WASM=1
 
 # Run the build
 RUN npm run build
