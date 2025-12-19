@@ -379,22 +379,8 @@ export function GenerationPanel({
   };
 
   // Track previous reference counts to detect new items
-  const [prevFlashcardCount, setPrevFlashcardCount] = useState(flashcardReferences.length);
   const [prevQuizCount, setPrevQuizCount] = useState(quizReferences.length);
   const [prevEssayCount, setPrevEssayCount] = useState(essayReferences.length);
-
-  // Clear active generations when new references appear (job completed)
-  useEffect(() => {
-    if (activeGenerations.has('flashcard') && localFlashcardReferences.length > prevFlashcardCount) {
-      // New flashcard appeared, clear the loading indicator
-      setActiveGenerations((prev) => {
-        const next = new Set(prev);
-        next.delete('flashcard');
-        return next;
-      });
-    }
-    setPrevFlashcardCount(localFlashcardReferences.length);
-  }, [localFlashcardReferences.length, prevFlashcardCount, activeGenerations]);
 
   useEffect(() => {
     if (activeGenerations.has('quiz') && localQuizReferences.length > prevQuizCount) {
