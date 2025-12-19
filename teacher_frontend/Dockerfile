@@ -8,7 +8,8 @@ RUN apk add --no-cache libc6-compat
 WORKDIR /app
 
 # Install dependencies using npm (no corporate registry lockfiles)
-COPY package.json package-lock.json* pnpm-lock.yaml* ./
+# Copy from teacher_frontend directory (when building from root)
+COPY teacher_frontend/package.json teacher_frontend/package-lock.json* teacher_frontend/pnpm-lock.yaml* ./
 RUN \
   if [ -f package-lock.json ]; then npm ci; \
   elif [ -f pnpm-lock.yaml ]; then corepack enable pnpm && pnpm i --frozen-lockfile; \
@@ -19,7 +20,8 @@ RUN \
 FROM base AS builder
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
-COPY . .
+# Copy teacher_frontend files (when building from root)
+COPY teacher_frontend/ .
 
 # Next.js collects completely anonymous telemetry data about general usage.
 # Learn more here: https://nextjs.org/telemetry
