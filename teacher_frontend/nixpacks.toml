@@ -4,7 +4,8 @@ nixPkgs = ["nodejs-20_x"]
 
 [phases.install]
 cmds = [
-  "if [ -f yarn.lock ]; then yarn install --frozen-lockfile; elif [ -f package-lock.json ]; then npm ci; else npm install; fi"
+  "rm -f package-lock.json",
+  "LIGHTNINGCSS_FORCE_WASM=1 npm_config_platform=linux npm_config_arch=x64 npm install"
 ]
 
 [phases.build]

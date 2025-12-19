@@ -15,10 +15,11 @@ WORKDIR /app
 COPY package.json package-lock.json* pnpm-lock.yaml* ./
 
 # --- THE FIX IS HERE ---
-# We use 'npm install' instead of 'npm ci'.
-# 'npm ci' strictly uses your local lockfile (which is missing Linux binaries).
-# 'npm install' will recalculate dependencies and download the correct Linux/GNU binaries.
-RUN npm install
+# Delete package-lock.json to force fresh dependency resolution for Linux
+RUN rm -f package-lock.json
+# Force lightningcss to use WASM instead of native binaries during dependency installation
+ENV LIGHTNINGCSS_FORCE_WASM=1
+RUN npm install 
 
 # 2. BUILDER STAGE
 FROM node:20-slim AS builder
@@ -33,6 +34,9 @@ ENV NEXT_TELEMETRY_DISABLED=1
 ENV NEXT_PRIVATE_SKIP_TURBO=1
 # Force lightningcss (used by Tailwind v4) to use WASM instead of native binaries
 ENV LIGHTNINGCSS_FORCE_WASM=1
+# Additional environment variable for npm to target correct platform
+ENV npm_config_platform=linux
+ENV npm_config_arch=x64
 
 # Run the build
 RUN npm run build
