@@ -10,6 +10,7 @@ export interface GenerationJobStatus {
     quiz_id?: number;
     essay_id?: number;
     mind_map_id?: number;
+    flashcard_topic_id?: number;
     topic: string;
   } | null;
   error_message?: string | null;

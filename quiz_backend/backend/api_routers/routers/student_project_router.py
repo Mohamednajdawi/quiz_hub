@@ -36,7 +36,7 @@ from backend.database.sqlite_dal import (
 )
 from backend.api_routers.routers.auth_router import get_current_user_dependency
 from backend.utils.credits import consume_generation_token
-from backend.utils.utils import generate_quiz_from_pdf, generate_essay_qa_from_pdf, generate_mind_map_from_pdf
+from backend.utils.utils import generate_quiz_from_pdf, generate_essay_qa_from_pdf, generate_mind_map_from_pdf, generate_flashcards_from_pdf
 from backend.database.sqlite_dal import User as UserModel
 from backend.config.settings import get_app_config, get_pdf_storage_dir
 from backend.database.db import SessionLocal
@@ -81,6 +81,14 @@ class EssayGenerationJobRequest(BaseModel):
 class MindMapGenerationJobRequest(BaseModel):
     focus: Optional[str] = None
     include_examples: bool = True
+
+
+class FlashcardGenerationJobRequest(BaseModel):
+    num_cards: Optional[int] = 10
+
+
+class BackgroundGenerationJobRequest(BaseModel):
+    focus: Optional[str] = None
 
 
 class GenerationJobStatusResponse(BaseModel):
@@ -1039,6 +1047,179 @@ def _process_mind_map_generation_job(job_id: int) -> None:
         session.close()
 
 
+def _process_flashcard_generation_job(job_id: int) -> None:
+    session = SessionLocal()
+    try:
+        logging.info("[FLASHCARD JOB] Starting flashcard generation job %s", job_id)
+        job = session.query(GenerationJob).filter(GenerationJob.id == job_id).first()
+        if not job:
+            logging.error("[FLASHCARD JOB] Job %s not found", job_id)
+            return
+
+        logging.debug("[FLASHCARD JOB] Job %s found: user_id=%s, project_id=%s, content_id=%s", 
+                     job_id, job.user_id, job.project_id, job.content_id)
+
+        job.status = "in_progress"
+        job.updated_at = datetime.datetime.now()
+        session.commit()
+        logging.debug("[FLASHCARD JOB] Job %s status set to 'in_progress'", job_id)
+
+        user = session.query(User).filter(User.id == job.user_id).first()
+        if not user:
+            logging.error("[FLASHCARD JOB] User %s not found for job %s", job.user_id, job_id)
+            job.status = "failed"
+            job.error_message = "User not found"
+            job.completed_at = datetime.datetime.now()
+            job.updated_at = datetime.datetime.now()
+            session.commit()
+            return
+
+        logging.debug("[FLASHCARD JOB] User %s validated for job %s", user.id, job_id)
+
+        content = session.query(StudentProjectContent).filter(
+            StudentProjectContent.id == job.content_id,
+            StudentProjectContent.project_id == job.project_id,
+        ).first()
+
+        if not content:
+            logging.error("[FLASHCARD JOB] Content %s not found for job %s", job.content_id, job_id)
+            job.status = "failed"
+            job.error_message = "Content not found"
+            job.completed_at = datetime.datetime.now()
+            job.updated_at = datetime.datetime.now()
+            session.commit()
+            return
+
+        if content.content_type != "pdf" or not content.content_url:
+            logging.error("[FLASHCARD JOB] Invalid content type for job %s: type=%s, url=%s", 
+                         job_id, content.content_type, bool(content.content_url))
+            job.status = "failed"
+            job.error_message = "Only PDF content is supported for flashcard generation"
+            job.completed_at = datetime.datetime.now()
+            job.updated_at = datetime.datetime.now()
+            session.commit()
+            return
+
+        logging.info("[FLASHCARD JOB] Processing PDF content: %s (content_id=%s)", 
+                    content.content_url, content.id)
+
+        payload = job.payload or {}
+        num_cards = payload.get("num_cards", 10)
+        logging.debug("[FLASHCARD JOB] Job %s payload: num_cards=%s", job_id, num_cards)
+
+        feedback_context = collect_feedback_context(session, user_id=user.id)
+        if feedback_context:
+            logging.debug("[FLASHCARD JOB] Collected feedback context (length: %d chars)", len(feedback_context))
+
+        logging.info("[FLASHCARD JOB] Calling generate_flashcards_from_pdf for job %s", job_id)
+        flashcard_data, token_usage = generate_flashcards_from_pdf(
+            content.content_url,
+            num_cards=num_cards,
+            feedback=feedback_context,
+        )
+
+        logging.info("[FLASHCARD JOB] Creating FlashcardTopic record for job %s", job_id)
+        from backend.database.sqlite_dal import FlashcardCard
+        
+        try:
+            flashcard_topic = FlashcardTopic(
+                topic=flashcard_data["topic"],
+                category=flashcard_data["category"],
+                subcategory=flashcard_data["subcategory"],
+                difficulty="medium",  # Default difficulty for flashcards
+                creation_timestamp=datetime.datetime.now(),
+                created_by_user_id=user.id,
+            )
+            session.add(flashcard_topic)
+            session.flush()
+            logging.info("[FLASHCARD JOB] FlashcardTopic record created with id=%s (topic='%s')", 
+                        flashcard_topic.id, flashcard_topic.topic)
+        except Exception as e:
+            # Fallback: create without difficulty if column doesn't exist
+            logging.warning("[FLASHCARD JOB] Creating flashcard topic without difficulty column: %s", e)
+            session.rollback()
+            
+            flashcard_topic = FlashcardTopic(
+                topic=flashcard_data["topic"],
+                category=flashcard_data["category"],
+                subcategory=flashcard_data["subcategory"],
+                creation_timestamp=datetime.datetime.now(),
+                created_by_user_id=user.id,
+            )
+            session.add(flashcard_topic)
+            session.flush()
+            logging.info("[FLASHCARD JOB] FlashcardTopic record created with id=%s (topic='%s')", 
+                        flashcard_topic.id, flashcard_topic.topic)
+
+        # Add cards
+        for card in flashcard_data["cards"]:
+            flashcard_card = FlashcardCard(
+                front=card["front"],
+                back=card["back"],
+                importance=card.get("importance", "medium"),
+                topic_id=flashcard_topic.id,
+            )
+            session.add(flashcard_card)
+
+        flashcard_reference = StudentProjectFlashcardReference(
+            project_id=job.project_id,
+            content_id=job.content_id,
+            flashcard_topic_id=flashcard_topic.id,
+            created_at=datetime.datetime.now(),
+        )
+        session.add(flashcard_reference)
+        logging.debug("[FLASHCARD JOB] Created flashcard reference for project %s, content %s", 
+                     job.project_id, job.content_id)
+
+        # Consume 1 token for this generation (quiz/flashcard/essay/mind_map)
+        consume_generation_token(session, user, amount=1)
+        logging.debug("[FLASHCARD JOB] Consumed generation token for user %s", user.id)
+
+        # Store token usage in the job
+        job.input_tokens = token_usage.get("input_tokens", 0)
+        job.output_tokens = token_usage.get("output_tokens", 0)
+        job.total_tokens = token_usage.get("total_tokens", 0)
+        logging.info("[FLASHCARD JOB] Token usage: input=%d, output=%d, total=%d", 
+                    job.input_tokens, job.output_tokens, job.total_tokens)
+
+        # Store token usage in TokenUsage table
+        token_usage_record = TokenUsage(
+            user_id=user.id,
+            generation_type="flashcard",
+            topic_id=flashcard_topic.id,
+            input_tokens=token_usage.get("input_tokens", 0),
+            output_tokens=token_usage.get("output_tokens", 0),
+            total_tokens=token_usage.get("total_tokens", 0),
+        )
+        session.add(token_usage_record)
+        logging.debug("[FLASHCARD JOB] Created TokenUsage record for flashcard id=%s", flashcard_topic.id)
+
+        job.status = "completed"
+        job.result_topic_id = flashcard_topic.id
+        job.completed_at = datetime.datetime.now()
+        job.updated_at = datetime.datetime.now()
+        session.commit()
+
+        logging.info("[FLASHCARD JOB] Flashcard generation completed successfully: job_id=%s, flashcard_topic_id=%s, cards=%d", 
+                    job_id, flashcard_topic.id, len(flashcard_data.get("cards", [])))
+    except Exception as exc:  # pylint: disable=broad-except
+        logging.exception("[FLASHCARD JOB] Flashcard generation failed for job %s: %s", job_id, exc)
+        try:
+            job = session.query(GenerationJob).filter(GenerationJob.id == job_id).first()
+            if job:
+                logging.error("[FLASHCARD JOB] Marking job %s as failed with error: %s", job_id, str(exc))
+                job.status = "failed"
+                job.error_message = str(exc)
+                job.completed_at = datetime.datetime.now()
+                job.updated_at = datetime.datetime.now()
+                session.commit()
+        except Exception as inner_exc:  # pylint: disable=broad-except
+            logging.error("[FLASHCARD JOB] Failed to update job %s status after error: %s", job_id, str(inner_exc))
+            session.rollback()
+    finally:
+        session.close()
+
+
 @router.post(
     "/student-projects/{project_id}/content/{content_id}/quiz-generation",
     tags=["Student Projects"],
@@ -1150,6 +1331,10 @@ async def get_generation_job_status(
             mind_map = db.query(MindMap).filter(MindMap.id == job.result_topic_id).first()
             if mind_map:
                 result = {"mind_map_id": mind_map.id, "topic": mind_map.title}
+        elif job.job_type == "flashcard":
+            flashcard_topic = db.query(FlashcardTopic).filter(FlashcardTopic.id == job.result_topic_id).first()
+            if flashcard_topic:
+                result = {"flashcard_topic_id": flashcard_topic.id, "topic": flashcard_topic.topic}
 
     return GenerationJobStatusResponse(
         job_id=job.id,
@@ -1317,6 +1502,86 @@ async def start_mind_map_generation_job(
             "status": job.status,
             "job_type": job.job_type,
             "message": "Mind map generation started. We'll notify you when it's ready.",
+        },
+        status_code=202,
+    )
+
+
+@router.post(
+    "/student-projects/{project_id}/content/{content_id}/flashcard-generation",
+    tags=["Student Projects"],
+    status_code=202,
+)
+async def start_flashcard_generation_job(
+    project_id: int,
+    content_id: int,
+    request: FlashcardGenerationJobRequest,
+    background_tasks: BackgroundTasks,
+    current_user: UserModel = Depends(get_current_user_dependency),
+    db: Session = Depends(get_db),
+) -> JSONResponse:
+    """Start an asynchronous flashcard generation job for a project content."""
+    logging.info("[FLASHCARD API] Starting flashcard generation request: user_id=%s, project_id=%s, content_id=%s", 
+                current_user.id, project_id, content_id)
+    
+    project = db.query(StudentProject).filter(
+        StudentProject.id == project_id,
+        StudentProject.user_id == current_user.id,
+    ).first()
+
+    if not project:
+        logging.warning("[FLASHCARD API] Project %s not found for user %s", project_id, current_user.id)
+        raise HTTPException(status_code=404, detail="Project not found")
+
+    content = db.query(StudentProjectContent).filter(
+        StudentProjectContent.id == content_id,
+        StudentProjectContent.project_id == project_id,
+    ).first()
+
+    if not content:
+        logging.warning("[FLASHCARD API] Content %s not found in project %s", content_id, project_id)
+        raise HTTPException(status_code=404, detail="Content not found")
+
+    if content.content_type != "pdf" or not content.content_url:
+        logging.warning("[FLASHCARD API] Invalid content type for flashcard generation: type=%s, url=%s", 
+                       content.content_type, bool(content.content_url))
+        raise HTTPException(
+            status_code=400,
+            detail="Only PDF content can be used for flashcard generation",
+        )
+
+    payload = {
+        "num_cards": request.num_cards if request.num_cards and request.num_cards > 0 else 10,
+    }
+
+    logging.debug("[FLASHCARD API] Request payload: num_cards=%s", payload.get("num_cards"))
+
+    job = GenerationJob(
+        user_id=current_user.id,
+        project_id=project_id,
+        content_id=content_id,
+        job_type="flashcard",
+        status="pending",
+        payload=payload,
+        created_at=datetime.datetime.now(),
+        updated_at=datetime.datetime.now(),
+    )
+    db.add(job)
+    db.commit()
+    db.refresh(job)
+
+    logging.info("[FLASHCARD API] Created generation job %s for user %s, project %s, content %s", 
+                job.id, current_user.id, project_id, content_id)
+
+    background_tasks.add_task(_process_flashcard_generation_job, job.id)
+    logging.debug("[FLASHCARD API] Enqueued background task for job %s", job.id)
+
+    return JSONResponse(
+        content={
+            "job_id": job.id,
+            "status": job.status,
+            "job_type": job.job_type,
+            "message": "Flashcard generation started. We'll notify you when it's ready.",
         },
         status_code=202,
     )
