@@ -1,16 +1,20 @@
-# Use the official Node.js runtime as base image
-FROM node:20-alpine AS base
+# Use the official Node.js runtime as base image (Debian-based for better native module support)
+FROM node:20-slim AS base
 
 # Install dependencies only when needed
 FROM base AS deps
-# Check https://github.com/nodejs/docker-node/tree/b4117f9333da4138b03a546ec926ef50a31506c3#nodealpine to understand why libc6-compat might be needed.
-# Install build dependencies for native modules (lightningcss needs these)
-RUN apk add --no-cache libc6-compat python3 make g++
+# Install build dependencies for native modules
+RUN apt-get update && apt-get install -y \
+    python3 \
+    make \
+    g++ \
+    && rm -rf /var/lib/apt/lists/*
 WORKDIR /app
 
 # Install dependencies using npm (no corporate registry lockfiles)
 # Copy package files (when building from teacher_frontend directory)
 COPY package.json package-lock.json* pnpm-lock.yaml* ./
+# Native modules should work better with Debian-based image
 RUN \
   if [ -f package-lock.json ]; then npm ci; \
   elif [ -f pnpm-lock.yaml ]; then corepack enable pnpm && pnpm i --frozen-lockfile; \
@@ -20,7 +24,11 @@ RUN \
 # Rebuild the source code only when needed
 FROM base AS builder
 # Install build dependencies for native modules if needed during build
-RUN apk add --no-cache libc6-compat python3 make g++
+RUN apt-get update && apt-get install -y \
+    python3 \
+    make \
+    g++ \
+    && rm -rf /var/lib/apt/lists/*
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 # Copy all files (when building from teacher_frontend directory)
@@ -30,6 +38,7 @@ COPY . .
 # Learn more here: https://nextjs.org/telemetry
 ENV NEXT_TELEMETRY_DISABLED=1
 # Disable Turbopack for Docker builds (native modules compatibility with Alpine)
+# This must be set as ENV before the build command
 ENV NEXT_PRIVATE_SKIP_TURBO=1
 
 # Always build with npm (we don't rely on corporate lockfiles)

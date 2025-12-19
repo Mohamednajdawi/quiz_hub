@@ -16,12 +16,6 @@ const nextConfig: NextConfig = {
   experimental: {
     optimizePackageImports: ['lucide-react', 'framer-motion'],
   },
-  
-  // Turbopack configuration (Next.js 16+ uses Turbopack by default)
-  turbopack: {
-    // Turbopack handles code splitting automatically
-    // No manual webpack config needed
-  },
 };
 
 export default nextConfig;
