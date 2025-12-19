@@ -70,17 +70,24 @@ The JSON MUST follow this shape:
 }
 
 Definitions:
-- "key_concepts" should highlight 3-8 unforgettable anchors (central node + marquee ideas).
-- "nodes" should cover 10-18 concepts. Include depth (0=root). Parents/children arrays can be empty.
+- "key_concepts" should highlight the most important anchors based on the document's complexity and depth (typically 3-8 concepts, but adjust based on content).
+- "nodes" should comprehensively cover the key concepts and relationships in the document. Include depth (0=root). Parents/children arrays can be empty. The number of nodes should be proportional to the document's complexity - simple documents may need 5-10 nodes, complex documents may need 15-25 nodes or more.
 - "edges" are used for visualization. Always include at least the edges that connect each node to its parent so nothing floats.
 - Colors should be soft hex codes to differentiate groups (reuse palette when possible).
 - Keep IDs slug-like (letters, numbers, dashes only).
+
+Guidelines for sizing:
+- Analyze the document's scope and complexity to determine appropriate detail level
+- Simple, short documents: Focus on core concepts with 5-10 nodes
+- Medium complexity documents: Include supporting details with 10-18 nodes
+- Complex, comprehensive documents: Provide detailed coverage with 18-30+ nodes
+- Always prioritize quality over quantity - ensure each node adds meaningful value
 
 Constraints:
 - Never invent facts that aren't supported by the document.
 - Do not mention the instructions or the learner explicitly in the output.
 - Make sure every edge source/target matches an existing node id.
-- If the document is very short, prefer fewer but richer nodes.
+- Base the mind map structure entirely on the document's actual content and relationships.
 
 Source text (truncated to 60k characters max):
 {{ documents|truncate(60000) }}
