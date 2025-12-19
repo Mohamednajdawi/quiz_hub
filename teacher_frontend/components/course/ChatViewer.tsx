@@ -88,10 +88,8 @@ export const ChatViewer = memo(function ChatViewer({
           return;
         }
 
-        // Start generation in background
-        const response = await flashcardsApi.startFlashcardGenerationJob(courseId, selectedContent.id, {
-          num_cards: 10,
-        });
+        // Start generation in background (auto-determine number of cards)
+        const response = await flashcardsApi.startFlashcardGenerationJob(courseId, selectedContent.id, {});
         setFlashcardJobId(response.job_id);
       } catch (error: any) {
         console.error('Error auto-starting flashcard generation:', error);
@@ -211,9 +209,8 @@ export const ChatViewer = memo(function ChatViewer({
       setFlashcardLoading(true);
       setFlashcardData(null);
 
-      const response = await flashcardsApi.startFlashcardGenerationJob(courseId, selectedContent.id, {
-        num_cards: 10,
-      });
+      // Auto-determine number of cards based on content
+      const response = await flashcardsApi.startFlashcardGenerationJob(courseId, selectedContent.id, {});
       setFlashcardJobId(response.job_id);
       setViewMode('flashcard');
     } catch (error: any) {
@@ -586,7 +583,7 @@ export const ChatViewer = memo(function ChatViewer({
               </div>
             )}
           </div>
-        ) : (
+        ) : viewMode === 'mindmap' ? (
           <div className="h-full flex flex-col">
             {!selectedContent ? (
               <div className="h-full flex items-center justify-center text-[#94A3B8]">
@@ -847,7 +844,7 @@ export const ChatViewer = memo(function ChatViewer({
               </div>
             )}
           </div>
-        )}
+        ) : null}
       </div>
     </div>
   );

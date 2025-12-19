@@ -84,7 +84,7 @@ class MindMapGenerationJobRequest(BaseModel):
 
 
 class FlashcardGenerationJobRequest(BaseModel):
-    num_cards: Optional[int] = 10
+    num_cards: Optional[int] = None  # None means auto-determine based on content
 
 
 class BackgroundGenerationJobRequest(BaseModel):
@@ -1104,17 +1104,17 @@ def _process_flashcard_generation_job(job_id: int) -> None:
                     content.content_url, content.id)
 
         payload = job.payload or {}
-        num_cards = payload.get("num_cards", 10)
-        logging.debug("[FLASHCARD JOB] Job %s payload: num_cards=%s", job_id, num_cards)
+        num_cards = payload.get("num_cards")  # None means auto-determine
+        logging.debug("[FLASHCARD JOB] Job %s payload: num_cards=%s (auto if None)", job_id, num_cards)
 
         feedback_context = collect_feedback_context(session, user_id=user.id)
         if feedback_context:
             logging.debug("[FLASHCARD JOB] Collected feedback context (length: %d chars)", len(feedback_context))
 
-        logging.info("[FLASHCARD JOB] Calling generate_flashcards_from_pdf for job %s", job_id)
+        logging.info("[FLASHCARD JOB] Calling generate_flashcards_from_pdf for job %s (num_cards=%s)", job_id, num_cards if num_cards is not None else "auto")
         flashcard_data, token_usage = generate_flashcards_from_pdf(
             content.content_url,
-            num_cards=num_cards,
+            num_cards=num_cards,  # None means auto-determine based on content
             feedback=feedback_context,
         )
 
@@ -1550,9 +1550,10 @@ async def start_flashcard_generation_job(
             detail="Only PDF content can be used for flashcard generation",
         )
 
-    payload = {
-        "num_cards": request.num_cards if request.num_cards and request.num_cards > 0 else 10,
-    }
+    payload = {}
+    # Only include num_cards if explicitly provided (None means auto-determine)
+    if request.num_cards is not None and request.num_cards > 0:
+        payload["num_cards"] = request.num_cards
 
     logging.debug("[FLASHCARD API] Request payload: num_cards=%s", payload.get("num_cards"))
 

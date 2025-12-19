@@ -1,4 +1,7 @@
-FLASHCARD_GENERATION_PROMPT = """Given the following text, create {{ num_cards }} flashcards with key concepts, terms, definitions, and important information. In the same language as the text.
+FLASHCARD_GENERATION_PROMPT = """Given the following text, create an appropriate number of flashcards with key concepts, terms, definitions, and important information. In the same language as the text.
+{% if num_cards %}
+Aim for approximately {{ num_cards }} flashcards, but adjust based on the content's complexity and depth.
+{% endif %}
 
 {% if feedback %}
 Learner performance feedback indicates that the following areas need reinforcement:

@@ -244,7 +244,7 @@ def generate_flashcards(
 
 def generate_flashcards_from_pdf(
     pdf_path: str,
-    num_cards: int = 10,
+    num_cards: int | None = None,
     feedback: str | None = None,
 ) -> Tuple[Dict[str, Any], Dict[str, int]]:
     """
@@ -252,19 +252,23 @@ def generate_flashcards_from_pdf(
     
     Args:
         pdf_path: Path to the PDF file
-        num_cards: Number of flashcards to generate (default: 10)
+        num_cards: Number of flashcards to generate (None means auto-determine based on content)
         feedback: Optional string that highlights learner weaknesses to prioritize
         
     Returns:
         tuple: (flashcard_data, token_usage) where token_usage contains input_tokens, output_tokens, total_tokens
     """
+    prompt_builder_params = {
+        "feedback": feedback or "",
+    }
+    # Only include num_cards if specified (for auto-generation)
+    if num_cards is not None:
+        prompt_builder_params["num_cards"] = num_cards
+    
     result = pdf_flashcard_generation_pipeline.run(
         {
             "pdf_extractor": {"file_path": pdf_path},
-            "prompt_builder": {
-                "num_cards": num_cards,
-                "feedback": feedback or "",
-            },
+            "prompt_builder": prompt_builder_params,
         }
     )
     flashcards = result["flashcard_parser"]["flashcards"]
