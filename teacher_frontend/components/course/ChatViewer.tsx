@@ -406,6 +406,58 @@ export const ChatViewer = memo(function ChatViewer({
     };
   }, [pdfBlobUrl]);
 
+  // Keyboard navigation for flashcards
+  useEffect(() => {
+    if (viewMode !== 'flashcard' || !flashcardData || flashcardData.cards.length === 0) {
+      return;
+    }
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Prevent navigation if user is typing in an input
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
+        return;
+      }
+
+      if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
+        e.preventDefault();
+        
+        if (e.key === 'ArrowLeft') {
+          // Go to previous card
+          if (flashcardCurrentIndex > 0) {
+            setFlashcardCurrentIndex((prev) => prev - 1);
+            setFlashcardFlippedCards((prev) => {
+              const newState = { ...prev };
+              delete newState[flashcardCurrentIndex - 1];
+              return newState;
+            });
+          }
+        } else if (e.key === 'ArrowRight') {
+          // Go to next card
+          if (flashcardCurrentIndex < flashcardData.cards.length - 1) {
+            setFlashcardCurrentIndex((prev) => prev + 1);
+            setFlashcardFlippedCards((prev) => {
+              const newState = { ...prev };
+              delete newState[flashcardCurrentIndex + 1];
+              return newState;
+            });
+          }
+        }
+      } else if (e.key === ' ' || e.key === 'Enter') {
+        // Space or Enter to flip card
+        e.preventDefault();
+        setFlashcardFlippedCards((prev) => ({
+          ...prev,
+          [flashcardCurrentIndex]: !prev[flashcardCurrentIndex],
+        }));
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [viewMode, flashcardData, flashcardCurrentIndex]);
+
   return (
     <div className="glassmorphism rounded-lg border border-[#38BDF8]/20 h-full flex flex-col">
       {/* Header */}
@@ -723,51 +775,122 @@ export const ChatViewer = memo(function ChatViewer({
                 </div>
               </div>
             ) : flashcardData && flashcardData.cards.length > 0 ? (
-              <div className="h-full flex flex-col p-4">
-                <div className="space-y-1 mb-4">
-                  <p className="text-xs font-semibold uppercase tracking-wide text-[#64748b]">
-                    Flashcards for
-                  </p>
-                  <p className="text-sm font-semibold text-white truncate">
-                    {flashcardData.topic}
-                  </p>
-                  <p className="text-xs text-[#94A3B8]">
-                    {flashcardCurrentIndex + 1} of {flashcardData.cards.length}
-                  </p>
+              <div className="h-full flex flex-col p-4 md:p-6">
+                <div className="space-y-2 mb-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-xs font-semibold uppercase tracking-wider text-[#64748b] font-sans">
+                        Flashcards for
+                      </p>
+                      <p className="text-lg md:text-xl font-bold text-white truncate font-sans">
+                        {flashcardData.topic}
+                      </p>
+                      <p className="text-sm text-[#94A3B8] font-sans">
+                        {flashcardCurrentIndex + 1} of {flashcardData.cards.length}
+                      </p>
+                    </div>
+                    <div className="text-xs text-[#64748b] font-sans hidden md:block">
+                      <p className="mb-1">⌨️ Shortcuts:</p>
+                      <p>← → Navigate</p>
+                      <p>Space/Enter Flip</p>
+                    </div>
+                  </div>
                 </div>
 
                 <div className="flex-1 flex items-center justify-center">
-                  <div className="w-full max-w-xl">
+                  <div className="w-full max-w-2xl">
                     {(() => {
                       const card = flashcardData.cards[flashcardCurrentIndex];
                       const isFlipped = !!flashcardFlippedCards[flashcardCurrentIndex];
                       return (
-                        <div
-                          className="relative w-full cursor-pointer"
-                          onClick={() =>
-                            setFlashcardFlippedCards((prev) => ({
-                              ...prev,
-                              [flashcardCurrentIndex]: !prev[flashcardCurrentIndex],
-                            }))
-                          }
-                        >
-                          <AnimatePresence mode="wait" initial={false}>
-                            <motion.div
-                              key={isFlipped ? 'back' : 'front'}
-                              initial={{ rotateY: 90, opacity: 0 }}
-                              animate={{ rotateY: 0, opacity: 1 }}
-                              exit={{ rotateY: -90, opacity: 0 }}
-                              transition={{ duration: 0.35 }}
-                              className="w-full min-h-[300px] rounded-xl border border-[#38BDF8]/40 bg-gradient-to-br from-[#020617] via-[#020617] to-[#1e293b] p-6 shadow-lg shadow-[#0f172a]/80 hover:border-[#38BDF8] transition-colors flex flex-col justify-center"
-                            >
-                              <p className="text-xs uppercase tracking-wide text-[#38BDF8] mb-3">
-                                {isFlipped ? 'Back' : 'Front'}
-                              </p>
-                              <p className="text-base text-[#E2E8F0] whitespace-pre-wrap leading-relaxed">
-                                {isFlipped ? card.back : card.front}
-                              </p>
-                            </motion.div>
-                          </AnimatePresence>
+                        <div className="relative w-full">
+                          {/* Clickable number indicator at top */}
+                          <div className="flex justify-center gap-2 mb-4 flex-wrap">
+                            {flashcardData.cards.map((_, index) => (
+                              <button
+                                key={index}
+                                onClick={() => {
+                                  setFlashcardCurrentIndex(index);
+                                  setFlashcardFlippedCards((prev) => {
+                                    const newState = { ...prev };
+                                    delete newState[index];
+                                    return newState;
+                                  });
+                                }}
+                                className={`px-3 py-1.5 rounded-lg text-sm font-semibold transition-all duration-150 font-sans ${
+                                  index === flashcardCurrentIndex
+                                    ? 'bg-[#38BDF8] text-[#0B1221] shadow-lg shadow-[#38BDF8]/30'
+                                    : 'bg-[#161F32] text-[#94A3B8] hover:bg-[#1e293b] hover:text-white border border-[#38BDF8]/20'
+                                }`}
+                              >
+                                {index + 1}
+                              </button>
+                            ))}
+                          </div>
+
+                          <motion.div
+                            className="relative w-full cursor-pointer"
+                            onClick={() => {
+                              const isFlipped = !!flashcardFlippedCards[flashcardCurrentIndex];
+                              if (isFlipped) {
+                                // If showing answer, go to next card
+                                if (flashcardCurrentIndex < flashcardData.cards.length - 1) {
+                                  setFlashcardCurrentIndex((prev) => prev + 1);
+                                  setFlashcardFlippedCards((prev) => {
+                                    const newState = { ...prev };
+                                    delete newState[flashcardCurrentIndex + 1];
+                                    return newState;
+                                  });
+                                }
+                              } else {
+                                // If showing question, flip to answer
+                                setFlashcardFlippedCards((prev) => ({
+                                  ...prev,
+                                  [flashcardCurrentIndex]: !prev[flashcardCurrentIndex],
+                                }));
+                              }
+                            }}
+                            style={{ 
+                              perspective: '1000px',
+                              transformStyle: 'preserve-3d',
+                              willChange: 'transform'
+                            }}
+                          >
+                            <AnimatePresence mode="wait" initial={false}>
+                              <motion.div
+                                key={`${flashcardCurrentIndex}-${isFlipped ? 'back' : 'front'}`}
+                                initial={{ rotateY: 90, opacity: 0 }}
+                                animate={{ rotateY: 0, opacity: 1 }}
+                                exit={{ rotateY: -90, opacity: 0 }}
+                                transition={{
+                                  duration: 0.4,
+                                  ease: [0.4, 0, 0.2, 1],
+                                }}
+                                style={{
+                                  backfaceVisibility: 'hidden',
+                                  WebkitBackfaceVisibility: 'hidden',
+                                  transformStyle: 'preserve-3d',
+                                  willChange: 'transform, opacity'
+                                }}
+                                className="w-full min-h-[400px] md:min-h-[450px] rounded-2xl border-2 border-[#38BDF8]/30 bg-gradient-to-br from-[#020617] via-[#0a1628] to-[#1e293b] p-8 md:p-10 shadow-2xl shadow-[#0f172a]/90 hover:shadow-[#38BDF8]/30 hover:border-[#38BDF8]/60 transition-shadow duration-200 flex flex-col justify-center group"
+                              >
+                                <p className="text-xs font-bold uppercase tracking-widest text-[#38BDF8] mb-6 font-sans">
+                                  {isFlipped ? 'Answer' : 'Question'}
+                                </p>
+                                <p className="text-xl md:text-2xl text-[#E2E8F0] whitespace-pre-wrap leading-relaxed font-sans font-medium">
+                                  {isFlipped ? card.back : card.front}
+                                </p>
+                                <div className="absolute bottom-6 right-6 text-xs text-[#64748b] font-sans">
+                                  {isFlipped 
+                                    ? flashcardCurrentIndex < flashcardData.cards.length - 1
+                                      ? 'Click for next →'
+                                      : 'Last card'
+                                    : 'Click to flip'
+                                  }
+                                </div>
+                              </motion.div>
+                            </AnimatePresence>
+                          </motion.div>
                         </div>
                       );
                     })()}
@@ -775,7 +898,7 @@ export const ChatViewer = memo(function ChatViewer({
                 </div>
 
                 {/* Navigation */}
-                <div className="flex items-center justify-between pt-4">
+                <div className="flex items-center justify-between pt-6 gap-4">
                   <button
                     onClick={() => {
                       setFlashcardCurrentIndex((prev) => Math.max(prev - 1, 0));
@@ -786,22 +909,22 @@ export const ChatViewer = memo(function ChatViewer({
                       });
                     }}
                     disabled={flashcardCurrentIndex === 0}
-                    className="px-4 py-2 bg-[#161F32] border border-[#38BDF8]/20 rounded text-xs text-white disabled:opacity-40 disabled:cursor-not-allowed hover:bg-[#161F32]/80 transition-colors"
+                    className="px-6 py-3 bg-[#161F32] border border-[#38BDF8]/20 rounded-lg text-sm font-medium text-white disabled:opacity-40 disabled:cursor-not-allowed hover:bg-[#1e293b] hover:border-[#38BDF8]/40 hover:shadow-lg hover:shadow-[#38BDF8]/10 transition-all duration-200 font-sans"
                   >
                     Previous
                   </button>
                   <button
                     onClick={handleGenerateFlashcard}
-                    className="inline-flex items-center gap-2 px-3 py-1.5 rounded border border-[#38BDF8]/40 text-xs text-[#E2E8F0] hover:bg-[#0B1221] transition-colors"
+                    className="inline-flex items-center gap-2 px-4 py-3 rounded-lg border border-[#38BDF8]/40 text-sm text-[#E2E8F0] hover:bg-[#0B1221] hover:border-[#38BDF8]/60 hover:shadow-lg hover:shadow-[#38BDF8]/10 transition-all duration-200 font-sans"
                   >
                     {flashcardLoading ? (
                       <>
-                        <Loader2 className="w-3 h-3 animate-spin" />
+                        <Loader2 className="w-4 h-4 animate-spin" />
                         Regenerating...
                       </>
                     ) : (
                       <>
-                        <BookOpen className="w-3 h-3" />
+                        <BookOpen className="w-4 h-4" />
                         Regenerate
                       </>
                     )}
@@ -818,7 +941,7 @@ export const ChatViewer = memo(function ChatViewer({
                       });
                     }}
                     disabled={flashcardCurrentIndex === flashcardData.cards.length - 1}
-                    className="px-4 py-2 bg-[#38BDF8] hover:bg-[#38BDF8]/90 text-[#0B1221] text-xs font-semibold rounded disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                    className="px-6 py-3 bg-[#38BDF8] hover:bg-[#38BDF8]/90 text-[#0B1221] text-sm font-semibold rounded-lg disabled:opacity-40 disabled:cursor-not-allowed hover:shadow-lg hover:shadow-[#38BDF8]/30 transition-all duration-200 font-sans"
                   >
                     Next
                   </button>

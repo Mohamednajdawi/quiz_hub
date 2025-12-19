@@ -28,14 +28,13 @@ export function GenerationPanel({
   contents = [],
 }: GenerationPanelProps) {
   const queryClient = useQueryClient();
-  const [generationType, setGenerationType] = useState<'quiz' | 'flashcard' | 'essay' | null>(null);
+  const [generationType, setGenerationType] = useState<'quiz' | 'essay' | null>(null);
   const [numQuestions, setNumQuestions] = useState(10);
   const [difficulty, setDifficulty] = useState<'easy' | 'medium' | 'hard'>('medium');
-  const [numCards, setNumCards] = useState(10);
   // Track active generations to keep loading indicators visible until job completes
-  const [activeGenerations, setActiveGenerations] = useState<Set<'quiz' | 'flashcard' | 'essay'>>(new Set());
+  const [activeGenerations, setActiveGenerations] = useState<Set<'quiz' | 'essay'>>(new Set());
   // Track which content types are expanded (show all items)
-  const [expandedTypes, setExpandedTypes] = useState<Set<'quiz' | 'flashcard' | 'essay'>>(new Set());
+  const [expandedTypes, setExpandedTypes] = useState<Set<'quiz' | 'flashcard' | 'essay'>>(new Set()); // Keep flashcard for display expansion
   // Track content_id for newly generated items (before generatedContent loads)
   const [pendingContentIds, setPendingContentIds] = useState<Record<string, number | null>>({});
   // Local copies of reference ids so we can react immediately to new generations
@@ -115,54 +114,6 @@ export function GenerationPanel({
     },
   });
 
-  const flashcardMutation = useMutation({
-    mutationFn: (data: { num_cards: number; project_id: number; content_id?: number }) =>
-      generationApi.generateFlashcards({ ...data, project_id: courseId }),
-    onMutate: (variables) => {
-      // Mark flashcard as actively generating immediately when mutation starts
-      setActiveGenerations((prev) => new Set(prev).add('flashcard'));
-      setPendingContentIds((prev) => ({
-        ...prev,
-        'flashcard-pending': variables.content_id || null,
-      }));
-    },
-    onSuccess: async (_data, variables) => {
-      // We don't get the new flashcard topic id directly, but generated-content
-      // and course queries will include it after refetch; keep local references
-      // in sync by relying on those queries.
-      // Store the content_id for the newly generated flashcard
-      setPendingContentIds((prev) => {
-        const { 'flashcard-pending': _pendingId, ...rest } = prev;
-        return rest;
-      });
-      // Reset form values
-      setNumCards(10);
-      // Refresh course data to show new references
-      await queryClient.invalidateQueries({
-        queryKey: ['course', courseId],
-        refetchType: 'active',
-      });
-      // Also refresh generated content to get content_id for new items
-      await queryClient.invalidateQueries({
-        queryKey: ['generated-content', courseId],
-        refetchType: 'active',
-      });
-    },
-    onError: (error: any) => {
-      const errorMessage = error.response?.data?.detail || error.message || 'Failed to generate flashcards';
-      const isLimitError = error.response?.status === 402 || error.status === 402;
-      if (isLimitError) {
-        alert(errorMessage);
-      }
-      // Remove from active generations on error
-      setActiveGenerations((prev) => {
-        const next = new Set(prev);
-        next.delete('flashcard');
-        return next;
-      });
-    },
-  });
-
   const essayMutation = useMutation({
     mutationFn: (data: { num_questions: number; difficulty: string; project_id: number; content_id?: number }) =>
       generationApi.generateEssays({ ...data, project_id: courseId }),
@@ -230,13 +181,6 @@ export function GenerationPanel({
       quizMutation.mutate({ 
         num_questions: numQuestions, 
         difficulty, 
-        ...commonData 
-      });
-      // Reset to main view after mutation starts
-      setGenerationType(null);
-    } else if (generationType === 'flashcard') {
-      flashcardMutation.mutate({ 
-        num_cards: numCards, 
         ...commonData 
       });
       // Reset to main view after mutation starts
@@ -656,19 +600,6 @@ export function GenerationPanel({
             </button>
 
             <button
-              onClick={() => setGenerationType('flashcard')}
-              className="w-full p-4 bg-[#161F32] hover:bg-[#161F32]/80 border border-[#38BDF8]/20 rounded transition-colors text-left"
-            >
-              <div className="flex items-center gap-3">
-                <BookOpen className="w-6 h-6 text-[#38BDF8]" />
-                <div>
-                  <div className="font-semibold text-white">Generate Flashcards</div>
-                  <div className="text-sm text-[#94A3B8]">Create flashcards from PDFs</div>
-                </div>
-              </div>
-            </button>
-
-            <button
               onClick={() => setGenerationType('essay')}
               className="w-full p-4 bg-[#161F32] hover:bg-[#161F32]/80 border border-[#38BDF8]/20 rounded transition-colors text-left"
             >
@@ -736,38 +667,6 @@ export function GenerationPanel({
               </div>
             )}
 
-            {generationType === 'flashcard' && (
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-[#94A3B8] mb-2">
-                    Number of Cards
-                  </label>
-                  <input
-                    type="number"
-                    min="1"
-                    max="100"
-                    value={numCards}
-                    onChange={(e) => setNumCards(parseInt(e.target.value) || 10)}
-                    className="w-full px-4 py-2 bg-[#161F32] border border-[#38BDF8]/20 rounded text-white focus:outline-none focus:border-[#38BDF8]"
-                  />
-                </div>
-                <button
-                  onClick={handleGenerate}
-                  disabled={flashcardMutation.isPending}
-                  className="w-full py-2 bg-[#38BDF8] hover:bg-[#38BDF8]/90 text-[#0B1221] font-semibold rounded transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
-                >
-                  {flashcardMutation.isPending ? (
-                    <>
-                      <Loader2 className="w-5 h-5 animate-spin" />
-                      Generating...
-                    </>
-                  ) : (
-                    'Generate Flashcards'
-                  )}
-                </button>
-              </div>
-            )}
-
             {generationType === 'essay' && (
               <div className="space-y-4">
                 <div>
@@ -817,7 +716,7 @@ export function GenerationPanel({
         )}
 
         {/* Generating Content Section */}
-        {(quizMutation.isPending || flashcardMutation.isPending || essayMutation.isPending || activeGenerations.size > 0) && (
+        {(quizMutation.isPending || essayMutation.isPending || activeGenerations.size > 0) && (
           <div className="mt-8 pt-4 border-t border-[#38BDF8]/20">
             <h3 className="text-sm font-semibold text-white mb-3">Generating Content</h3>
             <div className="space-y-2">
@@ -825,12 +724,6 @@ export function GenerationPanel({
                 <div className="p-3 bg-[#161F32] rounded border border-[#38BDF8]/10 flex items-center gap-2">
                   <Loader2 className="w-4 h-4 text-[#38BDF8] animate-spin" />
                   <span className="text-sm text-[#94A3B8]">Generating quiz...</span>
-                </div>
-              )}
-              {(flashcardMutation.isPending || activeGenerations.has('flashcard')) && (
-                <div className="p-3 bg-[#161F32] rounded border border-[#38BDF8]/10 flex items-center gap-2">
-                  <Loader2 className="w-4 h-4 text-[#38BDF8] animate-spin" />
-                  <span className="text-sm text-[#94A3B8]">Generating flashcards...</span>
                 </div>
               )}
               {(essayMutation.isPending || activeGenerations.has('essay')) && (
