@@ -1,8 +1,7 @@
 # 1. DEPS STAGE
-# Use node:20-slim for better compatibility with native modules (fixes the musl error)
 FROM node:20-slim AS deps
 
-# Install necessary build tools (needed for some npm packages)
+# Install common libraries for compatibility
 RUN apt-get update && apt-get install -y \
     python3 \
     make \
@@ -15,23 +14,22 @@ WORKDIR /app
 # Copy package files
 COPY package.json package-lock.json* pnpm-lock.yaml* ./
 
-# Install dependencies based on lockfile
-RUN \
-  if [ -f package-lock.json ]; then npm ci; \
-  elif [ -f pnpm-lock.yaml ]; then corepack enable pnpm && pnpm i --frozen-lockfile; \
-  else npm install; \
-  fi
+# --- THE FIX IS HERE ---
+# We use 'npm install' instead of 'npm ci'.
+# 'npm ci' strictly uses your local lockfile (which is missing Linux binaries).
+# 'npm install' will recalculate dependencies and download the correct Linux/GNU binaries.
+RUN npm install
 
 # 2. BUILDER STAGE
 FROM node:20-slim AS builder
 WORKDIR /app
 
-# Copy node_modules from deps stage
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
-# Disable Telemetry and Turbopack (forces Webpack, which is more stable for Docker builds)
+# Disable Telemetry
 ENV NEXT_TELEMETRY_DISABLED=1
+# Force Tailwind/Next to skip Turbo if possible to avoid binding issues
 ENV NEXT_PRIVATE_SKIP_TURBO=1
 
 # Run the build
@@ -46,19 +44,16 @@ ENV NEXT_TELEMETRY_DISABLED=1
 ENV PORT=3000
 ENV HOSTNAME=0.0.0.0
 
-# Create system user for security
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nextjs
 
-# Copy necessary files
 COPY --from=builder /app/public ./public
 
-# Set permissions for prerender cache
+# Set permissions
 RUN mkdir .next
 RUN chown nextjs:nodejs .next
 
-# Copy the standalone build and static files
-# https://nextjs.org/docs/pages/api-reference/next-config-js/output
+# Copy standalone output
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 
