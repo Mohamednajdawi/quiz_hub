@@ -186,10 +186,10 @@ export function GenerationPanel({
       // Reset to main view after mutation starts
       setGenerationType(null);
     } else if (generationType === 'essay') {
-      essayMutation.mutate({ 
-        num_questions: numQuestions, 
-        difficulty, 
-        ...commonData 
+      essayMutation.mutate({
+        num_questions: numQuestions,
+        difficulty,
+        ...commonData
       });
       // Reset to main view after mutation starts
       setGenerationType(null);
@@ -341,8 +341,7 @@ export function GenerationPanel({
         (activeGenerations.has('quiz') ? pendingContentIds['quiz-pending'] : undefined);
     } else if (type === 'flashcard') {
       const flashcard = generatedContent?.flashcards?.find((f) => f.id === id);
-      contentId = flashcard?.content_id ?? pendingContentIds[`flashcard-${id}`] ?? 
-        (activeGenerations.has('flashcard') ? pendingContentIds['flashcard-pending'] : undefined);
+      contentId = flashcard?.content_id ?? pendingContentIds[`flashcard-${id}`];
     } else if (type === 'essay') {
       const essay = generatedContent?.essays?.find((e) => e.id === id);
       contentId = essay?.content_id ?? pendingContentIds[`essay-${id}`] ?? 
@@ -942,8 +941,7 @@ export function GenerationPanel({
                   }
                   
                   // Get content_id from flashcard or pendingContentIds
-                  const storedContentId = pendingContentIds[`flashcard-${id}`] ?? 
-                    (activeGenerations.has('flashcard') ? pendingContentIds['flashcard-pending'] : undefined);
+                  const storedContentId = pendingContentIds[`flashcard-${id}`];
                   
                   // Handle missing content_id: if field doesn't exist or is undefined, treat as null (all PDFs)
                   const flashcardAny = flashcard as any;
