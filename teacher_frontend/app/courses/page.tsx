@@ -174,18 +174,19 @@ export default function CoursesPage() {
     <ProtectedRoute>
       <div className="min-h-screen bg-[#0B1221]">
         <Navigation />
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="flex items-center justify-between mb-8">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6 sm:mb-8">
             <div>
-              <h1 className="text-3xl font-bold text-white mb-2">My Courses</h1>
-              <p className="text-[#94A3B8]">Manage your courses and content</p>
+              <h1 className="text-2xl sm:text-3xl font-bold text-white mb-2">My Courses</h1>
+              <p className="text-sm sm:text-base text-[#94A3B8]">Manage your courses and content</p>
             </div>
             <button
               onClick={() => setShowCreateModal(true)}
-              className="flex items-center gap-2 px-6 py-3 bg-[#38BDF8] hover:bg-[#38BDF8]/90 text-[#0B1221] font-semibold rounded transition-colors"
+              className="flex items-center justify-center gap-2 px-4 sm:px-6 py-2 sm:py-3 bg-[#38BDF8] hover:bg-[#38BDF8]/90 text-[#0B1221] font-semibold rounded transition-colors text-sm sm:text-base"
             >
-              <Plus className="w-5 h-5" />
-              Create Course
+              <Plus className="w-4 h-4 sm:w-5 sm:h-5" />
+              <span className="hidden sm:inline">Create Course</span>
+              <span className="sm:hidden">Create</span>
             </button>
           </div>
 
@@ -270,11 +271,11 @@ export default function CoursesPage() {
         <Footer />
 
         {showCreateModal && (
-          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 overflow-y-auto">
             <motion.div
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
-              className="glassmorphism rounded-lg p-6 w-full max-w-md border border-[#38BDF8]/20"
+              className="glassmorphism rounded-lg p-4 sm:p-6 w-full max-w-md border border-[#38BDF8]/20 my-auto"
             >
               <h2 className="text-2xl font-bold text-white mb-4">Create New Course</h2>
               <div className="space-y-4">

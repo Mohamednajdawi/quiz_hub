@@ -8,7 +8,7 @@ import { PdfSidebar } from '@/components/course/PdfSidebar';
 import { useAuth } from '@/contexts/AuthContext';
 import { useQuery } from '@tanstack/react-query';
 import { coursesApi, CourseContent } from '@/lib/api/courses';
-import { ArrowLeft, BarChart3 } from 'lucide-react';
+import { ArrowLeft, BarChart3, Menu } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
 // Lazy load heavy components for better initial load performance
@@ -36,6 +36,7 @@ export default function CourseDetailPage({ params }: { params: Promise<{ id: str
   const router = useRouter();
   const { isAuthenticated, isLoading: authLoading } = useAuth();
   const [selectedPdf, setSelectedPdf] = useState<CourseContent | null>(null);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   const { data: course, isLoading } = useQuery({
     queryKey: ['course', courseId],
@@ -91,25 +92,60 @@ export default function CourseDetailPage({ params }: { params: Promise<{ id: str
             Back to Courses
           </button>
 
-          <div className="mb-6 flex items-start justify-between">
-            <div>
-              <h1 className="text-3xl font-bold text-white mb-2">{course.name}</h1>
+          <div className="mb-6 flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+            <div className="flex-1">
+              <div className="flex items-center gap-3 mb-2">
+                <button
+                  onClick={() => setIsSidebarOpen(true)}
+                  className="lg:hidden p-2 text-[#94A3B8] hover:text-white hover:bg-[#161F32] rounded transition-colors"
+                  aria-label="Open PDF sidebar"
+                >
+                  <Menu className="w-5 h-5" />
+                </button>
+                <h1 className="text-2xl sm:text-3xl font-bold text-white">{course.name}</h1>
+              </div>
               {course.description && (
-                <p className="text-[#94A3B8]">{course.description}</p>
+                <p className="text-sm sm:text-base text-[#94A3B8]">{course.description}</p>
               )}
             </div>
             <button
               onClick={() => router.push(`/courses/${courseId}/results`)}
-              className="flex items-center gap-2 px-4 py-2 bg-[#38BDF8] hover:bg-[#38BDF8]/90 text-[#0B1221] font-semibold rounded transition-colors"
+              className="flex items-center justify-center gap-2 px-4 py-2 bg-[#38BDF8] hover:bg-[#38BDF8]/90 text-[#0B1221] font-semibold rounded transition-colors text-sm sm:text-base"
             >
-              <BarChart3 className="w-5 h-5" />
-              View Results
+              <BarChart3 className="w-4 h-4 sm:w-5 sm:h-5" />
+              <span className="hidden sm:inline">View Results</span>
+              <span className="sm:hidden">Results</span>
             </button>
           </div>
 
-          <div className="grid grid-cols-12 gap-4 h-[calc(100vh-12rem)]">
-            {/* Left Column - PDFs (20%) */}
-            <div className="col-span-12 lg:col-span-2">
+          {/* Mobile Sidebar Overlay */}
+          {isSidebarOpen && (
+            <div
+              className="lg:hidden fixed inset-0 bg-black/50 z-50"
+              onClick={() => setIsSidebarOpen(false)}
+            >
+              <div
+                className="absolute left-0 top-0 bottom-0 w-80 max-w-[85vw] bg-[#0B1221] border-r border-[#38BDF8]/20 overflow-y-auto"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <div className="p-4">
+                  <PdfSidebar 
+                    courseId={courseId} 
+                    contents={course.contents}
+                    onPdfSelect={(pdf) => {
+                      setSelectedPdf(pdf);
+                      setIsSidebarOpen(false);
+                    }}
+                    selectedPdf={selectedPdf}
+                  />
+                </div>
+              </div>
+            </div>
+          )}
+
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 lg:h-[calc(100vh-12rem)]">
+            {/* Left Column - PDFs (hidden on mobile, shown in drawer) */}
+            <div className="hidden lg:block lg:col-span-2">
               <PdfSidebar 
                 courseId={courseId} 
                 contents={course.contents}
@@ -118,8 +154,8 @@ export default function CourseDetailPage({ params }: { params: Promise<{ id: str
               />
             </div>
 
-            {/* Middle Column - Chat/Viewer (60%) */}
-            <div className="col-span-12 lg:col-span-7">
+            {/* Middle Column - Chat/Viewer */}
+            <div className="col-span-1 lg:col-span-7 min-h-[400px] lg:min-h-0">
               <ChatViewer 
                 courseId={courseId} 
                 contents={course.contents}
@@ -128,8 +164,8 @@ export default function CourseDetailPage({ params }: { params: Promise<{ id: str
               />
             </div>
 
-            {/* Right Column - Generation (20%) */}
-            <div className="col-span-12 lg:col-span-3">
+            {/* Right Column - Generation */}
+            <div className="col-span-1 lg:col-span-3 min-h-[400px] lg:min-h-0">
               <GenerationPanel
                 courseId={courseId}
                 quizReferences={course.quiz_references}

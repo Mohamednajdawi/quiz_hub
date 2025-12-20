@@ -461,17 +461,18 @@ export const ChatViewer = memo(function ChatViewer({
   return (
     <div className="glassmorphism rounded-lg border border-[#38BDF8]/20 h-full flex flex-col">
       {/* Header */}
-      <div className="p-4 border-b border-[#38BDF8]/20 flex items-center justify-between">
-        <div className="flex items-center gap-2">
+      <div className="p-2 sm:p-4 border-b border-[#38BDF8]/20 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+        <div className="flex items-center gap-1 sm:gap-2 flex-wrap">
           <button
             onClick={() => setViewMode('chat')}
-            className={`px-4 py-2 rounded transition-colors ${
+            className={`px-2 sm:px-4 py-1.5 sm:py-2 rounded transition-colors ${
               viewMode === 'chat'
                 ? 'bg-[#38BDF8]/20 text-[#38BDF8]'
                 : 'text-[#94A3B8] hover:text-white'
             }`}
+            title="Chat"
           >
-            <MessageSquare className="w-5 h-5" />
+            <MessageSquare className="w-4 h-4 sm:w-5 sm:h-5" />
           </button>
           <button
             onClick={() => {
@@ -484,51 +485,53 @@ export const ChatViewer = memo(function ChatViewer({
                 handleViewPdf(selectedContent);
               }
             }}
-            className={`px-4 py-2 rounded transition-colors ${
+            className={`px-2 sm:px-4 py-1.5 sm:py-2 rounded transition-colors ${
               viewMode === 'viewer'
                 ? 'bg-[#38BDF8]/20 text-[#38BDF8]'
                 : 'text-[#94A3B8] hover:text-white'
             }`}
+            title="PDF Viewer"
           >
-            <FileText className="w-5 h-5" />
+            <FileText className="w-4 h-4 sm:w-5 sm:h-5" />
           </button>
           <button
             onClick={() => {
               setViewMode('mindmap');
             }}
-            className={`px-4 py-2 rounded transition-colors ${
+            className={`px-2 sm:px-4 py-1.5 sm:py-2 rounded transition-colors ${
               viewMode === 'mindmap'
                 ? 'bg-[#38BDF8]/20 text-[#38BDF8]'
                 : 'text-[#94A3B8] hover:text-white'
             }`}
             title="Mind map"
           >
-            <GitBranch className="w-5 h-5" />
+            <GitBranch className="w-4 h-4 sm:w-5 sm:h-5" />
           </button>
           <button
             onClick={() => {
               setViewMode('flashcard');
             }}
-            className={`px-4 py-2 rounded transition-colors ${
+            className={`px-2 sm:px-4 py-1.5 sm:py-2 rounded transition-colors ${
               viewMode === 'flashcard'
                 ? 'bg-[#38BDF8]/20 text-[#38BDF8]'
                 : 'text-[#94A3B8] hover:text-white'
             }`}
             title="Flashcards"
           >
-            <BookOpen className="w-5 h-5" />
+            <BookOpen className="w-4 h-4 sm:w-5 sm:h-5" />
           </button>
         </div>
         {selectedContent && (
-          <div className="flex items-center gap-2">
-            <span className="text-sm text-[#94A3B8]">{selectedContent.name}</span>
+          <div className="flex items-center gap-2 min-w-0">
+            <span className="text-xs sm:text-sm text-[#94A3B8] truncate">{selectedContent.name}</span>
             <button
               onClick={() => {
                 setSelectedContent(null);
                 setViewMode('chat');
                 onPdfDeselect?.();
               }}
-              className="p-1 text-[#94A3B8] hover:text-white"
+              className="p-1 text-[#94A3B8] hover:text-white flex-shrink-0"
+              aria-label="Deselect PDF"
             >
               <X className="w-4 h-4" />
             </button>
@@ -583,20 +586,20 @@ export const ChatViewer = memo(function ChatViewer({
             </div>
 
             {/* Input */}
-            <div className="p-4 border-t border-[#38BDF8]/20">
+            <div className="p-2 sm:p-4 border-t border-[#38BDF8]/20">
               <div className="flex gap-2">
                 <input
                   type="text"
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
                   onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
-                  placeholder="Ask a question about your PDFs..."
-                  className="flex-1 px-4 py-2 bg-[#161F32] border border-[#38BDF8]/20 rounded text-white placeholder-[#94A3B8] focus:outline-none focus:border-[#38BDF8]"
+                  placeholder="Ask a question..."
+                  className="flex-1 px-3 sm:px-4 py-2 text-sm sm:text-base bg-[#161F32] border border-[#38BDF8]/20 rounded text-white placeholder-[#94A3B8] focus:outline-none focus:border-[#38BDF8]"
                 />
                 <button
                   onClick={handleSendMessage}
                   disabled={!input.trim() || isLoading}
-                  className="px-6 py-2 bg-[#38BDF8] hover:bg-[#38BDF8]/90 text-[#0B1221] font-semibold rounded transition-colors disabled:opacity-50"
+                  className="px-4 sm:px-6 py-2 text-sm sm:text-base bg-[#38BDF8] hover:bg-[#38BDF8]/90 text-[#0B1221] font-semibold rounded transition-colors disabled:opacity-50"
                 >
                   Send
                 </button>

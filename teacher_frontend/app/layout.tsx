@@ -18,6 +18,7 @@ const manrope = Manrope({
 export const metadata: Metadata = {
   title: "Teacher Dashboard | Quiz Hub",
   description: "Manage courses, generate quizzes, and monitor student progress",
+  viewport: "width=device-width, initial-scale=1, maximum-scale=5",
 };
 
 export default function RootLayout({
@@ -27,6 +28,9 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
+      <head>
+        <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5" />
+      </head>
       <body
         className={`${inter.variable} ${manrope.variable} antialiased`}
       >

@@ -5,8 +5,8 @@ import Link from 'next/link';
 export function Footer() {
   return (
     <footer className="bg-[#050814] border-t border-[#38BDF8]/20 mt-auto text-[#94A3B8]">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-10">
+        <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-6 sm:gap-8">
           {/* Product */}
           <div>
             <h3 className="text-sm font-semibold text-white mb-4">Product</h3>
@@ -83,7 +83,7 @@ export function Footer() {
           </div>
         </div>
 
-        <div className="mt-8 pt-6 border-t border-[#1E293B] text-xs text-center text-[#64748B]">
+        <div className="mt-6 sm:mt-8 pt-4 sm:pt-6 border-t border-[#1E293B] text-xs text-center text-[#64748B]">
           © {new Date().getFullYear()} Quiz Hub Teacher Dashboard. All rights reserved.
         </div>
       </div>

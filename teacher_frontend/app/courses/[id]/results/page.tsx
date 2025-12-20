@@ -236,54 +236,54 @@ export default function CourseResultsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#0B1221] p-4">
+    <div className="min-h-screen bg-[#0B1221] p-4 sm:p-6">
       <div className="max-w-6xl mx-auto">
         {/* Header */}
-        <div className="mb-6">
+        <div className="mb-4 sm:mb-6">
           <button
             onClick={() => router.push('/results')}
-            className="flex items-center gap-2 text-[#94A3B8] hover:text-white mb-4"
+            className="flex items-center gap-2 text-sm sm:text-base text-[#94A3B8] hover:text-white mb-3 sm:mb-4"
           >
-            <ArrowLeft className="w-5 h-5" />
+            <ArrowLeft className="w-4 h-4 sm:w-5 sm:h-5" />
             Back to results
           </button>
-          <h1 className="text-3xl font-bold mb-2">
+          <h1 className="text-2xl sm:text-3xl font-bold mb-2">
             <span className="text-white">Quiz Results for </span>
             <span className="text-[#38BDF8]">
               {course?.name || 'Course'}
             </span>
           </h1>
-          <p className="text-[#94A3B8]">
+          <p className="text-sm sm:text-base text-[#94A3B8]">
             View all student attempts and performance analytics
           </p>
         </div>
 
         {/* Summary Stats */}
         {allResults.length > 0 && (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 mb-4 sm:mb-6">
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="glassmorphism rounded-lg border border-[#38BDF8]/20 p-6"
+                className="glassmorphism rounded-lg border border-[#38BDF8]/20 p-4 sm:p-6"
               >
-                <div className="flex items-center gap-3 mb-2">
-                  <User className="w-6 h-6 text-[#38BDF8]" />
-                  <h3 className="text-sm font-medium text-[#94A3B8]">Total Attempts</h3>
+                <div className="flex items-center gap-2 sm:gap-3 mb-2">
+                  <User className="w-5 h-5 sm:w-6 sm:h-6 text-[#38BDF8]" />
+                  <h3 className="text-xs sm:text-sm font-medium text-[#94A3B8]">Total Attempts</h3>
                 </div>
-                <p className="text-3xl font-bold text-white">{allResults.length}</p>
+                <p className="text-2xl sm:text-3xl font-bold text-white">{allResults.length}</p>
               </motion.div>
 
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.1 }}
-                className="glassmorphism rounded-lg border border-[#38BDF8]/20 p-6"
+                className="glassmorphism rounded-lg border border-[#38BDF8]/20 p-4 sm:p-6"
               >
-                <div className="flex items-center gap-3 mb-2">
-                  <TrendingUp className="w-6 h-6 text-[#38BDF8]" />
-                  <h3 className="text-sm font-medium text-[#94A3B8]">Average Score</h3>
+                <div className="flex items-center gap-2 sm:gap-3 mb-2">
+                  <TrendingUp className="w-5 h-5 sm:w-6 sm:h-6 text-[#38BDF8]" />
+                  <h3 className="text-xs sm:text-sm font-medium text-[#94A3B8]">Average Score</h3>
                 </div>
-                <p className="text-3xl font-bold text-white">
+                <p className="text-2xl sm:text-3xl font-bold text-white">
                   {allResults.length > 0
                     ? (
                         allResults.reduce((sum, r) => sum + r.percentage_score, 0) /
@@ -298,13 +298,13 @@ export default function CourseResultsPage() {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.2 }}
-                className="glassmorphism rounded-lg border border-[#38BDF8]/20 p-6"
+                className="glassmorphism rounded-lg border border-[#38BDF8]/20 p-4 sm:p-6"
               >
-                <div className="flex items-center gap-3 mb-2">
-                  <Clock className="w-6 h-6 text-[#38BDF8]" />
-                  <h3 className="text-sm font-medium text-[#94A3B8]">Avg Time</h3>
+                <div className="flex items-center gap-2 sm:gap-3 mb-2">
+                  <Clock className="w-5 h-5 sm:w-6 sm:h-6 text-[#38BDF8]" />
+                  <h3 className="text-xs sm:text-sm font-medium text-[#94A3B8]">Avg Time</h3>
                 </div>
-                <p className="text-3xl font-bold text-white">
+                <p className="text-2xl sm:text-3xl font-bold text-white">
                   {allResults.length > 0
                     ? formatTime(
                         Math.round(
@@ -369,15 +369,15 @@ export default function CourseResultsPage() {
                     }
                     className="w-full text-left"
                   >
-                    <div className="glassmorphism rounded-lg border border-[#38BDF8]/30 p-4 bg-[#38BDF8]/5 flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <div className="w-1 h-8 bg-[#38BDF8] rounded-full" />
-                        <div>
-                          <h2 className="text-lg font-semibold text-white flex items-center gap-2">
+                    <div className="glassmorphism rounded-lg border border-[#38BDF8]/30 p-3 sm:p-4 bg-[#38BDF8]/5 flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
+                        <div className="w-1 h-6 sm:h-8 bg-[#38BDF8] rounded-full flex-shrink-0" />
+                        <div className="min-w-0">
+                          <h2 className="text-base sm:text-lg font-semibold text-white flex items-center gap-2 truncate">
                             <span>📄</span>
-                            {pdfGroup.pdfName}
+                            <span className="truncate">{pdfGroup.pdfName}</span>
                           </h2>
-                          <p className="text-sm text-[#94A3B8] mt-1">
+                          <p className="text-xs sm:text-sm text-[#94A3B8] mt-1">
                             {pdfGroup.results.length}{' '}
                             {pdfGroup.results.length === 1 ? 'attempt' : 'attempts'}
                           </p>
@@ -396,10 +396,10 @@ export default function CourseResultsPage() {
 
                   {/* Results for this PDF */}
                   {!isCollapsed && (
-                    <div className="space-y-4 ml-4">
+                    <div className="space-y-3 sm:space-y-4 ml-2 sm:ml-4">
                       {/* Per-PDF summary stats */}
                       {pdfAttempts > 0 && (
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-3">
                           <div className="glassmorphism rounded-lg border border-[#38BDF8]/20 p-3">
                             <div className="flex items-center gap-2 mb-1">
                               <User className="w-4 h-4 text-[#38BDF8]" />
@@ -500,15 +500,15 @@ export default function CourseResultsPage() {
                 className="glassmorphism rounded-lg border border-[#38BDF8]/20 overflow-hidden"
               >
                 <div
-                  className="p-6 cursor-pointer hover:bg-[#161F32]/50 transition-colors"
+                  className="p-4 sm:p-6 cursor-pointer hover:bg-[#161F32]/50 transition-colors"
                   onClick={() =>
                     setExpandedAttempt(expandedAttempt === attempt.id ? null : attempt.id)
                   }
                 >
-                  <div className="flex items-start justify-between gap-4">
+                  <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 sm:gap-4">
                     <div className="flex-1 min-w-0">
                       {/* Participant Name */}
-                      <h3 className="text-lg font-semibold text-white mb-1">
+                      <h3 className="text-base sm:text-lg font-semibold text-white mb-1">
                         {getParticipantName(attempt)}
                       </h3>
                       
@@ -568,9 +568,9 @@ export default function CourseResultsPage() {
                     </div>
                     
                     {/* Score Percentage */}
-                    <div className="text-right flex-shrink-0">
+                    <div className="text-left sm:text-right flex-shrink-0">
                       <div
-                        className={`text-3xl font-bold ${
+                        className={`text-2xl sm:text-3xl font-bold ${
                           attempt.percentage_score >= 70
                             ? 'text-[#38BDF8]'
                             : attempt.percentage_score >= 50
@@ -586,7 +586,7 @@ export default function CourseResultsPage() {
 
                 {/* Expanded Details */}
                 {expandedAttempt === attempt.id && (
-                  <div className="border-t border-[#38BDF8]/20 p-6 bg-[#161F32]/30 space-y-4">
+                  <div className="border-t border-[#38BDF8]/20 p-4 sm:p-6 bg-[#161F32]/30 space-y-3 sm:space-y-4">
                     {/* Participant Information */}
                     <div>
                       <h4 className="text-sm font-semibold text-white mb-3">Participant Information</h4>

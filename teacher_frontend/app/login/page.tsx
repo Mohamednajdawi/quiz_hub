@@ -35,11 +35,11 @@ export default function LoginPage() {
         animate={{ opacity: 1, y: 0 }}
         className="w-full max-w-md"
       >
-        <div className="glassmorphism rounded-lg p-8 border border-[#38BDF8]/20">
-          <div className="text-center mb-8">
-            <BookOpen className="w-12 h-12 text-[#38BDF8] mx-auto mb-4" />
-            <h1 className="text-3xl font-bold text-white mb-2">Teacher Dashboard</h1>
-            <p className="text-[#94A3B8]">Sign in to manage your courses</p>
+        <div className="glassmorphism rounded-lg p-6 sm:p-8 border border-[#38BDF8]/20">
+          <div className="text-center mb-6 sm:mb-8">
+            <BookOpen className="w-10 h-10 sm:w-12 sm:h-12 text-[#38BDF8] mx-auto mb-3 sm:mb-4" />
+            <h1 className="text-2xl sm:text-3xl font-bold text-white mb-2">Teacher Dashboard</h1>
+            <p className="text-sm sm:text-base text-[#94A3B8]">Sign in to manage your courses</p>
           </div>
 
           {error && (

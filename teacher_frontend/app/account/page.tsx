@@ -65,17 +65,17 @@ export default function AccountPage() {
     <ProtectedRoute>
       <div className="min-h-screen bg-[#0B1221]">
         <Navigation />
-        <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="glassmorphism rounded-lg p-6 border border-[#38BDF8]/20"
+            className="glassmorphism rounded-lg p-4 sm:p-6 border border-[#38BDF8]/20"
           >
-            <div className="flex items-center gap-3 mb  -6">
-              <UserIcon className="w-8 h-8 text-[#38BDF8]" />
+            <div className="flex items-center gap-3 mb-6">
+              <UserIcon className="w-6 h-6 sm:w-8 sm:h-8 text-[#38BDF8] flex-shrink-0" />
               <div>
-                <h1 className="text-2xl font-bold text-white">Account</h1>
-                <p className="text-sm text-[#94A3B8]">
+                <h1 className="text-xl sm:text-2xl font-bold text-white">Account</h1>
+                <p className="text-xs sm:text-sm text-[#94A3B8]">
                   Update your personal information used across the teacher dashboard.
                 </p>
               </div>
@@ -180,9 +180,9 @@ export default function AccountPage() {
                 <button
                   type="submit"
                   disabled={isSaving}
-                  className="inline-flex items-center gap-2 px-6 py-2 bg-[#38BDF8] hover:bg-[#38BDF8]/90 text-[#0B1221] font-semibold rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="inline-flex items-center gap-2 px-4 sm:px-6 py-2 bg-[#38BDF8] hover:bg-[#38BDF8]/90 text-[#0B1221] font-semibold rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm sm:text-base"
                 >
-                  <Save className="w-5 h-5" />
+                  <Save className="w-4 h-4 sm:w-5 sm:h-5" />
                   {isSaving ? 'Saving...' : 'Save changes'}
                 </button>
               </div>
